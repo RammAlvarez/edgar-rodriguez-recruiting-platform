@@ -132,8 +132,8 @@ public static class EmployeeEndpoints
                 // An employee created without an account is queued for a card automatically (SPEC §5.5).
                 if (!hasAccount)
                     db.Add(new CardRequest { EmployeeId = employee.Uid, Bank = r.CardBank!.Value, RequestedAt = clock.UtcNow });
-                return await db.SaveOrConflictAsync(async () => Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), employee.Uid, today, ct)),
-                    AlreadyEmployed, ct);
+                return await Refreshed(db, employee.Uid, clock, AlreadyEmployed, ct)
+                    ?? Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), employee.Uid, today, ct));
             })
             .WithName("CreateEmployee").Mutation<EmployeeRequest>(CandidateEndpoints.Tag).RequireAccess(Access);
 
@@ -147,7 +147,7 @@ public static class EmployeeEndpoints
                 e.HourlyRateOverride = r.HourlyRateOverride;
                 e.DaysWorkedBonusOverride = r.DaysWorkedBonusOverride;
                 e.Notes = r.Notes.Clean();
-                await db.SaveChangesAsync(ct);
+                await Prepayroll.Prepayrolls.SaveAndRefreshEmployeeAsync(db, id, clock.UtcNow, ct);
                 return Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), id, clock.Today(), ct));
             })
             .WithName("UpdateEmployee").Mutation<UpdateEmployeeRequest>().RequireAccess(Access);
@@ -166,8 +166,8 @@ public static class EmployeeEndpoints
                 e.PayrollGroupId = r.PayrollGroupId;
                 e.PositionId = r.PositionId;
                 e.Shift = Shift(r.Shift);
-                return await db.SaveOrConflictAsync(async () => Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), id, clock.Today(), ct)),
-                    AlreadyEmployed, ct);
+                return await Refreshed(db, id, clock, AlreadyEmployed, ct)
+                    ?? Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), id, clock.Today(), ct));
             })
             .WithName("ChangeEmployeeAssignment").Mutation<AssignmentRequest>().RequireAccess(Access);
 
@@ -210,8 +210,8 @@ public static class EmployeeEndpoints
                 }
                 await StaffRules.PrefillAsync(db, period, r.StartDate, end ?? r.StartDate, ctx.RequiredPrincipal.UserId, clock.UtcNow, ct);
                 await RefreshStatus(db, e, clock.Today(), ct);
-                return await db.SaveOrConflictAsync(async () => Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), id, clock.Today(), ct)),
-                    "El periodo se cruza con otro.", ct);
+                return await Refreshed(db, id, clock, "El periodo se cruza con otro.", ct)
+                    ?? Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), id, clock.Today(), ct));
             })
             .WithName("AddEmployeeStatusPeriod").Mutation<StatusPeriodRequest>(CardRequestsTag).RequireAccess(Access);
 
@@ -236,7 +236,7 @@ public static class EmployeeEndpoints
                 else
                     await StaffRules.PrefillAsync(db, period, previous.AddDays(1), r.EndDate, ctx.RequiredPrincipal.UserId, clock.UtcNow, ct);
                 await RefreshStatus(db, e, clock.Today(), ct);
-                await db.SaveChangesAsync(ct);
+                await Prepayroll.Prepayrolls.SaveAndRefreshEmployeeAsync(db, id, clock.UtcNow, ct);
                 return Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), id, clock.Today(), ct));
             })
             .WithName("UpdateEmployeeStatusPeriod").Mutation<UpdateStatusPeriodRequest>().RequireAccess(Access);
@@ -264,11 +264,11 @@ public static class EmployeeEndpoints
                     await StaffRules.UnfillAsync(db, period, period.EndDate, ct);
                 }
                 await RefreshStatus(db, e, today, ct, removed: period.StartDate >= today ? period.Uid : null);
-                await db.SaveChangesAsync(ct);
+                await Prepayroll.Prepayrolls.SaveAndRefreshEmployeeAsync(db, id, clock.UtcNow, ct);
                 return Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), id, today, ct));
             })
             .WithName("EndEmployeeStatusPeriod").Produces<EmployeeDetailDto>().ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag).RequireAccess(Access);
+            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, Prepayroll.PrepayrollEndpoints.Tag).RequireAccess(Access);
 
         g.MapPost("/{id:guid}/rehire", async (Guid id, RehireRequest r, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
             {
@@ -296,8 +296,8 @@ public static class EmployeeEndpoints
                 db.Add(employee);
                 if (!hasAccount)
                     db.Add(new CardRequest { EmployeeId = employee.Uid, Bank = r.CardBank!.Value, RequestedAt = clock.UtcNow });
-                return await db.SaveOrConflictAsync(async () => Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), employee.Uid, clock.Today(), ct)),
-                    AlreadyEmployed, ct);
+                return await Refreshed(db, employee.Uid, clock, AlreadyEmployed, ct)
+                    ?? Detail(await EmployeeQueries.Detail(db, db.Set<Employee>(), employee.Uid, clock.Today(), ct));
             })
             .WithName("RehireEmployee").Mutation<RehireRequest>(CardRequestsTag).RequireAccess(Access);
     }
@@ -409,11 +409,25 @@ public static class EmployeeEndpoints
 
     private static RouteHandlerBuilder Mutation<TBody>(this RouteHandlerBuilder route, params string[] alsoInvalidates) where TBody : class =>
         route.Validate<TBody>().Produces<EmployeeDetailDto>().ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates([Tag, GroupEndpoints.Tag, .. alsoInvalidates]);
+            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates([Tag, GroupEndpoints.Tag, Prepayroll.PrepayrollEndpoints.Tag, .. alsoInvalidates]);
 
     private static RouteHandlerBuilder Accounts<TBody>(this RouteHandlerBuilder route) where TBody : class =>
         route.Validate<TBody>().Produces<List<BankAccountDto>>().ProducesProblem(StatusCodes.Status404NotFound)
             .Invalidates(Tag, CardRequestsTag);
+
+    /// <summary>Saves and recomputes the employee's open prenómina lines in one transaction; a unique violation is a 409.</summary>
+    private static async Task<IResult?> Refreshed(DbContext db, Guid employeeId, IClock clock, string conflict, CancellationToken ct)
+    {
+        try
+        {
+            await Prepayroll.Prepayrolls.SaveAndRefreshEmployeeAsync(db, employeeId, clock.UtcNow, ct);
+            return null;
+        }
+        catch (DbUpdateException e) when (DbErrors.UniqueViolation(e) is not null)
+        {
+            return ApiResults.Conflict(conflict);
+        }
+    }
 
     private static IResult Detail(EmployeeDetailDto? dto) => dto is null ? ApiResults.NotFound(NotFound) : TypedResults.Ok(dto);
 

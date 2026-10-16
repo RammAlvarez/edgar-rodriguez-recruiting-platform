@@ -47,6 +47,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "employee_status", new[] { "active", "vacation", "sick_leave", "suspended", "terminated" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "gender", new[] { "male", "female", "unspecified" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "interview_outcome", new[] { "pending", "attended", "no_show" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "item_source", new[] { "attendance", "incident", "position", "manual" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_event_kind", new[] { "created", "edited", "status_changed", "recruiter_assigned", "recruiter_removed", "lead_changed" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_priority", new[] { "high", "medium", "low" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_status", new[] { "open", "in_progress", "filled", "cancelled", "paused" });
@@ -2084,6 +2085,326 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Platform.Payroll.Prepayroll.Incident", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid?>("AdjustedConceptId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("adjusted_concept_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("DuringReview")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("during_review");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<DateOnly>("IncidentDate")
+                        .HasColumnType("date")
+                        .HasColumnName("incident_date");
+
+                    b.Property<Guid?>("OriginPeriodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("origin_period_id");
+
+                    b.Property<Guid>("PayConceptId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pay_concept_id");
+
+                    b.Property<Guid>("PayrollPeriodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payroll_period_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ReportedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reported_by");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<decimal>("UnitValue")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("unit_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_incidents");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_incidents_uid");
+
+                    b.HasIndex("AdjustedConceptId")
+                        .HasDatabaseName("ix_incidents_adjusted_concept_id");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("ix_incidents_employee_id");
+
+                    b.HasIndex("OriginPeriodId")
+                        .HasDatabaseName("ix_incidents_origin_period_id");
+
+                    b.HasIndex("PayConceptId")
+                        .HasDatabaseName("ix_incidents_pay_concept_id");
+
+                    b.HasIndex("ReportedBy")
+                        .HasDatabaseName("ix_incidents_reported_by");
+
+                    b.HasIndex("PayrollPeriodId", "EmployeeId")
+                        .HasDatabaseName("ix_incidents_payroll_period_id_employee_id");
+
+                    b.ToTable("incidents", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_incidents_amount", "amount >= 0 OR adjusted_concept_id IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_incidents_quantity", "quantity >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Prepayroll.PrepayrollLine", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Comments")
+                        .HasColumnType("text")
+                        .HasColumnName("comments");
+
+                    b.Property<DateTimeOffset>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<decimal>("DailySalaryImss")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("daily_salary_imss");
+
+                    b.Property<decimal>("DailySalaryPocket")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("daily_salary_pocket");
+
+                    b.Property<decimal>("DaysWorked")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("days_worked");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<decimal>("GrossEarnings")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("gross_earnings");
+
+                    b.Property<DateOnly>("HiredAt")
+                        .HasColumnType("date")
+                        .HasColumnName("hired_at");
+
+                    b.Property<int>("HolidaysEntitled")
+                        .HasColumnType("integer")
+                        .HasColumnName("holidays_entitled");
+
+                    b.Property<decimal>("HolidaysWorked")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("holidays_worked");
+
+                    b.Property<decimal>("HourlyRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("hourly_rate");
+
+                    b.Property<decimal>("OvertimeDoubleHours")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)")
+                        .HasColumnName("overtime_double_hours");
+
+                    b.Property<decimal>("OvertimeHours")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)")
+                        .HasColumnName("overtime_hours");
+
+                    b.Property<decimal>("OvertimeTripleHours")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)")
+                        .HasColumnName("overtime_triple_hours");
+
+                    b.Property<decimal>("PartialHours")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)")
+                        .HasColumnName("partial_hours");
+
+                    b.Property<Guid>("PayrollPeriodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payroll_period_id");
+
+                    b.Property<string>("PositionName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("position_name");
+
+                    b.Property<string>("Shift")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("shift");
+
+                    b.Property<decimal>("TotalDeductions")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("total_deductions");
+
+                    b.Property<decimal>("TotalNet")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("total_net");
+
+                    b.Property<decimal>("TotalNetExact")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("total_net_exact");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<bool>("WorkedSunday")
+                        .HasColumnType("boolean")
+                        .HasColumnName("worked_sunday");
+
+                    b.HasKey("Id")
+                        .HasName("pk_prepayroll_lines");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_prepayroll_lines_uid");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("ix_prepayroll_lines_employee_id");
+
+                    b.HasIndex("PayrollPeriodId", "EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_prepayroll_lines_payroll_period_id_employee_id");
+
+                    b.ToTable("prepayroll_lines", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_prepayroll_lines_net", "total_net_exact = gross_earnings - total_deductions");
+
+                            t.HasCheckConstraint("ck_prepayroll_lines_payable", "total_net = trunc(total_net_exact, 2)");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Prepayroll.PrepayrollLineItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("IncidentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("incident_id");
+
+                    b.Property<Guid>("PayConceptId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pay_concept_id");
+
+                    b.Property<Guid>("PrepayrollLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("prepayroll_line_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("quantity");
+
+                    b.Property<ItemSource>("Source")
+                        .HasColumnType("platform.item_source")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<decimal>("UnitValue")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("unit_value");
+
+                    b.HasKey("Id")
+                        .HasName("pk_prepayroll_line_items");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_prepayroll_line_items_uid");
+
+                    b.HasIndex("IncidentId")
+                        .HasDatabaseName("ix_prepayroll_line_items_incident_id");
+
+                    b.HasIndex("PayConceptId")
+                        .HasDatabaseName("ix_prepayroll_line_items_pay_concept_id");
+
+                    b.HasIndex("PrepayrollLineId")
+                        .HasDatabaseName("ix_prepayroll_line_items_prepayroll_line_id");
+
+                    b.ToTable("prepayroll_line_items", "platform");
+                });
+
             modelBuilder.Entity("Platform.Payroll.Staff.AttendanceRecord", b =>
                 {
                     b.Property<long>("Id")
@@ -3574,6 +3895,100 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_payroll_periods_payroll_groups_payroll_group_id");
                 });
 
+            modelBuilder.Entity("Platform.Payroll.Prepayroll.Incident", b =>
+                {
+                    b.HasOne("Platform.Payroll.Groups.PayConceptRow", null)
+                        .WithMany()
+                        .HasForeignKey("AdjustedConceptId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_incidents_pay_concepts_adjusted_concept_id");
+
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_incidents_employee_employee_id");
+
+                    b.HasOne("Platform.Payroll.Periods.PayrollPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("OriginPeriodId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_incidents_payroll_periods_origin_period_id");
+
+                    b.HasOne("Platform.Payroll.Groups.PayConceptRow", null)
+                        .WithMany()
+                        .HasForeignKey("PayConceptId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_incidents_pay_concepts_pay_concept_id");
+
+                    b.HasOne("Platform.Payroll.Periods.PayrollPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("PayrollPeriodId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_incidents_payroll_periods_payroll_period_id");
+
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReportedBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_incidents_users_reported_by");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Prepayroll.PrepayrollLine", b =>
+                {
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_prepayroll_lines_employee_employee_id");
+
+                    b.HasOne("Platform.Payroll.Periods.PayrollPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("PayrollPeriodId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_prepayroll_lines_payroll_periods_payroll_period_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Prepayroll.PrepayrollLineItem", b =>
+                {
+                    b.HasOne("Platform.Payroll.Prepayroll.Incident", null)
+                        .WithMany()
+                        .HasForeignKey("IncidentId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_prepayroll_line_items_incidents_incident_id");
+
+                    b.HasOne("Platform.Payroll.Groups.PayConceptRow", null)
+                        .WithMany()
+                        .HasForeignKey("PayConceptId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_prepayroll_line_items_pay_concepts_pay_concept_id");
+
+                    b.HasOne("Platform.Payroll.Prepayroll.PrepayrollLine", null)
+                        .WithMany("Items")
+                        .HasForeignKey("PrepayrollLineId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_prepayroll_line_items_prepayroll_lines_prepayroll_line_id");
+                });
+
             modelBuilder.Entity("Platform.Payroll.Staff.AttendanceRecord", b =>
                 {
                     b.HasOne("Platform.Core.Clients.ClientSite", null)
@@ -3926,6 +4341,11 @@ namespace Platform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Platform.Core.Users.User", b =>
                 {
                     b.Navigation("Permissions");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Prepayroll.PrepayrollLine", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Platform.Recruiting.Openings.JobOpening", b =>

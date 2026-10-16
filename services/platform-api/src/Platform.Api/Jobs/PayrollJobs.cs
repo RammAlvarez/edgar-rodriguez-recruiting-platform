@@ -3,6 +3,7 @@ using Platform.Api.Internal;
 using Platform.Core.Abstractions;
 using Platform.Payroll.Groups;
 using Platform.Payroll.Periods;
+using Platform.Payroll.Prepayroll;
 using Platform.Payroll.Staff;
 
 namespace Platform.Api.Jobs;
@@ -33,12 +34,9 @@ public sealed class AttendanceLockJob(DbContext db, IClock clock) : IJob
                 .OrderBy(p => p.StartDate).ToListAsync(cancellationToken);
             foreach (var period in closing)
             {
-                absences += await AutoAbsentAsync(group, period, now, cancellationToken);
-                period.Status = PeriodStatus.InReview;
-                period.ReviewStartedAt = now;
+                absences += await Prepayrolls.CloseCaptureAsync(db, group, period, now, cancellationToken);
                 reviewed++;
             }
-            await db.SaveChangesAsync(cancellationToken);
         }
         return new { locked, periodsInReview = reviewed, autoAbsences = absences };
     }
@@ -49,38 +47,6 @@ public sealed class AttendanceLockJob(DbContext db, IClock clock) : IJob
         var today = AttendanceRules.Today(group, now);
         return AttendanceRules.IsLocked(group, today, now) ? today : today.AddDays(-1);
     }
-
-    /// <summary>«Missing day = falta automatically when the period closes»: one explicit, locked record per uncaptured day.</summary>
-    private async Task<int> AutoAbsentAsync(PayrollGroup group, PayrollPeriod period, DateTimeOffset now, CancellationToken ct)
-    {
-        var employees = await db.Set<Employee>().AsNoTracking()
-            .Where(e => e.PayrollGroupId == group.Uid && e.HiredAt <= period.EndDate && (e.TerminatedAt == null || e.TerminatedAt > period.StartDate))
-            .ToListAsync(ct);
-        var ids = employees.Select(e => e.Uid).ToList();
-        var captured = (await db.Set<AttendanceRecord>().AsNoTracking()
-                .Where(a => ids.Contains(a.EmployeeId) && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate)
-                .Select(a => new { a.EmployeeId, a.WorkDate }).ToListAsync(ct))
-            .Select(a => (a.EmployeeId, a.WorkDate)).ToHashSet();
-        var created = 0;
-        foreach (var e in employees)
-            for (var d = period.StartDate; d <= period.EndDate; d = d.AddDays(1))
-            {
-                if (d < e.HiredAt || (e.TerminatedAt is { } t && d >= t) || captured.Contains((e.Uid, d)))
-                    continue;
-                db.Add(new AttendanceRecord
-                {
-                    EmployeeId = e.Uid,
-                    WorkDate = d,
-                    Status = AttendanceStatus.Absent,
-                    IsAutoAbsent = true,
-                    IsLocked = true,
-                    RecordedAt = now,
-                    Note = "Sin captura al cerrar el período",
-                });
-                created++;
-            }
-        return created;
-    }
 }
 
 /// <summary><c>period-roll</c>, daily: makes sure each active group has the period containing today and the next one.</summary>
@@ -90,15 +56,20 @@ public sealed class PeriodRollJob(DbContext db, IClock clock) : IJob
 
     public async Task<object> RunAsync(CancellationToken cancellationToken)
     {
-        var created = 0;
+        int created = 0, lines = 0;
         foreach (var group in await db.Set<PayrollGroup>().Where(g => g.IsActive).AsNoTracking().ToListAsync(cancellationToken))
         {
             var today = AttendanceRules.Today(group, clock.UtcNow);
             var current = PeriodCalendar.Containing(group, today);
             created += await PeriodCalendar.EnsureAsync(db, group, [today, current.End.AddDays(1)], cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+            // Every open period has a line per employee who works in it (idempotent).
+            foreach (var period in await db.Set<PayrollPeriod>()
+                         .Where(p => p.PayrollGroupId == group.Uid && p.Status != PeriodStatus.Paid).ToListAsync(cancellationToken))
+                lines += await Prepayrolls.EnsureLinesAsync(db, period, clock.UtcNow, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
         }
-        await db.SaveChangesAsync(cancellationToken);
-        return new { periodsCreated = created };
+        return new { periodsCreated = created, linesCreated = lines };
     }
 }
 

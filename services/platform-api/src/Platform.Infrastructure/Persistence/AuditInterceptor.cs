@@ -64,6 +64,9 @@ public sealed class AuditInterceptor(RequestContext request, IClock clock) : Sav
         {
             if (entry.State == EntityState.Modified && !entry.Properties.Any(p => p.IsModified && !IsStamp(p)))
                 continue;
+            // Derived rows (prenómina lines) are recomputed from audited sources; logging them would flood the trail.
+            if (entry.Entity is IDerived)
+                continue;
             db.Add(new AuditEntry
             {
                 OccurredAt = now,

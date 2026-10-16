@@ -76,7 +76,13 @@ public static class GroupEndpoints
                 if (await PayrollScope.Groups(db, ctx, PermissionModule.PayrollPrepayroll).SingleOrDefaultAsync(x => x.Uid == id, ct) is not { } group)
                     return ApiResults.NotFound(NotFound);
                 Apply(group, r);
-                return await db.SaveOrConflictAsync(async () => Result(await Detail(db, db.Set<PayrollGroup>(), id, clock.Today(), ct)), NameTaken, ct);
+                return await db.SaveOrConflictAsync(async () =>
+                {
+                    // The group's rules (séptimo día, prima, festivo) are in every open line.
+                    await Prepayroll.Prepayrolls.RecomputeGroupAsync(db, id, clock.UtcNow, ct);
+                    await db.SaveChangesAsync(ct);
+                    return Result(await Detail(db, db.Set<PayrollGroup>(), id, clock.Today(), ct));
+                }, NameTaken, ct);
             })
             .WithName("UpdatePayrollGroup").Mutation<PayrollGroupRequest>().RequireAccess(Access);
 
@@ -117,6 +123,8 @@ public static class GroupEndpoints
                     row.AmountOverride = item.Amount;
                     row.RateOverride = concept.Calc == ConceptCalc.PerDayWorked ? item.DaysBasis : null;
                 }
+                await db.SaveChangesAsync(ct);
+                await Prepayroll.Prepayrolls.RecomputeGroupAsync(db, id, clock.UtcNow, ct);
                 await db.SaveChangesAsync(ct);
                 return Result(await Detail(db, db.Set<PayrollGroup>(), id, clock.Today(), ct));
             })
@@ -161,6 +169,9 @@ public static class GroupEndpoints
                     ValidFrom = r.ValidFrom,
                 });
                 await db.SaveChangesAsync(ct);
+                // A period uses the rates valid at its end: only open periods change, a paid one keeps what it paid.
+                await Prepayroll.Prepayrolls.RecomputeGroupAsync(db, position.PayrollGroupId, clock.UtcNow, ct);
+                await db.SaveChangesAsync(ct);
                 return Result(await Detail(db, db.Set<PayrollGroup>(), position.PayrollGroupId, clock.Today(), ct));
             })
             .WithName("ChangePositionRates").Mutation<PositionRatesRequest>().RequireAccess(Access);
@@ -171,7 +182,7 @@ public static class GroupEndpoints
 
     private static RouteHandlerBuilder Mutation<TBody>(this RouteHandlerBuilder route) where TBody : class =>
         route.Validate<TBody>().Produces<PayrollGroupDetailDto>().ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, ClientEndpoints.Tag);
+            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, ClientEndpoints.Tag, Prepayroll.PrepayrollEndpoints.Tag);
 
     private static IResult Result(PayrollGroupDetailDto? dto) => dto is null ? ApiResults.NotFound(NotFound) : TypedResults.Ok(dto);
 

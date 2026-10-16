@@ -109,12 +109,12 @@ public static class AttendanceEndpoints
                         db.Add(day = new AttendanceRecord { EmployeeId = w.E.Uid, WorkDate = r.Date });
                     Apply(day, w.R.Status, w.Hours, w.Overtime, site.Uid, w.R.Note, ctx.RequiredPrincipal.UserId, now);
                 }
-                await db.SaveChangesAsync(ct);
+                await Prepayroll.Prepayrolls.SaveAndRecomputeAsync(db, writes.Select(w => (w.E.Uid, r.Date, r.Date)), now, ct);
                 return TypedResults.Ok(await Day(db, ctx, r.SiteId, r.Date, now, ct));
             })
             .WithName("SaveAttendanceDay").Produces<AttendanceDayDto>().ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
-            .Invalidates(Tag, ScheduleEndpoints.Tag, EmployeeEndpoints.Tag).RequireAccess(Access);
+            .Invalidates(Tag, ScheduleEndpoints.Tag, EmployeeEndpoints.Tag, Prepayroll.PrepayrollEndpoints.Tag).RequireAccess(Access);
 
         g.MapPost("/unlock", async (UnlockAttendanceRequest r, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
             {
@@ -153,12 +153,12 @@ public static class AttendanceEndpoints
                     PreviousValue = previous,
                     NewValue = AttendanceRules.Snapshot(day),
                 });
-                await db.SaveChangesAsync(ct);
+                await Prepayroll.Prepayrolls.SaveAndRecomputeAsync(db, [(x.E.Uid, r.Date, r.Date)], now, ct);
                 return TypedResults.Ok(await RecordDto(db, day, ct));
             })
             .WithName("UnlockAttendanceDay").Produces<AttendanceRecordDto>().ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, ScheduleEndpoints.Tag, EmployeeEndpoints.Tag).RequireAccess(Access);
+            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, ScheduleEndpoints.Tag, EmployeeEndpoints.Tag, Prepayroll.PrepayrollEndpoints.Tag).RequireAccess(Access);
 
         // The employee detail's Asistencia tab (Personal).
         v1.MapGet("/employees/{id:guid}/attendance", async (Guid id, DateOnly from, DateOnly to, DbContext db, RequestContext ctx,
