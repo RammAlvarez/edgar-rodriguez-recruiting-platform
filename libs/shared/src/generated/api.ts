@@ -1874,6 +1874,38 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/incidents/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListIncidentPeriods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/incidents/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListIncidentEmployees"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll/incidents/{id}": {
         parameters: {
             query?: never;
@@ -2222,6 +2254,19 @@ export type components = {
         CandidateSource: "facebook" | "linkedin" | "whatsapp" | "referral" | "job_board" | "other" | null;
         /** @enum {unknown} */
         CandidateStage: "new" | "contacted" | "interview" | "suitable" | "not_suitable" | "hired" | "discarded";
+        CardQueueItemDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            clientName: string;
+            groupName: string;
+            bank: components["schemas"]["RegistrationBank"];
+            status: components["schemas"]["CardRequestStatus"];
+            /** Format: date-time */
+            requestedAt: Date;
+        };
         CardRequestDto: {
             /** Format: uuid */
             id: string;
@@ -3199,6 +3244,7 @@ export type components = {
             /** Format: uuid */
             clientId: string;
             clientName: string;
+            weekly: boolean;
             /** Format: int32 */
             number: number | string;
             /** Format: int32 */
@@ -3929,6 +3975,7 @@ export type CandidateProfileDto = components['schemas']['CandidateProfileDto'];
 export type CandidateProfileRequest = components['schemas']['CandidateProfileRequest'];
 export type CandidateSource = components['schemas']['CandidateSource'];
 export type CandidateStage = components['schemas']['CandidateStage'];
+export type CardQueueItemDto = components['schemas']['CardQueueItemDto'];
 export type CardRequestDto = components['schemas']['CardRequestDto'];
 export type CardRequestRequest = components['schemas']['CardRequestRequest'];
 export type CardRequestStatus = components['schemas']['CardRequestStatus'];
@@ -4214,7 +4261,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CardRequestDto"][];
+                    "application/json": components["schemas"]["CardQueueItemDto"][];
                 };
             };
             /** @description Bad Request */
@@ -9798,6 +9845,57 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListIncidentPeriods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodDto"][];
+                };
+            };
+        };
+    };
+    ListIncidentEmployees: {
+        parameters: {
+            query: {
+                periodId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeePickDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

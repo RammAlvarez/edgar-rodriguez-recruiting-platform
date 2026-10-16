@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Http;
+using Platform.Core.People;
 using Platform.Core.Users;
 using Platform.Payroll.Engine;
 using Platform.Payroll.Groups;
@@ -53,6 +54,29 @@ public static class IncidentEndpoints
                 return TypedResults.Ok(await PrepayrollQueries.Incidents(db, q.Take(500), ct));
             })
             .WithName("ListIncidents").Produces<List<IncidentDto>>().RequireAccess(Access);
+
+        // The pickers of the Incidencias screen, in this grant's scope (an Incidencias user may not hold Prenómina).
+        g.MapGet("/periods", async (DbContext db, RequestContext ctx, CancellationToken ct) =>
+                TypedResults.Ok(await PrepayrollQueries.Periods(db, PayrollScope.Groups(db, ctx, PermissionModule.PayrollIncidents),
+                    db.Set<PayrollPeriod>(), ct)))
+            .WithName("ListIncidentPeriods").Produces<List<PayrollPeriodDto>>().RequireAccess(Access);
+
+        g.MapGet("/employees", async (Guid periodId, DbContext db, RequestContext ctx, CancellationToken ct) =>
+            {
+                var groups = PayrollScope.Groups(db, ctx, PermissionModule.PayrollIncidents);
+                var period = await db.Set<PayrollPeriod>().AsNoTracking()
+                    .SingleOrDefaultAsync(p => p.Uid == periodId && groups.Any(x => x.Uid == p.PayrollGroupId), ct);
+                if (period is null)
+                    return ApiResults.NotFound(PrepayrollEndpoints.PeriodNotFound);
+                return TypedResults.Ok(await db.Set<Employee>().AsNoTracking()
+                    .Where(e => e.PayrollGroupId == period.PayrollGroupId && e.HiredAt <= period.EndDate
+                        && (e.TerminatedAt == null || e.TerminatedAt > period.StartDate))
+                    .Join(db.Set<Person>(), e => e.PersonId, p => p.Uid, (e, p) => new { e, p.FullName })
+                    .Join(db.Set<Position>(), x => x.e.PositionId, p => p.Uid, (x, p) => new { x.e.Uid, x.FullName, Position = p.Name })
+                    .OrderBy(x => x.FullName)
+                    .Select(x => new EmployeePickDto(x.Uid, x.FullName, x.Position)).ToListAsync(ct));
+            })
+            .WithName("ListIncidentEmployees").Produces<List<EmployeePickDto>>().ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Access);
 
         g.MapPost("", async (IncidentRequest r, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
             {

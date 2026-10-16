@@ -334,10 +334,15 @@ public static class EmployeeEndpoints
                     // Queued but no longer needed: the person got a principal account elsewhere (Candidates app).
                     .Where(r => wanted != CardRequestStatus.Queued || !employees.Any(e => e.Uid == r.EmployeeId
                         && db.Set<PersonBankAccount>().Any(a => a.PersonId == e.PersonId && a.IsPrimary && (a.ValidTo == null || a.ValidTo >= today))))
-                    .OrderBy(r => r.RequestedAt)
-                    .Select(r => new CardRequestDto(r.Uid, r.EmployeeId, r.Bank, r.Status, r.RequestedAt)).ToListAsync(ct));
+                    .Join(db.Set<Employee>(), r => r.EmployeeId, e => e.Uid, (r, e) => new { r, e })
+                    .Join(db.Set<Person>(), x => x.e.PersonId, p => p.Uid, (x, p) => new { x.r, x.e, p.FullName })
+                    .Join(db.Set<PayrollGroup>(), x => x.e.PayrollGroupId, g => g.Uid, (x, g) => new { x.r, x.FullName, Group = g.Name, g.ClientId })
+                    .Join(db.Set<Client>(), x => x.ClientId, c => c.Uid, (x, c) => new { x.r, x.FullName, x.Group, Client = c.ShortName })
+                    .OrderBy(x => x.r.RequestedAt)
+                    .Select(x => new CardQueueItemDto(x.r.Uid, x.r.EmployeeId, x.FullName, x.Client, x.Group, x.r.Bank, x.r.Status, x.r.RequestedAt))
+                    .ToListAsync(ct));
             })
-            .WithName("ListCardRequests").WithTags("Employees").Produces<List<CardRequestDto>>().ProducesValidationProblem()
+            .WithName("ListCardRequests").WithTags("Employees").Produces<List<CardQueueItemDto>>().ProducesValidationProblem()
             .RequireAccess(CardRequestAccess);
     }
 

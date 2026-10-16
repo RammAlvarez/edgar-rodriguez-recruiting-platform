@@ -265,6 +265,12 @@ public sealed class PrepayrollTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(7, line.GetProperty("days").GetArrayLength());
         Assert.Equal(2, line.GetProperty("incidents").GetArrayLength());
 
+        // The Incidencias screen's pickers.
+        Assert.Contains((await BodyOf(await _owner.GetAsync("/v1/payroll/incidents/periods"))).EnumerateArray(),
+            p => p.GetProperty("id").GetGuid() == a.Period);
+        var picks = await BodyOf(await _owner.GetAsync($"/v1/payroll/incidents/employees?periodId={a.Period}"));
+        Assert.Equal(employee, Assert.Single(picks.EnumerateArray()).GetProperty("employeeId").GetGuid());
+
         // Not attendance concepts, and hours or an amount as the concept needs.
         var bad = await _owner.PostAsJsonAsync("/v1/payroll/incidents", new
         {
@@ -401,6 +407,13 @@ public sealed class PrepayrollTests(ApiFactory factory) : ApiTest(factory)
         }
         Assert.Equal(3, await WithDb(db => db.Set<Platform.Core.Audit.AuditEntry>().CountAsync(e => e.Action == Platform.Core.Audit.AuditAction.Export)));
     }
+
+    [Theory]
+    [InlineData("NOE ALANIS TREVINO", "ALANÍS TREVIÑO NOÉ", true)]
+    [InlineData("carreon monsivais roberto eduardo", "CARREON MONSIVAIS ROBERTO EDUARDO", true)]
+    [InlineData("LETICIA MORA SANCHEZ", "ALANÍS TREVIÑO NOÉ", false)]
+    public void The_holder_is_the_employee_whatever_the_order_case_or_accents(string holder, string fullName, bool same) =>
+        Assert.Equal(same, PrepayrollQueries.SameName(holder, fullName));
 
     [Fact]
     public async Task Prenomina_needs_its_grant_and_follows_the_client_scope()

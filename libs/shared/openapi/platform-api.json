@@ -141,7 +141,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/CardRequestDto"
+                    "$ref": "#/components/schemas/CardQueueItemDto"
                   }
                 }
               }
@@ -7743,6 +7743,73 @@
         }
       }
     },
+    "/v1/payroll/incidents/periods": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "operationId": "ListIncidentPeriods",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollPeriodDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/incidents/employees": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "operationId": "ListIncidentEmployees",
+        "parameters": [
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeePickDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/payroll/incidents/{id}": {
       "put": {
         "tags": [
@@ -9246,6 +9313,48 @@
           "hired",
           "discarded"
         ]
+      },
+      "CardQueueItemDto": {
+        "required": [
+          "id",
+          "employeeId",
+          "fullName",
+          "clientName",
+          "groupName",
+          "bank",
+          "status",
+          "requestedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "employeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "bank": {
+            "$ref": "#/components/schemas/RegistrationBank"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CardRequestStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "CardRequestDto": {
         "required": [
@@ -13262,6 +13371,7 @@
           "groupName",
           "clientId",
           "clientName",
+          "weekly",
           "number",
           "year",
           "startDate",
@@ -13290,6 +13400,9 @@
           },
           "clientName": {
             "type": "string"
+          },
+          "weekly": {
+            "type": "boolean"
           },
           "number": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",

@@ -35,7 +35,7 @@ public static class PrepayrollQueries
         await q.Join(groups, p => p.PayrollGroupId, g => g.Uid, (p, g) => new { p, g })
             .Join(db.Set<Client>(), x => x.g.ClientId, c => c.Uid, (x, c) => new { x.p, x.g, Client = c.ShortName })
             .OrderByDescending(x => x.p.StartDate).ThenBy(x => x.g.Name)
-            .Select(x => new PayrollPeriodDto(x.p.Uid, x.g.Uid, x.g.Name, x.g.ClientId, x.Client, x.p.PeriodNumber, x.p.Year, x.p.StartDate,
+            .Select(x => new PayrollPeriodDto(x.p.Uid, x.g.Uid, x.g.Name, x.g.ClientId, x.Client, x.g.PeriodType == PeriodType.Weekly, x.p.PeriodNumber, x.p.Year, x.p.StartDate,
                 x.p.EndDate, x.p.Status, x.p.ReviewStartedAt,
                 db.Set<PrepayrollLine>().Count(l => l.PayrollPeriodId == x.p.Uid),
                 x.p.TotalNet ?? db.Set<PrepayrollLine>().Where(l => l.PayrollPeriodId == x.p.Uid).Sum(l => (decimal?)l.TotalNet) ?? 0))
@@ -176,10 +176,15 @@ public static class PrepayrollQueries
             : new LinePaymentDto(cards.Contains(w.EmployeeId) ? PaymentState.CardRequested : PaymentState.MissingAccount, null, null, null, null));
     }
 
-    /// <summary>The holder is the employee when the same words appear, in any order and case («NOMBRES PATERNO» or the Excel order).</summary>
-    private static bool SameName(string holder, string fullName)
+    /// <summary>
+    /// The holder is the employee when the same words appear, in any order, case or accents («NOE ALANIS TREVINO» is
+    /// «ALANÍS TREVIÑO NOÉ»).
+    /// </summary>
+    public static bool SameName(string holder, string fullName)
     {
-        static string[] Words(string s) => s.ToUpperInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).Order().ToArray();
+        static string[] Words(string s) => new string(s.Normalize(System.Text.NormalizationForm.FormD)
+                .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray())
+            .ToUpperInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).Order(StringComparer.Ordinal).ToArray();
         return Words(holder).SequenceEqual(Words(fullName));
     }
 }

@@ -12,6 +12,10 @@ public sealed record StatusPeriodDto(Guid Id, EmployeeStatus Status, DateOnly St
 
 public sealed record CardRequestDto(Guid Id, Guid EmployeeId, RegistrationBank Bank, CardRequestStatus Status, DateTimeOffset RequestedAt);
 
+/// <summary>A row of «Tarjetas por solicitar» (Prenómina side panel): who, where and which bank.</summary>
+public sealed record CardQueueItemDto(Guid Id, Guid EmployeeId, string FullName, string ClientName, string GroupName, RegistrationBank Bank,
+    CardRequestStatus Status, DateTimeOffset RequestedAt);
+
 /// <summary>
 /// A row of Personal (SPEC §5.1). <see cref="Status"/> is today's (America/Monterrey); <see cref="Period"/> is the period
 /// behind it, or the next scheduled one. <see cref="HasAccount"/> = the person has a current primary account.

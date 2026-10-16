@@ -5,7 +5,7 @@ using Platform.Payroll.Staff;
 
 namespace Platform.Payroll.Prepayroll;
 
-public sealed record PayrollPeriodDto(Guid Id, Guid GroupId, string GroupName, Guid ClientId, string ClientName, int Number, int Year,
+public sealed record PayrollPeriodDto(Guid Id, Guid GroupId, string GroupName, Guid ClientId, string ClientName, bool Weekly, int Number, int Year,
     DateOnly StartDate, DateOnly EndDate, PeriodStatus Status, DateTimeOffset? ReviewStartedAt, int Lines, decimal TotalNet);
 
 /// <summary>«Crear período»: the period of the group that contains <see cref="Date"/> (idempotent).</summary>

@@ -87,7 +87,8 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
         Assert.False(row.GetProperty("hasAccount").GetBoolean());
         Assert.Equal("VALIDADOR", row.GetProperty("positionName").GetString());
         var queue = await BodyOf(await _owner.GetAsync("/v1/card-requests"));
-        Assert.Single(queue.EnumerateArray());
+        var queued = Assert.Single(queue.EnumerateArray());
+        Assert.Equal(row.GetProperty("fullName").GetString(), queued.GetProperty("fullName").GetString());
     }
 
     [Fact]

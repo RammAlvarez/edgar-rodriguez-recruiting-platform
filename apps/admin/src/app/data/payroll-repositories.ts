@@ -9,10 +9,19 @@ import type {
   BankAccountDto,
   BankAccountRequest,
   CalendarDayDto,
+  CardQueueItemDto,
+  IncidentDto,
+  IncidentRequest,
+  PayrollPeriodDto,
+  PrepayrollExport,
+  PrepayrollGridDto,
+  PrepayrollLineDetailDto,
+  ReportExportDto,
   ConversionDto,
   EmployeeDetailDto,
   EmployeeListItemDto,
   EmployeeOptionsDto,
+  EmployeePickDto,
   EmployeeRequest,
   GroupConceptRequest,
   PayrollGroupDetailDto,
@@ -204,3 +213,78 @@ export class AttendanceRepository {
     return liveQuery(() => this.api.get<AttendanceRecordDto[]>(`/v1/employees/${id()}/attendance`, { from, to }), ['attendance']);
   }
 }
+
+/** Prenómina (grant payroll_prepayroll): periods, the grid, a row's desglose, ajustes, comments, Cerrar captura and the files. */
+@Injectable({ providedIn: 'root' })
+export class PrepayrollRepository {
+  private readonly api = inject(API_CLIENT);
+
+  periods() {
+    return liveQuery(() => this.api.get<PayrollPeriodDto[]>('/v1/payroll/periods'), ['prepayroll']);
+  }
+
+  /** Resolves to undefined until a period is chosen. */
+  grid(id: () => string | null) {
+    return liveQuery(() => {
+      const periodId = id();
+      return periodId ? this.api.get<PrepayrollGridDto | undefined>(`/v1/payroll/periods/${periodId}`) : Promise.resolve(undefined);
+    }, ['prepayroll']);
+  }
+
+  line(id: () => string) {
+    return liveQuery(() => this.api.get<PrepayrollLineDetailDto>(`/v1/payroll/lines/${id()}`), ['prepayroll', 'incidents']);
+  }
+
+  closeCapture(periodId: string): Promise<PrepayrollGridDto> {
+    return this.api.post(`/v1/payroll/periods/${periodId}/close-capture`, {});
+  }
+
+  adjust(lineId: string, column: string, amount: string, reason: string): Promise<PrepayrollLineDetailDto> {
+    return this.api.post(`/v1/payroll/lines/${lineId}/adjustments`, { column, amount, reason });
+  }
+
+  setComments(lineId: string, comments: string | null): Promise<void> {
+    return this.api.put(`/v1/payroll/lines/${lineId}/comments`, { comments });
+  }
+
+  export(periodId: string, kind: PrepayrollExport): Promise<ReportExportDto> {
+    return this.api.post(`/v1/payroll/periods/${periodId}/exports`, { kind });
+  }
+
+  cardQueue() {
+    return liveQuery(() => this.api.get<CardQueueItemDto[]>('/v1/card-requests'), ['card-requests', 'employees']);
+  }
+}
+
+/** Incidencias (grant payroll_incidents): horas extra, retroactivos, descuentos, abonos a préstamo. */
+@Injectable({ providedIn: 'root' })
+export class IncidentsRepository {
+  private readonly api = inject(API_CLIENT);
+
+  periods() {
+    return liveQuery(() => this.api.get<PayrollPeriodDto[]>('/v1/payroll/incidents/periods'), ['prepayroll']);
+  }
+
+  employees(periodId: () => string | null) {
+    return liveQuery(() => {
+      const id = periodId();
+      return id ? this.api.get<EmployeePickDto[]>('/v1/payroll/incidents/employees', { periodId: id }) : Promise.resolve([] as EmployeePickDto[]);
+    }, ['employees']);
+  }
+
+  list(periodId: () => string | null) {
+    return liveQuery(() => {
+      const id = periodId();
+      return id ? this.api.get<IncidentDto[]>('/v1/payroll/incidents', { periodId: id }) : Promise.resolve([] as IncidentDto[]);
+    }, ['incidents', 'prepayroll']);
+  }
+
+  save(id: string | null, body: IncidentRequest): Promise<IncidentDto> {
+    return id ? this.api.put(`/v1/payroll/incidents/${id}`, body) : this.api.post('/v1/payroll/incidents', body);
+  }
+
+  remove(id: string): Promise<void> {
+    return this.api.delete(`/v1/payroll/incidents/${id}`);
+  }
+}
+
