@@ -3,9 +3,12 @@
 // Refuses a non-local database. Grows with each slice of docs/PLAN.md, and is safe to re-run:
 //   S0  the local owner, signed up in the Auth emulator with a known password and bootstrapped as the first Administrador;
 //   S3  this year's and next year's LFT holidays, the recruiting puestos, the 11 clients of design-reference/data.js
-//       (razón social, RFC, contacto principal, one site with its zona) and the 6 recruiters (same local password).
+//       (razón social, RFC, contacto principal, one site with its zona) and the 6 recruiters (same local password);
+//   S4  the 13 vacantes and 30 candidatos of data.js at their etapas (HEB has two open CAJERO vacantes, so the date suffix
+//       shows), two hires that fill GTS, the paused / cancelled vacantes, and the two sample notes. Skipped once any
+//       vacante exists.
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
-import { clients as sampleClients, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
+import { candidatos as sampleCandidates, clients as sampleClients, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
 
 export const LOCAL_OWNER = { email: 'edgar@local.test', password: 'plataforma-local', name: 'Edgar Rodríguez' };
 
@@ -99,4 +102,96 @@ for (const name of RECRUITERS) {
   await signUpInEmulator({ email, password: LOCAL_OWNER.password, name });
   await api(token, 'POST', '/v1/users', { email, displayName: name, role: 'recruiter', clientId: null, grants: null, clientContactId: null });
   console.log(`recruiter: ${email} / ${LOCAL_OWNER.password}`);
+}
+
+// ---- S4: vacantes, candidatos, notes ----
+if ((await api(token, 'GET', '/v1/openings')).body.length > 0) {
+  console.log('vacantes: already there, skipped');
+} else {
+  const catalogs = (await api(token, 'GET', '/v1/catalogs')).body;
+  const clientIds = Object.fromEntries((await api(token, 'GET', '/v1/clients')).body.map((c) => [c.shortName, c.id]));
+  const recruiterIds = Object.fromEntries((await api(token, 'GET', '/v1/recruiters')).body.map((r) => [r.displayName, r.id]));
+  const bankIds = ['072', '127'].map((code) => catalogs.banks.find((b) => b.speiCode === code)?.id).filter(Boolean);
+  const secundaria = catalogs.educationLevels.find((e) => /secundaria/i.test(e.nameEs))?.id ?? null;
+  const PRIORITY = { Alta: 'high', Media: 'medium', Baja: 'low' };
+
+  const openings = sampleOpenings();
+  const ids = [];
+  for (const v of openings) {
+    const { body } = await api(token, 'POST', '/v1/openings', {
+      clientId: clientIds[v.cliente],
+      zoneId: zoneId(v.zona),
+      positionName: v.puesto,
+      headcountRequested: v.solicitadas,
+      monthlySalary: v.sueldo.toFixed(2),
+      benefits: v.prestaciones,
+      schedule: v.horario,
+      paymentBankIds: bankIds,
+      educationLevelId: secundaria,
+      yearsExperience: v.experiencia,
+      requiredExperience: v.expReq,
+      genderRequirement: 'unspecified',
+      ageRange: v.edad,
+      priority: PRIORITY[v.prioridad],
+      leadRecruiterId: recruiterIds[v.reclutador] ?? null,
+      documentTemplateId: null,
+      visibleToClient: true,
+      notes: null,
+      requestedAt: v.abierta,
+    });
+    ids.push(body.id);
+  }
+
+  const STAGE = { Nuevo: 'new', Contactado: 'contacted', Entrevista: 'interview', Apto: 'suitable', 'No apto': 'not_suitable', Contratado: 'hired', Descartado: 'discarded' };
+  const SOURCE = { Facebook: 'facebook', LinkedIn: 'linkedin', WhatsApp: 'whatsapp', Referido: 'referral', 'Bolsa de trabajo': 'job_board', Otro: 'other' };
+  const REASON = { not_suitable: 'No aprobó la entrevista', discarded: 'No se presentó' };
+  // The prototype's sample CURPs are not valid CURPs, so people are captured without one.
+  const sample = sampleCandidates(openings).map((c) => ({ ...c, vacIndex: openings.findIndex((v) => v.id === c.vacId) }));
+  // GTS is «Cubierta» in the prototype: two hires make the API derive it.
+  sample.push(
+    { nombres: 'Ernesto', apellidoP: 'Salinas', apellidoM: 'Rocha', telefono: '8123456781', correo: null, fechaNac: '1990-04-12', fuente: 'Referido', etapa: 'Contratado', vacIndex: 4, sueldo: 13500 },
+    { nombres: 'Liliana', apellidoP: 'Cavazos', apellidoM: 'Elizondo', telefono: '8123456782', correo: null, fechaNac: '1994-07-21', fuente: 'Facebook', etapa: 'Contratado', vacIndex: 4, sueldo: 13500 },
+  );
+  const candidateIds = [];
+  for (const [i, c] of sample.entries()) {
+    const { body } = await api(token, 'POST', '/v1/candidates', {
+      personId: null,
+      person: {
+        firstNames: c.nombres,
+        lastNamePaternal: c.apellidoP,
+        lastNameMaternal: c.apellidoM,
+        birthDate: c.fechaNac,
+        gender: i % 2 ? 'male' : 'female',
+        isForeign: false,
+        mobilePhone: c.telefono,
+        email: c.correo,
+        street: c.calle ?? null,
+        extNumber: c.numero ?? null,
+        neighborhood: c.colonia ?? null,
+        postalCode: c.cp ?? null,
+        municipality: c.municipio ?? null,
+        state: c.estado ?? null,
+      },
+      jobOpeningId: ids[c.vacIndex],
+      source: SOURCE[c.fuente],
+      offeredSalary: c.sueldo.toFixed(2),
+      comments: null,
+      capturedAt: null,
+    });
+    candidateIds.push(body.id);
+    const stage = STAGE[c.etapa];
+    if (stage !== 'new') await api(token, 'POST', `/v1/candidates/${body.id}/stage`, { stage, reason: REASON[stage] ?? null, hiredAt: stage === 'hired' ? '2026-10-01' : null });
+  }
+
+  const notes = [
+    '<h2>Entrevista telefónica</h2><p>Buena comunicación y disponibilidad inmediata para el turno de día.</p><ul><li><p>Vive cerca de la sucursal</p></li><li><p>Experiencia en atención al cliente</p></li><li><p>Pide pago por Banorte</p></li></ul>',
+    '<p><strong>Referencias verificadas.</strong> Perfil en <a href="https://www.linkedin.com/">LinkedIn</a>.</p>',
+  ];
+  for (const html of notes) await api(token, 'POST', `/v1/candidates/${candidateIds[0]}/notes`, { contentHtml: html, contentJson: null });
+
+  for (const [i, v] of openings.entries()) {
+    if (v.estatus === 'Pausada') await api(token, 'POST', `/v1/openings/${ids[i]}/status`, { status: 'paused', reason: 'El cliente pidió esperar' });
+    if (v.estatus === 'Cancelada') await api(token, 'POST', `/v1/openings/${ids[i]}/status`, { status: 'cancelled', reason: 'El cliente canceló el proyecto' });
+  }
+  console.log(`vacantes: ${ids.length} created; candidatos: ${candidateIds.length}`);
 }
