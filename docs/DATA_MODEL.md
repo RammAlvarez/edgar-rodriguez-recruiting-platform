@@ -1,8 +1,8 @@
 # DATA MODEL — Plataforma de Reclutamiento y Prenómina
 
-> **Database:** PostgreSQL 16 on Cloud SQL · **ORM:** EF Core 9 (code-first migrations) · **Schemas:** `core`, `recruiting`, `payroll`, `bank`, `audit`
+> **Database:** PostgreSQL 18 (any Postgres reachable over TCP — managed or a container) · **ORM:** Drizzle + drizzle-kit migrations, owned by `services/platform-api` · **Schema:** one, `platform` (the API owns its migrations); the sections below (`core`, `recruiting`, `payroll`, `bank`, `audit`) are **modules** of that API, not Postgres schemas — see ARCHITECTURE §2
 > **Companion docs:** [SPEC.md](./SPEC.md) · [ARCHITECTURE.md](./ARCHITECTURE.md)
-> **Conventions:** English identifiers, `snake_case` in SQL / `PascalCase` in C#, `uuid` primary keys (`gen_random_uuid()`), every table has `created_at`, `created_by`, `updated_at`, `updated_by`; soft delete only where stated (`deleted_at`). Money is always `numeric(12,2)`; rates `numeric(12,4)`; never `float`/`real`. Time zone stored as `timestamptz`, business dates as `date` interpreted in `America/Monterrey`.
+> **Conventions:** English identifiers, `snake_case` in SQL / `camelCase` in TypeScript. Every table has `id bigint generated always as identity` (internal, never exposed) and `uid uuid not null unique default gen_random_uuid()`; every foreign key references `uid`; the API returns `uid` as `id`. Column lines below written as `… | uuid FK …` mean "uuid referencing that table's `uid`". Business codes (`legacy_code`, `short_name`, `spei_code`) are unique columns. Every table has `created_at / created_by / updated_at / updated_by` stamped by the API; soft delete only where stated (`deleted_at`). Money is always `numeric(12,2)`, rates `numeric(12,4)`, never `float`/`real`; on the wire money is a decimal **string**, computed with `decimal.js` in `libs/payroll`. Timestamps are `timestamptz`; business dates are `date` keys (`yyyy-MM-dd`) computed on the server in the payroll group's IANA time zone (`payroll_groups.time_zone`, default `America/Monterrey`), never from the server's UTC clock. Nested value objects (e.g. a bank batch's fixed header snapshot) may be `jsonb` typed by `libs/shared`; anything queried or joined is rows. Derived data (statuses, counters, totals, prepayroll lines) is server-only and written in the same transaction as the change that causes it; the API ignores it if a client sends it.
 
 ---
 
@@ -66,9 +66,9 @@ erDiagram
     card_requests |o--|| registration_batch_rows : "in"
 ```
 
-Schema ownership:
+Module ownership (all tables live in Postgres schema `platform`, migrated by `platform-api`; the module is the folder in the API and the prefix used in this document):
 
-| Schema | Tables |
+| Module | Tables |
 |---|---|
 | `core` | users, user_permissions, clients, client_contacts, client_sites, people, person_documents, person_bank_accounts, document_types, document_templates, document_template_items, banks, catalogs (zones, positions_catalog, education_levels, benefits, sources, holidays), notifications |
 | `recruiting` | job_openings, job_opening_recruiters, candidates, candidate_stage_history, candidate_notes, interviews, opening_comments |
@@ -107,18 +107,18 @@ Schema ownership:
 
 ---
 
-## 3. Schema `core`
+## 3. Module `core`
 
 ### 3.1 `users`
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
-| firebase_uid | text UNIQUE NOT NULL | Firebase Auth uid |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
+| auth_uid | text UNIQUE NOT NULL | subject returned by `AuthProvider.verify(token)` (Firebase Auth today); the only place the provider leaks in |
 | email | citext UNIQUE NOT NULL | |
 | display_name | text NOT NULL | |
 | phone | text | |
-| role | user_role NOT NULL | |
+| role | user_role NOT NULL | roles live here, never in token claims; the client reads them from `GET /v1/me` |
 | client_id | uuid FK clients | required when role = `client`, NULL otherwise (CHECK) |
 | mfa_required | boolean default false | owner can force |
 | is_active | boolean default true | |
@@ -140,7 +140,7 @@ Delegated grants for `administrator` users (SPEC §2.2).
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | short_name | text UNIQUE NOT NULL | "ECOVIA", "HEB" — what the owner uses |
 | legal_name | text | razón social |
 | rfc | text | 12/13 chars |
@@ -153,7 +153,7 @@ Delegated grants for `administrator` users (SPEC §2.2).
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | client_id | uuid FK | |
 | full_name, email (citext), phone, job_title | text | |
 | user_id | uuid FK users NULL | set when invited to the Clients app |
@@ -163,7 +163,7 @@ Delegated grants for `administrator` users (SPEC §2.2).
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | client_id | uuid FK | |
 | name | text NOT NULL | "Oficinas Mitras", "Estación Ecovía Centro" |
 | zone_id | uuid FK zones | municipio |
@@ -176,7 +176,7 @@ The shared registry. Columns were chosen so every bank layout can be produced wi
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | first_names | text NOT NULL | "CESAR EDUARDO" |
 | last_name_paternal | text NOT NULL | |
 | last_name_maternal | text | |
@@ -201,11 +201,11 @@ Indexes: `(curp)`, `(rfc)`, trigram on `full_name`, `(mobile_phone)`.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | person_id | uuid FK | |
 | bank_id | uuid FK banks | |
 | account_type | bank_account_type | drives length validation: debit_card 16, clabe 18, own_account 14/20 |
-| account_number_enc | bytea NOT NULL | AES-GCM via `pgp_sym_encrypt` with key from Secret Manager; app decrypts only for exports |
+| account_number_enc | bytea NOT NULL | AES-256-GCM in the API (`libs/crypto`, key from env `ENCRYPTION_KEY`, key id prefix for rotation); decrypted only in the bank-file writers |
 | account_last4 | text NOT NULL | for display `•••• 4562` |
 | holder_name | text NOT NULL ≤ 40 | titular — defaults to the person's `full_name`; may be a third party (spouse, relative). Goes into the Azteca file as NOMBRE DEL BENEFICIARIO |
 | alias | text | "Tarjeta Azteca", "Cuenta de mi esposa" |
@@ -217,7 +217,7 @@ Indexes: `(curp)`, `(rfc)`, trigram on `full_name`, `(mobile_phone)`.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | name | text | "Banorte" |
 | spei_code | text UNIQUE | "072" (Banxico 3-digit) |
 | supports_registration | registration_bank NULL | banorte / banregio |
@@ -240,19 +240,19 @@ Seed codes: `INE`, `CURP`, `RFC`, `NSS`, `ACTA_NAC`, `DOMICILIO`, `ESTUDIOS`, `C
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | person_id | uuid FK | |
 | document_type_id | uuid FK | |
 | status | document_status default `pending` | |
-| storage_path | text | `gs://<bucket>/people/<person_id>/<doc_type>/<uuid>.<ext>` |
+| storage_key | text | S3 object key decided by the API: `people/<person uid>/<doc_type>/<uuid>.<ext>` (bucket from env); objects private, presigned URLs only |
 | original_filename, content_type, size_bytes | | ≤ 10 MB |
-| issued_at, expires_at | date | `expired` set nightly by Cloud Scheduler job |
+| issued_at, expires_at | date | `expired` set by the daily `document-expiry` job (`POST /internal/jobs/document-expiry`) |
 | validated_by | uuid FK users NULL | |
 | validated_at | timestamptz | |
 | rejection_reason | text | |
 | version | int | re-uploads create a new row; previous kept (`superseded_by`) |
 
-View `core.person_document_completeness(person_id, template_id) → numeric(5,2)` used by both apps.
+View `platform.person_document_completeness(person_id, template_id) → numeric(5,2)` used by both apps.
 
 ### 3.11 Catalogs
 
@@ -267,14 +267,14 @@ notifications(id, user_id FK, kind notification_kind, payload jsonb, read_at, cr
 
 ---
 
-## 4. Schema `recruiting`
+## 4. Module `recruiting`
 
 ### 4.1 `job_openings` (Vacantes)
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
-| legacy_code | text UNIQUE NULL | `VAC-0001` from the Excel import only; never displayed. Display name = `client.short_name ‖ ' – ' ‖ position_name` (+ `requested_at` when ambiguous) — see view `recruiting.job_opening_display` |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
+| legacy_code | text UNIQUE NULL | `VAC-0001` from the Excel import only; never displayed. Display name = `client.short_name ‖ ' – ' ‖ position_name` (+ `requested_at` when ambiguous) — see view `platform.job_opening_display` |
 | requested_at | date NOT NULL default today | FECHA_SOLICITUD |
 | client_id | uuid FK clients | |
 | zone_id | uuid FK zones | |
@@ -301,13 +301,13 @@ notifications(id, user_id FK, kind notification_kind, payload jsonb, read_at, cr
 Trigger: when `count(candidates where stage='hired') >= headcount_requested` → status `filled`, `filled_at = today`.
 
 ```sql
-CREATE VIEW recruiting.job_opening_display AS
+CREATE VIEW platform.job_opening_display AS
 SELECT o.id,
        cl.short_name || ' – ' || o.position_name
        || CASE WHEN count(*) OVER (PARTITION BY o.client_id, lower(o.position_name))
                     FILTER (WHERE o.status IN ('open','in_progress')) > 1
                THEN ' · ' || to_char(o.requested_at, 'DD/MM/YYYY') ELSE '' END AS display_name
-FROM recruiting.job_openings o JOIN core.clients cl ON cl.id = o.client_id;
+FROM platform.job_openings o JOIN platform.clients cl ON cl.id = o.client_id;
 ```
 Every DTO that references a vacante carries `display_name`; the UI never shows ids.
 
@@ -319,7 +319,7 @@ Every DTO that references a vacante carries `display_name`; the UI never shows i
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | legacy_code | text UNIQUE NULL | `CAN-0001` from the Excel import only; never displayed |
 | captured_at | date default today | FECHA_CAPTURA |
 | person_id | uuid FK people | |
@@ -333,7 +333,7 @@ Every DTO that references a vacante carries `display_name`; the UI never shows i
 | offered_salary | numeric(12,2) | |
 | comments | text | |
 | discard_reason | text | required when `discarded` / `not_suitable` |
-| employee_id | uuid FK payroll.employees NULL | set by "Convertir en empleado" |
+| employee_id | uuid FK platform.employees NULL | set by "Convertir en empleado" |
 | UNIQUE | (person_id, job_opening_id) | |
 
 `days_in_process` = `(hired_at ?? current_date) - captured_at` (view).
@@ -346,7 +346,7 @@ Every DTO that references a vacante carries `display_name`; the UI never shows i
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | candidate_id | uuid FK | notes belong to the application; the person view can list notes across applications |
 | author_user_id | uuid FK users | |
 | acting_for_user_id | uuid FK users NULL | cover mode |
@@ -369,7 +369,7 @@ Never exposed to `client` or candidate scopes.
 
 ```sql
 -- 1 Rendimiento por reclutador (BD_RECLUTADORES)
-CREATE VIEW recruiting.recruiter_performance AS
+CREATE VIEW platform.recruiter_performance AS
 SELECT r.user_id AS recruiter_id, c.job_opening_id, o.client_id, o.position_name, r.assigned_at,
        o.requested_at, o.filled_at, o.status,
        count(c.id)                                  AS candidates_presented,
@@ -378,14 +378,14 @@ SELECT r.user_id AS recruiter_id, c.job_opening_id, o.client_id, o.position_name
        CASE WHEN count(c.id) = 0 THEN 0
             ELSE round(count(c.id) FILTER (WHERE c.is_hired)::numeric / count(c.id), 4) END AS conversion_rate,
        o.filled_at - o.requested_at                 AS days_to_fill
-FROM recruiting.job_opening_recruiters r
-JOIN recruiting.job_openings o ON o.id = r.job_opening_id
-LEFT JOIN recruiting.candidates c ON c.job_opening_id = r.job_opening_id AND c.recruiter_id = r.user_id
+FROM platform.job_opening_recruiters r
+JOIN platform.job_openings o ON o.id = r.job_opening_id
+LEFT JOIN platform.candidates c ON c.job_opening_id = r.job_opening_id AND c.recruiter_id = r.user_id
 GROUP BY 1,2,3,4,5,6,7,8;
 -- recruiter totals (vacantes asignadas / cubiertas / % efectividad) aggregated in the API over this view
 
 -- 2 Resumen de reclutamiento (DASHBOARD) — function with range + optional client
-CREATE FUNCTION recruiting.summary(p_from date, p_to date, p_client uuid DEFAULT NULL)
+CREATE FUNCTION platform.summary(p_from date, p_to date, p_client uuid DEFAULT NULL)
 RETURNS TABLE (client_id uuid, openings_total int, openings_open int, openings_in_progress int, openings_filled int,
                openings_cancelled int, openings_paused int, candidates_total int, candidates_suitable int,
                candidates_hired int, conversion_rate numeric, avg_days_to_fill numeric)
@@ -393,7 +393,7 @@ LANGUAGE sql STABLE AS $$ ... WHERE o.requested_at BETWEEN p_from AND p_to GROUP
 -- Δ vs previous range = the API calls it twice
 
 -- 3 Vacantes abiertas y envejecimiento (snapshot)
-CREATE VIEW recruiting.open_openings_aging AS
+CREATE VIEW platform.open_openings_aging AS
 SELECT o.id, o.code, o.client_id, o.position_name, o.priority, o.headcount_requested,
        count(c.id) FILTER (WHERE c.is_hired) AS hired,
        current_date - o.requested_at         AS days_open,
@@ -401,40 +401,40 @@ SELECT o.id, o.code, o.client_id, o.position_name, o.priority, o.headcount_reque
        jsonb_object_agg(coalesce(c.stage::text,'none'), 1) FILTER (WHERE c.id IS NOT NULL) AS stage_counts, -- API reshapes to counts
        greatest(max(h.changed_at), max(c.captured_at)::timestamptz, o.updated_at) AS last_activity_at,
        current_date - greatest(max(h.changed_at), max(c.captured_at)::timestamptz, o.updated_at)::date AS idle_days
-FROM recruiting.job_openings o
-LEFT JOIN recruiting.candidates c ON c.job_opening_id = o.id
-LEFT JOIN recruiting.candidate_stage_history h ON h.candidate_id = c.id
+FROM platform.job_openings o
+LEFT JOIN platform.candidates c ON c.job_opening_id = o.id
+LEFT JOIN platform.candidate_stage_history h ON h.candidate_id = c.id
 WHERE o.status IN ('open','in_progress')
 GROUP BY o.id;
 
 -- 4 Embudo por etapa — entries per stage from the history, with days in stage
-CREATE VIEW recruiting.stage_funnel AS
+CREATE VIEW platform.stage_funnel AS
 SELECT c.job_opening_id, o.client_id, c.recruiter_id, c.source, h.to_stage AS stage, h.changed_at,
        lead(h.changed_at) OVER (PARTITION BY c.id ORDER BY h.changed_at) - h.changed_at AS time_in_stage,
        c.discard_reason
-FROM recruiting.candidate_stage_history h
-JOIN recruiting.candidates c ON c.id = h.candidate_id
-JOIN recruiting.job_openings o ON o.id = c.job_opening_id;
+FROM platform.candidate_stage_history h
+JOIN platform.candidates c ON c.id = h.candidate_id
+JOIN platform.job_openings o ON o.id = c.job_opening_id;
 -- API: count entries per stage in range, drop-off = entries(stage n) − entries(stage n+1), avg(time_in_stage)
 
 -- 5 Fuentes de reclutamiento
-CREATE VIEW recruiting.source_effectiveness AS
+CREATE VIEW platform.source_effectiveness AS
 SELECT c.source, o.client_id, c.recruiter_id, c.captured_at,
        c.is_suitable, c.is_hired, c.hired_at - c.captured_at AS days_to_hire
-FROM recruiting.candidates c JOIN recruiting.job_openings o ON o.id = c.job_opening_id;
+FROM platform.candidates c JOIN platform.job_openings o ON o.id = c.job_opening_id;
 -- API groups by source within the range
 
 -- 6 Vacantes por cliente
-CREATE VIEW recruiting.client_openings AS
+CREATE VIEW platform.client_openings AS
 SELECT o.client_id, o.id AS job_opening_id, o.requested_at, o.status, o.headcount_requested,
        count(c.id) FILTER (WHERE c.is_hired) AS hired, count(c.id) AS candidates_presented,
        o.filled_at - o.requested_at AS days_to_fill
-FROM recruiting.job_openings o LEFT JOIN recruiting.candidates c ON c.job_opening_id = o.id
+FROM platform.job_openings o LEFT JOIN platform.candidates c ON c.job_opening_id = o.id
 GROUP BY o.id;
 -- fill rate = Σ hired / Σ headcount_requested per client in the range
 ```
 
-## 5. Schema `payroll`
+## 5. Module `payroll`
 
 ### 5.1 `payroll_groups`
 
@@ -442,7 +442,7 @@ A client × scheme, e.g. *ECOVIA — Validadores 12 h*.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | client_id | uuid FK | |
 | name | text | "VALIDADORES 12 HRS" |
 | period_type | period_type default `weekly` | |
@@ -453,13 +453,14 @@ A client × scheme, e.g. *ECOVIA — Validadores 12 h*.
 | sunday_premium_pct | numeric(5,4) default 0.25 | prima dominical |
 | holiday_worked_multiplier | numeric(4,2) default 2 | festivo laborado |
 | schedule_description | text | "LUNES A DOMINGO 12 HRS CORTE VIERNES A JUEVES" (printed on the export) |
+| time_zone | text default 'America/Monterrey' | IANA zone used for "today", lock times and date keys of this group |
 | is_active | boolean | |
 
 ### 5.2 `positions` (per group)
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | payroll_group_id | uuid FK | |
 | name | text | VALIDADOR, SUPERVISOR |
 | daily_salary_pocket | numeric(12,2) | SD BOLSILLO / "SUELDO REAL" 428.57 |
@@ -505,7 +506,7 @@ Seed (codes → Excel column):
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | person_id | uuid FK people | |
 | payroll_group_id | uuid FK | |
 | position_id | uuid FK positions | |
@@ -516,7 +517,7 @@ Seed (codes → Excel column):
 | daily_salary_pocket_override, daily_salary_imss_override, hourly_rate_override, days_worked_bonus_override | numeric NULL | per-employee overrides |
 | alimony_pct | numeric(5,4) NULL | "PENSION DEL 39%" — percentage only |
 | primary_bank_account_id | uuid FK person_bank_accounts | payment account |
-| candidate_id | uuid FK recruiting.candidates NULL | origin |
+| candidate_id | uuid FK platform.candidates NULL | origin |
 | notes | text | COMENTARIOS |
 | UNIQUE | (person_id, payroll_group_id) WHERE terminated_at IS NULL | one active employment per group |
 
@@ -524,7 +525,7 @@ Seed (codes → Excel column):
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | employee_id | uuid FK | |
 | status | employee_status CHECK ≠ 'active' | vacation / sick_leave / suspended / terminated |
 | start_date | date NOT NULL | |
@@ -534,7 +535,7 @@ Seed (codes → Excel column):
 | created_by | uuid FK users | |
 | ended_early_at | timestamptz | set by "Reactivar" |
 
-Rules: no overlapping periods per employee (exclusion constraint on `daterange`); `employees.status` is maintained by trigger = status of the period covering `current_date`, else `active`; `terminated` sets `employees.terminated_at`. Creating a period upserts `attendance_records` for each date in range with status `vacation` / `sick_leave` / `leave_unpaid` (locked, `recorded_by` = creator); ending it early deletes the remaining ones. The daily scheduler job `status-roll` recomputes `employees.status` so expired periods return to `active`.
+Rules: no overlapping periods per employee (exclusion constraint on `daterange`); `employees.status` is maintained by trigger = status of the period covering `current_date`, else `active`; `terminated` sets `employees.terminated_at`. Creating a period upserts `attendance_records` for each date in range with status `vacation` / `sick_leave` / `leave_unpaid` (locked, `recorded_by` = creator); ending it early deletes the remaining ones. The daily `status-roll` job recomputes `employees.status` so expired periods return to `active`.
 
 ### 5.5 `employee_bank_numbers`
 
@@ -544,7 +545,7 @@ Rules: no overlapping periods per employee (exclusion constraint on `daterange`)
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | employee_id | uuid FK | |
 | bank | registration_bank | banorte / banregio — chosen at alta (default from the vacante's `payment_bank_ids`) |
 | status | card_request_status default `queued` | |
@@ -558,7 +559,7 @@ Created automatically when an employee is created without a primary bank account
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | employee_id | uuid FK | |
 | client_site_id | uuid FK | |
 | weekdays | smallint[] | `{1,2,3,4,5}`; empty = one-off |
@@ -573,14 +574,14 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | employee_id | uuid FK | |
 | work_date | date NOT NULL | |
 | status | attendance_status NOT NULL | |
 | hours_worked | numeric(4,2) | default group `shift_hours` for `present`; < shift for `partial` |
 | overtime_hours | numeric(4,2) default 0 | |
 | client_site_id | uuid FK NULL | where |
-| is_locked | boolean default false | set by scheduler at `attendance_lock_time` |
+| is_locked | boolean default false | set by the `attendance-lock` job (every 15 min) once `attendance_lock_time` in the group's time zone has passed |
 | is_auto_absent | boolean default false | created at period close for missing days |
 | recorded_by | uuid FK users | |
 | recorded_at | timestamptz | |
@@ -595,7 +596,7 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | employee_id | uuid FK | |
 | payroll_period_id | uuid FK | period it affects (next open one when `origin_period_id` is set) |
 | origin_period_id | uuid FK payroll_periods NULL | the already-paid period the incident really belongs to (shown as "corresponde a Semana 38") |
@@ -612,7 +613,7 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | payroll_group_id | uuid FK | |
 | period_number | int | SEMANA N° 38 |
 | year | int | |
@@ -624,13 +625,13 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 | total_net | numeric(14,2) | snapshot at `paid` |
 | UNIQUE | (payroll_group_id, year, period_number) | |
 
-Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (by generating the period payment batch). No backward transitions. While `capturing`/`in_review`, `prepayroll_lines` are **recomputed by the API on every attendance/incident change** for that employee (idempotent upsert keyed by period+employee); at `paid` they freeze (trigger). Periods are created ahead by Cloud Scheduler (weekly) from the group's cut-off weekday. An incident whose `incident_date` falls in a `paid` period is stored with `origin_period_id` = that period and `payroll_period_id` = the next open period, under concept `RETROACTIVE`.
+Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (by generating the period payment batch). No backward transitions. While `capturing`/`in_review`, `prepayroll_lines` are **recomputed by the API in the same transaction as every attendance/incident/status change** for that employee (idempotent upsert keyed by period+employee; the engine is the pure function in `libs/payroll`); at `paid` they freeze (trigger). Periods are created ahead by the daily `period-roll` job from the group's cut-off weekday. An incident whose `incident_date` falls in a `paid` period is stored with `origin_period_id` = that period and `payroll_period_id` = the next open period, under concept `RETROACTIVE`.
 
 ### 5.11 `prepayroll_lines` (one row per employee per period — the Excel row)
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | payroll_period_id | uuid FK | |
 | employee_id | uuid FK | |
 | position_name, shift, hired_at | snapshot | printed columns |
@@ -661,43 +662,43 @@ All six reports are plain SQL views/functions over the tables above; no extra st
 
 ```sql
 -- 1 Costo de nómina por cliente: one row per period × client × concept
-CREATE VIEW payroll.period_cost_by_concept AS
+CREATE VIEW platform.period_cost_by_concept AS
 SELECT p.id AS period_id, p.year, p.period_number, p.start_date, p.end_date, g.client_id,
        c.code AS concept_code, c.kind,
        count(DISTINCT l.employee_id) AS employees_paid,
        sum(i.amount) AS amount
-FROM payroll.payroll_periods p
-JOIN payroll.payroll_groups g ON g.id = p.payroll_group_id
-JOIN payroll.prepayroll_lines l ON l.payroll_period_id = p.id
-JOIN payroll.prepayroll_line_items i ON i.prepayroll_line_id = l.id
-JOIN payroll.pay_concepts c ON c.id = i.pay_concept_id
+FROM platform.payroll_periods p
+JOIN platform.payroll_groups g ON g.id = p.payroll_group_id
+JOIN platform.prepayroll_lines l ON l.payroll_period_id = p.id
+JOIN platform.prepayroll_line_items i ON i.prepayroll_line_id = l.id
+JOIN platform.pay_concepts c ON c.id = i.pay_concept_id
 GROUP BY 1,2,3,4,5,6,7,8;
 -- week-over-week Δ computed in the API with LAG() over (client_id ORDER BY start_date)
 
 -- 2 Resumen de pago: batches + rows by receiving bank and payment type
-CREATE VIEW bank.period_payment_summary AS
+CREATE VIEW platform.period_payment_summary AS
 SELECT b.payroll_period_id, b.id AS batch_id, b.kind, b.status, r.receiving_bank_code, r.payment_type, r.status AS row_status,
        count(*) AS rows, sum(r.amount) AS amount
-FROM bank.payment_batches b JOIN bank.payment_batch_rows r ON r.payment_batch_id = b.id
+FROM platform.payment_batches b JOIN platform.payment_batch_rows r ON r.payment_batch_id = b.id
 GROUP BY 1,2,3,4,5,6,7;
 -- plus prepayroll_lines WHERE payment_status IN ('missing_account','invalid_account','rejected') for the blocker list
 
 -- 3 Incidencias del período: incidents ∪ manual adjustments, with origin
-CREATE VIEW payroll.period_incidents AS
+CREATE VIEW platform.period_incidents AS
 SELECT i.payroll_period_id, i.origin_period_id, i.incident_date, i.employee_id, c.code AS concept_code,
        i.quantity, i.unit_value, i.amount, i.reason, i.reported_by,
        CASE WHEN c.code = 'MANUAL_ADJUSTMENT' THEN 'manual' WHEN i.origin_period_id IS NOT NULL THEN 'retroactive' ELSE 'incident' END AS origin
-FROM payroll.incidents i JOIN payroll.pay_concepts c ON c.id = i.pay_concept_id;
+FROM platform.incidents i JOIN platform.pay_concepts c ON c.id = i.pay_concept_id;
 
 -- 4 Asistencia por empleado: counts per status in a date range (function, range param)
-CREATE FUNCTION payroll.attendance_summary(p_from date, p_to date, p_client uuid DEFAULT NULL)
+CREATE FUNCTION platform.attendance_summary(p_from date, p_to date, p_client uuid DEFAULT NULL)
 RETURNS TABLE (employee_id uuid, client_id uuid, days_worked numeric, absences int, auto_absences int, sick_leave int,
                leave_days int, partial_hours numeric, overtime_hours numeric, holidays_worked int, locked_without_capture int)
 LANGUAGE sql STABLE AS $$ ... GROUP BY employee_id $$;
 -- the employee × day grid is the raw attendance_records query for the site + range
 
 -- 5 Rotación: hires and terminations per client × month
-CREATE VIEW payroll.turnover_monthly AS
+CREATE VIEW platform.turnover_monthly AS
 SELECT g.client_id, date_trunc('month', d.month) AS month,
        count(e.id) FILTER (WHERE date_trunc('month', e.hired_at) = d.month)        AS hires,
        count(e.id) FILTER (WHERE date_trunc('month', e.terminated_at) = d.month)   AS terminations,
@@ -705,27 +706,27 @@ SELECT g.client_id, date_trunc('month', d.month) AS month,
                              AND e.terminated_at - e.hired_at <= 30)               AS early_terminations,
        count(e.id) FILTER (WHERE e.hired_at < d.month + interval '1 month'
                              AND (e.terminated_at IS NULL OR e.terminated_at >= d.month + interval '1 month')) AS headcount_end
-FROM payroll.employees e JOIN payroll.payroll_groups g ON g.id = e.payroll_group_id
+FROM platform.employees e JOIN platform.payroll_groups g ON g.id = e.payroll_group_id
 CROSS JOIN generate_series(date_trunc('month', e.hired_at), now(), interval '1 month') d(month)
 GROUP BY 1,2;
 -- antigüedad promedio and motivo de baja distribution computed in the API from the same rows
 
 -- 6 Tarjetas y cuentas: snapshot
-CREATE VIEW payroll.payment_account_status AS
+CREATE VIEW platform.payment_account_status AS
 SELECT e.id AS employee_id, g.client_id,
        a.id IS NULL                                        AS missing_account,
        a.id IS NOT NULL AND a.holder_name <> p.full_name   AS third_party_holder,
        NOT coalesce(a.is_frequent_account_registered,false) AS not_frequent_registered,
        cr.bank AS card_request_bank, cr.status AS card_request_status
-FROM payroll.employees e
-JOIN core.people p ON p.id = e.person_id
-JOIN payroll.payroll_groups g ON g.id = e.payroll_group_id
-LEFT JOIN core.person_bank_accounts a ON a.id = e.primary_bank_account_id
-LEFT JOIN payroll.card_requests cr ON cr.employee_id = e.id AND cr.status NOT IN ('received','cancelled')
+FROM platform.employees e
+JOIN platform.people p ON p.id = e.person_id
+JOIN platform.payroll_groups g ON g.id = e.payroll_group_id
+LEFT JOIN platform.person_bank_accounts a ON a.id = e.primary_bank_account_id
+LEFT JOIN platform.card_requests cr ON cr.employee_id = e.id AND cr.status NOT IN ('received','cancelled')
 WHERE e.status = 'active';
 ```
 
-## 6. Schema `bank`
+## 6. Module `bank`
 
 ### 6.1 `paying_accounts`
 
@@ -733,7 +734,7 @@ Fixed header of the Azteca massive-payment file. One row: the owner's company **
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
+| id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | name | text | "Cuenta Azteca — MAXIMA" |
 | bank_id | uuid FK | Banco Azteca |
 | charge_account_number_enc | bytea | NO. DE CUENTA CARGO |
@@ -745,7 +746,7 @@ Fixed header of the Azteca massive-payment file. One row: the owner's company **
 
 ### 6.2 (removed) — no external-beneficiary entity
 
-Every payee is an employee's `core.person_bank_accounts` row; a third-party holder is just a different `holder_name` on that row (SPEC §5.8, D25).
+Every payee is an employee's `platform.person_bank_accounts` row; a third-party holder is just a different `holder_name` on that row (SPEC §5.8, D25).
 
 ### 6.3 `payment_batches` / `payment_batch_rows`
 
@@ -782,7 +783,7 @@ registration_batch_rows(id, registration_batch_id FK, card_request_id FK, employ
 
 On batch status → `completed` the user types each card number on its `card_requests` row (`received`); that creates the `person_bank_accounts` row (debit_card at that bank, primary) and the next period pays into it.
 
-## 7. Schema `audit`
+## 7. Module `audit`
 
 ```
 audit_log(id bigserial, occurred_at timestamptz, user_id uuid,
@@ -793,17 +794,19 @@ data_access_log(id bigserial, occurred_at, user_id, person_id uuid, document_id 
                 access enum('view_profile','view_document','download_document','decrypt_account'), request_id)
 ```
 
-Populated by EF Core interceptors (not DB triggers) so the acting user is always known. Retention: 5 years (LFPDPPP). Both tables are partitioned by month.
+`audit_log` is written by the API's audit helper **in the same transaction** as the change (so the acting user and `acting_for_user_id` are known); a trigger rejects `UPDATE` and `DELETE` on it (append-only). `data_access_log` is written on read of personal data. Retention: 5 years (LFPDPPP). Both tables are partitioned by month.
 
 ---
 
-## 8. Row-level scoping rules (enforced in the API, mirrored by PostgreSQL RLS as defence in depth)
+## 8. Permission matrix (enforced per route in the API; one test per row)
+
+Input to every decision: `uid` from `AuthProvider.verify`, `role` and `is_active` from the `users` row, grants from `user_permissions`, scope (assigned vacantes, client) from the DB. A denied route returns 403 with the user-facing message; validation failures return 400 with the Zod issues.
 
 | Role | Rule |
 |---|---|
-| `client` | `job_openings.client_id = :client_id AND visible_to_client` with `gender_requirement` and `age_range` excluded from the DTO; `candidates` through those openings; person fields masked until `stage ∈ (suitable, hired)`, `offered_salary` visible from `suitable`; never `person_documents`, `person_bank_accounts`, `payroll.*`, `bank.*` |
-| `recruiter` | `job_openings` where `lead_recruiter_id = :uid OR id IN job_opening_recruiters(:uid)`; candidates of those; `person_documents` of those people; nothing in `payroll.*`, `bank.*`, reports |
-| `administrator` (cover mode) | the API receives header `X-Acting-For: <recruiter user id>`; data scope = that recruiter's rule below, writes stamped with `acting_for_user_id`, `candidates.recruiter_id` defaults to the recruiter. Only `administrator` may send the header. |
+| `client` | `job_openings.client_id = :client_id AND visible_to_client` with `gender_requirement` and `age_range` excluded from the DTO; `candidates` through those openings; person fields masked until `stage ∈ (suitable, hired)`, `offered_salary` visible from `suitable`; never `person_documents`, `person_bank_accounts`, payroll or bank tables |
+| `recruiter` | `job_openings` where `lead_recruiter_id = :uid OR id IN job_opening_recruiters(:uid)`; candidates of those; `person_documents` of those people; nothing in payroll or bank tables, reports |
+| `administrator` (cover mode) | the API receives header `X-Acting-For: <recruiter user uid>`; data scope = that recruiter's rule below, writes stamped with `acting_for_user_id`, `candidates.recruiter_id` defaults to the recruiter. Only `administrator` may send the header. |
 | `administrator` | everything, minus modules without a grant; `client_id`-scoped grants add `payroll_groups.client_id = :client` filters on payroll/bank tables; `payroll_payment_files` is required to generate any `payment_batches` row, `payroll_card_requests` for `registration_batches` |
 | candidate (Candidates app) | own `people` row (via `candidates.person_id` matched by verified email) and own `person_documents` |
 
@@ -814,8 +817,8 @@ Populated by EF Core interceptors (not DB triggers) so the acting user is always
 | Code | Sequence | Format |
 |---|---|---|
 | Vacante / Candidato | none — no user-facing codes (SPEC D30); `legacy_code` holds the imported Excel ids |
-| Employee number Banorte | `payroll.banorte_employee_seq` start 2000000001 | 10 digits |
-| Employee number Banregio | `payroll.banregio_employee_seq` start 3000000001 | 10 digits |
+| Employee number Banorte | `platform.banorte_employee_seq` start 2000000001 | 10 digits |
+| Employee number Banregio | `platform.banregio_employee_seq` start 3000000001 | 10 digits |
 | Period | per group: `(year, iso_week)` or running number | `SEM 38` |
 
 ---

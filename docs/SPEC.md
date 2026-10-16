@@ -87,10 +87,10 @@ client_id ∈ { null = all clients, <client> }
 
 ### 2.3 Authentication and security
 
-- Firebase Auth. Role and grants are stored in PostgreSQL and mirrored into Firebase **custom claims** (`role`, `clientId`) so the API can authorize from the ID token without a DB hit; grants are checked in the API.
+- Firebase Auth as identity provider, used only behind an `AuthProvider` interface (ARCHITECTURE §2). Role, grants and client scope live **in the database** (`users`, `user_permissions`), never in token claims; the apps learn them from `GET /v1/me` and the API checks them per route (DATA_MODEL §8).
 - MFA (TOTP) **optional per user** in the Admin app; the owner can make it mandatory for Administradores from Usuarios.
 - Email-link sign-in for candidates and clients; the link is bound to the app's domain (`candidates.*` / `clients.*`), so a client link cannot open the admin app.
-- Session: Firebase ID token (1 h) refreshed silently; API validates on every request.
+- Session: provider token (1 h) refreshed silently by the client adapter; the API verifies it on every request and loads the user row.
 - All personal data access is logged (who viewed/downloaded which document) — see ARCHITECTURE.md §6.
 
 ---
@@ -435,11 +435,11 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | Requirement | Decision |
 |---|---|
 | Responsive | Desktop-first for Admin (tables, Kanban); mobile-first for Asistencia capture, Candidates app and Clients app |
-| Robust accounting | All money as `decimal(12,2)` in PostgreSQL and `decimal` in .NET; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
+| Robust accounting | All money as `numeric(12,2)` in PostgreSQL, decimal strings on the wire and `decimal.js` in the engine; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
 | Language | es-MX UI, dates `dd/MM/yyyy`, currency `$ 1,234.56 MXN`, time zone America/Monterrey |
-| Security | Firebase Auth, optional MFA for Admin, custom claims + API authorization, row-level client scoping, encrypted card/CLABE numbers, signed URLs for documents (15 min), full audit log of personal-data reads and attendance unlocks |
+| Security | Firebase Auth behind `AuthProvider`, optional MFA for Admin, roles/grants in the database checked per route, client scoping in every query, encrypted card/CLABE numbers (AES-GCM in the API), presigned URLs for documents (15 min), append-only audit log written in the same transaction, personal-data read log, audited attendance unlocks |
 | Audit | `audit_log` for create/update/delete on people, documents, attendance, incidents, periods, bank batches, users |
-| Backups | Cloud SQL automated daily backups + PITR; Storage bucket versioning |
+| Backups | the managed Postgres's automated backups + PITR (or `pg_dump` cron on the same-VM variant); bucket versioning |
 | Performance | ≤ 2 s for the pre-payroll grid at 500 employees; exports streamed |
 | Browser support | Last 2 versions Chrome/Edge/Safari; iOS Safari and Android Chrome for mobile |
 
@@ -450,7 +450,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | # | Decision | Source |
 |---|---|---|
 | D1 | One platform, shared people registry + document vault, two modules | brief / quote spec |
-| D2 | Stack: Angular 22 · ASP.NET Core · PostgreSQL (Cloud SQL) · Firebase Auth · Cloud Run · Cloud Storage · Cloud Scheduler · Secret Manager | brief (replaces React/NestJS from quote spec) |
+| D2 | Stack: Angular 22 SPAs · **NestJS on Fastify (TypeScript)** API in a container · PostgreSQL · S3-compatible storage · Firebase Auth behind an interface · cron container for jobs · env-var config. Provider-neutral; GCP is the first provider (Cloud Run, Cloud SQL, Firebase Hosting, Cloud Storage S3 API). Supersedes the brief's ASP.NET Core / Cloud Scheduler / Secret Manager (ARCHITECTURE D33–D39, 2026-10-16) | brief + architecture redesign |
 | D3 | Pre-nómina only, no CFDI/timbrado | brief / quote spec |
 | D4 | Attendance captured daily, locked after cut-off, unlock audited | meeting 2026-09-25 |
 | D5 | Reports restricted to the owner via permission grant | meeting 2026-09-25 |

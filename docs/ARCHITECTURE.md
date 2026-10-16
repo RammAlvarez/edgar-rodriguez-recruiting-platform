@@ -1,165 +1,174 @@
 # ARCHITECTURE — Plataforma de Reclutamiento y Prenómina
 
-> **Cloud:** Google Cloud Platform + Firebase, one project per environment (`er-platform-dev`, `er-platform-prod`), region `us-south1` (Dallas) — closest region to Monterrey; `us-central1` as fallback for services not yet in us-south1.
-> **Companion docs:** [SPEC.md](./SPEC.md) · [DATA_MODEL.md](./DATA_MODEL.md)
-> **Section 8** holds the Claude Design prompt for the architecture diagram; **section 9** the prompt for the interactive web-app prototype, with iteration prompts in 9.x.
+> **Style:** portable web platform — static SPAs, one stateless API in a container, one PostgreSQL, S3-compatible object storage. Provider-neutral by rule (see `PROJECT_KICKOFF_PROMPT.md`): it runs the same on Google Cloud, DigitalOcean, Linode, AWS or a single VM with Docker Compose.
+> **First provider:** Google Cloud (the client's brief) — `deploy/providers/gcp.md`. **Cheapest:** the same-VM `docker-compose` variant.
+> **Companion docs:** [SPEC.md](./SPEC.md) · [DATA_MODEL.md](./DATA_MODEL.md) · `PLAN.md` (written at kickoff) · UI reference in `design-reference/` (Claude Design export, RASS Angular Material design system)
+> **Section 8** holds the Claude Design prompt for the architecture diagram; **section 9** the consolidated prompt for the interactive web-app prototype, with iteration prompts in 9.x kept as a change log.
 
 ---
 
 ## 1. Summary
 
-A modular monolith: three Angular SPAs on Firebase Hosting talk to one ASP.NET Core API on Cloud Run, which owns a single PostgreSQL database on Cloud SQL and a Cloud Storage bucket for documents. Firebase Auth issues identities; the API authorizes with role claims and database-backed grants. Cloud Scheduler drives the few time-based jobs (attendance lock, period creation, document expiry, backups verification). No Kubernetes, no message broker, no microservices — the client is one company with ~10 internal users, ~150 employees and ~500 candidates per year; the architecture is sized for that and for a solo consultant to operate.
+```
+  Administrador / Reclutador ──▶ apps/admin       ─┐
+  Candidato                  ──▶ apps/candidates   ├─ static files (any static host / CDN)
+  Cliente                    ──▶ apps/clients     ─┘
+                                        │  HTTPS · Bearer <provider token> · X-Invalidates on every write
+                                        ▼
+                      services/platform-api  (NestJS on Fastify · one container · stateless)
+                        AuthProvider.verify(token) → uid → users row → role, grants, scope
+                        modules: core · recruiting · payroll · bank · audit · jobs
+                        │                    │                           ▲
+                        ▼                    ▼                           │ POST /internal/jobs/{name}
+              PostgreSQL 18            S3-compatible storage      services/scheduler
+              schema `platform`        (documents, exports)       (alpine + crontab + curl)
+              Drizzle migrations       presigned URLs only        INTERNAL_SECRET header
+```
 
-```
-                   ┌──────────────── Firebase Hosting ────────────────┐
-  Admin ──────────▶│ admin.<domain>        Angular 22 (Admin app)     │
-  Reclutador ─────▶│                                                  │
-  Candidato ──────▶│ candidatos.<domain>   Angular 22 (Candidates)    │──┐
-  Cliente ────────▶│ clientes.<domain>     Angular 22 (Clients)       │  │ HTTPS + Firebase ID token
-                   └──────────────────────────────────────────────────┘  │
-                                                                         ▼
-   Firebase Auth ◀──── verifies token ────  Cloud Run: api (ASP.NET Core 9, .NET 9)
-   (email/pwd, MFA,                                 │          │            │
-    email link)                                     ▼          ▼            ▼
-                                        Cloud SQL (PostgreSQL 16)  Cloud Storage   Secret Manager
-                                        private IP, PITR           documents,      DB pwd, enc key,
-                                                                   exports         SMTP key
-   Cloud Scheduler ──(OIDC)──▶ Cloud Run: api /jobs/*    Cloud Logging ◀── API + Cloud SQL logs
-```
+Sized for the client: ~10 internal users, ~150 employees, ~500 candidates a year, one solo consultant operating it. No queues, no vendor SDKs, no realtime; consistency lives in the database transaction of the write that causes it.
 
 ---
 
-## 2. Services and why
+## 2. Components and why
 
-| Service | Role in the system | Why this choice |
+| Component | What it is | Why |
 |---|---|---|
-| **Firebase Hosting** (3 sites, 1 project) | Serves the three Angular builds under separate subdomains with CDN, TLS and SPA rewrites | Free tier covers it; deploy is `firebase deploy --only hosting:admin`; subdomain-per-app keeps email-link sign-in scoped per audience |
-| **Angular 22** | Admin app (desktop-first, heavy tables/Kanban/grids), Candidates app and Clients app (mobile-first) | Client's requirement; standalone components + signals; Angular Material for data tables, CDK drag-drop for the Kanban, Tiptap (ProseMirror) for the candidate notes editor with a fixed toolbar (H1–H3, bold, italic, lists, link) and server-side HTML sanitization; Firebase JS SDK directly (no AngularFire) |
-| **Firebase Auth** | Identity for the three audiences: email/password + optional TOTP MFA for Admin; email-link (passwordless) for Candidates and Clients | Zero-ops auth with MFA, custom claims and per-domain action links. TOTP MFA requires upgrading the project to **Identity Platform** (pay-as-you-go, negligible at this scale) |
-| **Cloud Run — `api`** | ASP.NET Core 9 minimal-API + vertical-slice modules (`Core`, `Recruiting`, `Payroll`, `Bank`, `Jobs`); validates Firebase tokens, enforces roles/grants, runs the pre-payroll engine, generates Excel/PDF exports | Client's stack. Scales to zero at night, 1 min instance during business hours (cold starts hurt the attendance capture UX). `decimal` end-to-end for money |
-| **Cloud SQL — PostgreSQL 16** | System of record (see DATA_MODEL.md). `db-f1-micro` (shared core, 0.6 GB), 10 GB SSD, private IP + Cloud SQL Auth Proxy connector from Cloud Run, automated backups + 7-day PITR; upgrade path `db-g1-small` → `db-custom-1-3840` by resize | Relational integrity, RLS as defence in depth, pgcrypto for account numbers, `numeric` money. Postgres over SQL Server: cheaper on Cloud SQL and the client has no MS licensing |
-| **Cloud Storage** | Bucket `er-platform-documents` (person documents, uniform bucket-level access, versioning, CMEK optional) and `er-platform-exports` (generated bank files/Excel, 90-day lifecycle) | Signed URLs (15 min) issued by the API; browser uploads go straight to GCS via signed PUT so the API never streams files |
-| **Cloud Scheduler** | `attendance-lock` (every 15 min, locks records whose group lock time has passed), `period-roll` (daily 02:00, creates upcoming periods), `status-roll` (daily 02:05, expires vacation/sick-leave/suspension periods back to active), `document-expiry` (daily 03:00, marks expired + notifications), `auto-absent` (at period close), `backup-check` (daily, verifies last Cloud SQL backup, alerts) | Invokes `POST /jobs/<name>` on Cloud Run with an OIDC token from a dedicated service account; idempotent handlers |
-| **Secret Manager** | DB password, pgcrypto symmetric key, Resend API key, Firebase Admin SDK credentials | Mounted as env vars in Cloud Run at deploy time; rotation without redeploying code for the DB (IAM DB auth as upgrade path) |
-| **Cloud Logging + Error Reporting** | Structured JSON logs from the API (request id, user id, duration), Cloud SQL slow-query and audit (pgAudit) logs, alerts on 5xx rate and job failures | "SQL Logging" requirement: pgAudit `log = 'write, ddl'` + the application `audit.audit_log` table |
-| **Artifact Registry + Cloud Build / GitHub Actions** | Build the API container on push to `main`, run EF migrations as a Cloud Run job, deploy; Angular builds deployed to Firebase Hosting from the same workflow | One `cloudbuild.yaml` per app; Workload Identity Federation, no JSON keys in GitHub |
-| **Resend** | Transactional email: invitations, document reminders, period ready | Outside GCP; free tier (3,000 emails / month) covers this volume, simple HTTP API, domain verified once; Firebase Auth sends its own auth emails |
+| **apps/admin** · **apps/candidates** · **apps/clients** | Three Angular 22 SPAs (standalone components + signals, Angular Material 3 with the RASS `azure-blue` theme from `design-reference/_ds`, Firebase JS SDK only inside `apps/*/auth/firebase-*.ts`). Built to static files. | Three audiences, three sign-in flows, three deploy targets; shared UI in `libs/ui`. Subdomain per app keeps email-link sign-in scoped per audience |
+| **services/platform-api** | One NestJS (Fastify adapter) API, TypeScript, Zod validation, Drizzle ORM, pino JSON logs. Modules mirror DATA_MODEL: `core`, `recruiting`, `payroll`, `bank`, `audit`, `jobs`. Owns Postgres schema `platform` and its migrations. | One codebase, one deploy, one schema. The module folders already match the split (`recruiting-api` / `payroll-api`) if it is ever needed; cross-module writes (candidate → employee) are in-process today and would become internal endpoints then. **Replaces the ASP.NET Core API of the original brief** (D33) |
+| **libs/shared** | Wire types + Zod schemas for every request/response, enums, money-as-string helpers | Single source of shapes for apps and API |
+| **libs/api-client** | fetch wrapper: auth header from the client `AuthProvider`, ISO-date reviver, `ApiError` (400 → field issues, 403 → message), cache tags, `X-Invalidates` handling, presigned upload client | Components never call `fetch` |
+| **libs/payroll** | Pure pre-payroll engine: period + attendance + incidents + rates → lines and items, `decimal.js`, no I/O. Golden test reproduces `SEM 38` to the cent | The one piece of logic the client will argue about; must be testable without a database |
+| **libs/bank-layouts** | Column definitions and validation rules of the Banorte alta, Banregio alta, Banco Azteca pagos masivos and cuentas frecuentes layouts (pure); the API renders them with `exceljs` | Layouts change by template edit, not by touching the API |
+| **libs/crypto** | AES-256-GCM for account/card numbers, key from `ENCRYPTION_KEY` (with key-id prefix for rotation) | Bank data encrypted at rest without a vendor KMS |
+| **services/scheduler** | `alpine` + `crontab` + `curl` → `POST /internal/jobs/{name}` with the `INTERNAL_SECRET` header | Cron is cron everywhere; jobs are idempotent and safe to re-run |
+| **PostgreSQL 18** | One database, schema `platform`, `bigint` identity + `uuid uid` per table, append-only `audit_log`, roles in `db/roles.sql` | Relational integrity, audit trail, permissions — the shape of this domain |
+| **S3-compatible storage** | Bucket `documents` (person documents, private) and `exports` (generated Excel/PDF/bank files, 90-day lifecycle); AWS SDK v3 with checksum mode `WHEN_REQUIRED`; MinIO locally, GCS S3-interop / Spaces / S3 in production | Presigned PUT/GET from the API; the API never streams files |
+| **Auth provider: Firebase Auth** | Email/password (+ optional TOTP MFA) for the admin app, email-link for candidates and clients. Server side: `AuthProvider { verify(token) → uid }` with the Firebase Admin SDK only in `services/platform-api/src/auth/firebase-*.ts`; client side: sign-in / token / sign-out behind the same interface. | Zero-ops identity; swappable (Keycloak, Auth0) by replacing one adapter. **Roles and grants are rows in `users` / `user_permissions`, never token claims**; the client learns them from `GET /v1/me` |
+| **Email: Resend** | Invitations, document reminders, period-ready notices, behind `EmailSender` with the adapter in `services/platform-api/src/email/resend-*.ts` | Free tier covers the volume; swappable |
 
-Not used on purpose: GKE, Pub/Sub, Memorystore, Cloud Functions (everything time-based goes through Scheduler → API to keep one codebase and one deploy).
+Deliberately absent: Kubernetes, queues, Cloud Functions, managed secret stores, cloud schedulers, DB connectors, custom claims, WebSockets, PostgreSQL RLS (authorization is per route, from the permission matrix).
 
 ---
 
-## 3. Application layout
-
-### 3.1 Repository (monorepo)
+## 3. Repository
 
 ```
 edgar-rodriguez-recruiting-platform/
 ├── apps/
-│   ├── admin/          Angular 22 — Reclutamiento, Nómina, Usuarios
-│   ├── candidates/     Angular 22 — perfil + documentos
-│   └── clients/        Angular 22 — portal de vacantes
+│   ├── admin/              Angular 22 — Reclutamiento, Nómina, Usuarios
+│   ├── candidates/         Angular 22 — perfil + documentos (mobile-first)
+│   └── clients/            Angular 22 — portal de vacantes (mobile-first)
+├── services/
+│   ├── platform-api/       NestJS on Fastify · Zod · Drizzle + drizzle-kit · pino
+│   │   └── src/{auth,core,recruiting,payroll,bank,audit,jobs,storage,email,crypto}
+│   └── scheduler/          alpine + crontab + curl
 ├── libs/
-│   ├── ui/             shared Angular components (tables, document checklist, money pipe, date pipe es-MX)
-│   ├── api-client/     generated TypeScript client from the API's OpenAPI spec
-│   └── auth/           Firebase JS SDK wrapper, token interceptor, role guards
-├── api/
-│   ├── src/Platform.Api/            minimal APIs, auth, DI, jobs endpoints
-│   ├── src/Platform.Core/           people, documents, clients, users, catalogs
-│   ├── src/Platform.Recruiting/     openings, candidates, interviews, reports
-│   ├── src/Platform.Payroll/        groups, employees, attendance, incidents, periods, engine
-│   ├── src/Platform.Bank/           Banorte/Banregio registration, Azteca payments, Excel writers
-│   ├── src/Platform.Infrastructure/ EF Core DbContext, migrations, GCS, email, audit interceptors
-│   └── tests/                       engine golden tests (SEM 38 reproduced to the cent)
-├── infra/              Terraform: project, Cloud SQL, buckets, Cloud Run, Scheduler, Secret Manager, IAM
-└── docs/               SPEC.md, DATA_MODEL.md, ARCHITECTURE.md
+│   ├── shared/             wire types + Zod schemas (single source of shapes)
+│   ├── api-client/         fetch wrapper, cache tags, ApiError, upload client
+│   ├── ui/                 shared Angular components (tables, document checklist, money/date pipes es-MX)
+│   ├── payroll/            pure pre-payroll engine + golden tests
+│   ├── bank-layouts/       pure layout definitions + validation rules
+│   └── crypto/             AES-GCM helpers
+├── db/                     docker-compose.yml (Postgres 18 :5433, MinIO, scheduler), roles.sql
+├── deploy/                 Dockerfiles, docker-compose.same-vm.yml, providers/{gcp,digitalocean}.md
+├── scripts/                seed (through the API), bootstrap (first admin), import-excel (one-off, SPEC §10 of DATA_MODEL)
+├── docs/                   SPEC.md, DATA_MODEL.md, ARCHITECTURE.md, PLAN.md, HANDOFF.md, TEST_PLAN.md, tests/
+├── design-reference/       Claude Design export + RASS Angular Material design system (read-only reference)
+└── examples/               the client's Excel files (source of the golden test and the import)
 ```
 
-### 3.2 API shape
+---
 
-- REST, JSON, versioned under `/v1`. OpenAPI generated; the Angular `api-client` lib is regenerated in CI.
-- Authentication: `Authorization: Bearer <Firebase ID token>`; validated with `FirebaseAdmin` (cached JWKS). Claims → `ClaimsPrincipal`; grants loaded per request from `core.user_permissions` (cached 60 s).
-- Authorization: endpoint policies `RequireRole(administrator)`, `RequireGrant(payroll_prepayroll, clientId)`, `RequireClientScope` (Clients app), `RequireSelf` (Candidates app).
-- Money: `decimal` DTOs, `numeric` columns, `MidpointRounding.AwayFromZero` applied once per line item; engine is pure and unit-tested against the SEM 38 workbook (golden file in `tests/`).
-- Exports: ClosedXML for `.xlsx` (bank layouts are templates with exact header rows/sheet names), QuestPDF for PDF; generated to `er-platform-exports`, returned as signed URLs.
-- Jobs: `POST /jobs/{name}` protected by `RequireScheduler` (verifies the OIDC audience + service account email).
+## 4. API shape
 
-### 3.3 Data flow — the two signature flows
+- REST, JSON, under `/v1`; every DTO is a Zod schema from `libs/shared`; dates travel as ISO-8601 strings; money as decimal strings.
+- Authentication: `Authorization: Bearer <token>` → `AuthProvider.verify` → `uid` → `users` row (`is_active`, `role`) → grants and scope from the DB. Cover mode: `X-Acting-For: <recruiter uid>`, accepted only for `administrator`, stamped as `acting_for_user_id` (DATA_MODEL §7, §8).
+- Authorization: one guard per route built from the permission matrix (DATA_MODEL §8); 403 carries the user-facing message, 400 the Zod issues.
+- Derived data (prepayroll lines, period status, employee status, opening `filled`, document completeness, batch totals) is computed **in the same transaction** as the write that causes it, or on read when cheap; clients cannot write it.
+- No realtime: every mutating route declares the cache tags it invalidates and returns them in `X-Invalidates` (also on errors); `libs/api-client` re-fetches the live queries tagged with them; the shell has an «Actualizar» action for other users' changes.
+- Files: `POST /v1/files/presign-upload` → presigned PUT (key decided by the API, file name sanitized, content type and size limits) → `POST /v1/people/:id/documents` records metadata; downloads are presigned GET for 15 minutes and logged in `data_access_log`.
+- Exports (period Excel/PDF, bank files) are generated by the API with `exceljs` / `pdfmake` into the `exports` bucket and returned as presigned GET; bank files are the exact layouts in `libs/bank-layouts`.
+- Jobs: `POST /internal/jobs/{name}` guarded by the `INTERNAL_SECRET` header (also used service-to-service). Idempotent:
+
+| Job | Cadence | What it does |
+|---|---|---|
+| `attendance-lock` | every 15 min | locks `attendance_records` whose group lock time (in the group's time zone) has passed; moves periods whose last day locked to `in_review` |
+| `period-roll` | daily 02:00 | creates the next period per payroll group from its cut-off weekday |
+| `status-roll` | daily 02:05 | returns expired vacation / sick-leave / suspension periods to `active` |
+| `document-expiry` | daily 03:00 | marks expired documents, queues 30/7-day reminders |
+| `notifications-digest` | daily 08:00 | sends pending email notifications through `EmailSender` |
+
+- Time zones: each payroll group has an IANA zone; "today", lock times and `yyyy-MM-dd` date keys are computed in that zone on the server.
+- Composition over inheritance: audit stamps, soft delete, pagination, authorization and storage are small injectables or plain functions; no base service/repository/entity classes.
+
+### 4.1 The two signature flows
 
 **Candidate → employee → paid**
 
-1. Recruiter captures candidate (person created, invitation email).
-2. Candidate completes profile and uploads documents from the Candidates app (signed PUT to GCS, API records metadata).
-3. Recruiter validates documents, moves stage to *Apto*; the Clients app now shows the candidate by name.
-4. Client interviews, recruiter marks *Contratado*; vacante counter updates; "Convertir en empleado" creates `payroll.employees` under the client's payroll group.
-5. Supervisor captures daily attendance (locks nightly via Scheduler).
-6. The period grid recomputes live; at the last-day lock it enters Revisión; Excel identical to the client's current sheet.
-7. Admin presses "Generar archivos de pago": the API validates accounts, writes the payment batch, freezes the period as Pagada and returns the Banco Azteca file (plus a cuentas frecuentes file if needed). New hires without a card sit in "Tarjetas por solicitar"; the Banorte/Banregio alta file is generated from that queue and, when cards arrive, the card numbers are stored encrypted and become the payment account.
+1. Recruiter captures a candidate (person row, invitation email through `EmailSender`).
+2. Candidate completes profile and uploads documents from `apps/candidates` (presigned PUT; the API records metadata).
+3. Recruiter validates documents, moves the stage to *Apto*; `apps/clients` now shows the candidate by name.
+4. Client interviews, recruiter marks *Contratado*; the opening counter and `filled` status update in the same transaction; "Convertir en empleado" creates the `employees` row under the client's payroll group.
+5. Supervisor captures daily attendance; `attendance-lock` freezes each day.
+6. Every attendance/incident/status write recomputes that employee's prepayroll line in the same transaction; at the last-day lock the period enters *Revisión*.
+7. "Generar archivos de pago" validates accounts, writes the payment batch, freezes the period as *Pagada* and returns presigned links to the Banco Azteca file (and cuentas frecuentes if needed). Card requests produce the Banorte/Banregio alta files; received cards become payment accounts.
 
-**Attendance lock**
-
-Scheduler → `/jobs/attendance-lock` every 15 min → `UPDATE attendance_records SET is_locked = true WHERE work_date < today OR (work_date = today AND now() at group tz > lock_time)` → further edits need `attendance_unlocks` row by an Administrador with `payroll_attendance`.
+**Attendance lock** — scheduler → `/internal/jobs/attendance-lock` → `UPDATE attendance_records SET is_locked = true WHERE …` in one statement per group zone; later edits need an `attendance_unlocks` row by an Administrador with `payroll_attendance`.
 
 ---
 
-## 4. Environments and deployment
+## 5. Environments, CI and deployment
 
-| | dev | prod |
-|---|---|---|
-| GCP project | `er-platform-dev` | `er-platform-prod` |
-| Hosting | `*-dev.web.app` | `admin.<cliente>.mx`, `candidatos.<…>`, `clientes.<…>` |
-| Cloud SQL | `db-f1-micro`, no PITR | `db-f1-micro`, PITR 7 d, daily backup 03:00, maintenance Sun 04:00 |
-| Cloud Run | min 0 / max 2 | min 1 (07:00–20:00 via Scheduler-toggled min instances) / max 5, 1 vCPU, 512 MB |
-| Secrets | separate Secret Manager per project | |
-| CI | GitHub Actions: PR → build + tests; `main` → deploy dev; tag `v*` → deploy prod after manual approval | |
+| | local | staging | production |
+|---|---|---|---|
+| Postgres | `db/docker-compose.yml` :5433 | managed Postgres, smallest tier | managed Postgres (provider's smallest with backups + PITR) |
+| Storage | MinIO (compose) | provider bucket (S3 API) | provider bucket, versioning on, `exports` lifecycle 90 d |
+| API | `npm run api` | one container, min 0 | one container, min 1 during business hours where the provider allows it |
+| Scheduler | compose service | container | container (or the host's cron in the same-VM variant) |
+| Apps | `npm start` | static host | static host + CDN, custom domains |
+| Auth | Firebase emulator | Firebase project `-staging` | Firebase project `-prod` |
+| Config | `.env` | env vars | env vars |
 
-Migrations run as a Cloud Run **job** (`api-migrate`) before the new revision receives traffic; rollback = redeploy previous revision + down-migration only when data-safe.
+CI (GitHub Actions): lint · type-check · all tests (Vitest; API tests against a throw-away Postgres with a fake `AuthProvider`; the Firebase adapter against the emulator) · builds · **neutrality grep** (Firebase SDK only in `*/auth/firebase-*.ts`, no cloud SDKs anywhere, S3 client only in `storage/`) · `drizzle-kit check`. Migrations run from the API image before the new revision takes traffic.
 
----
+Deployment is documented per provider in `deploy/providers/*.md`, same images and env vars everywhere:
 
-## 5. Observability
+| | Postgres | API + scheduler containers | Static apps | S3 storage |
+|---|---|---|---|---|
+| **GCP** (first) | Cloud SQL for PostgreSQL over TCP (public IP + authorized networks or the VPC) | Cloud Run (API, min 1 business hours) + Cloud Run service for the scheduler (min 1, no ingress) | Firebase Hosting (3 sites) | Cloud Storage through its S3-interoperability endpoint (HMAC keys) |
+| **DigitalOcean** | Managed PostgreSQL | App Platform or a Droplet with Compose | App Platform static sites | Spaces |
+| **Same VM** | Postgres container | Compose: api, scheduler, caddy | Caddy serves the three builds | MinIO container |
 
-- Request logs with `requestId`, `userId`, `route`, `durationMs`, `status`; errors to Error Reporting.
-- Uptime check on `/health` (DB + bucket ping) every 5 min; alert to the owner's email (Cloud Monitoring notification channel).
-- Dashboards: Cloud Run latency/5xx, Cloud SQL CPU/connections/disk, Scheduler job success.
-- pgAudit on `write, ddl`; retention 400 days in a log bucket.
-
----
-
-## 6. Security and compliance
-
-| Concern | Measure |
-|---|---|
-| Transport | HTTPS everywhere (Hosting + Cloud Run managed TLS); HSTS |
-| Identity | Firebase Auth; email-link limited to the issuing app's domain; TOTP MFA optional/forced for Admin; sessions revocable from Usuarios |
-| Authorization | Role claims + DB grants; PostgreSQL RLS policies as a second layer keyed by `SET LOCAL app.user_id / app.client_id` per request |
-| Personal data (LFPDPPP) | Documents in a private bucket, signed URLs 15 min, every view/download logged in `audit.data_access_log`; aviso de privacidad shown at first login in the Candidates app; erasure job anonymizes `people` rows after retention |
-| Bank data | Card/CLABE numbers encrypted with pgcrypto (key in Secret Manager); only the export endpoints decrypt; UI shows last 4; exports bucket lifecycle 90 days |
-| Payroll integrity | Closed periods immutable (trigger); every manual edit is an incident with author; attendance unlocks audited |
-| Network | Cloud SQL private IP only; Cloud Run egress through Serverless VPC connector; no public DB |
-| Secrets | Secret Manager, least-privilege service accounts (`sa-api`, `sa-scheduler`, `sa-ci`) |
-| Backups | Cloud SQL automated + PITR; bucket versioning; weekly restore test on dev (scripted) |
+No cloud commands are run by an agent; the docs and scripts are written, a human runs them.
 
 ---
 
-## 7. Cost estimate (prod, monthly, USD, us-south1)
+## 6. Observability, security and compliance
 
-| Item | Estimate | Basis |
-|---|---|---|
-| Cloud SQL `db-f1-micro` (shared core, 0.6 GB) + 10 GB SSD + 7-day backups/PITR logs | ≈ 10 | instance ≈ 7.70 + storage ≈ 1.70 + backups ≈ 0.80 |
-| Cloud Run api (1 min instance 07:00–20:00, 1 vCPU / 512 MB, low traffic) | ≈ 12 | idle min-instance billing dominates; min 0 would be ≈ 2 but adds cold starts |
-| Cloud Storage (≈ 20 GB docs + egress) | ≈ 1 | |
-| Firebase Hosting | 0 | free tier: 10 GB storage, 360 MB/day transfer — far above 3 small SPAs |
-| Firebase Auth / Identity Platform (≈ 700 MAU) | 0 | free up to 50,000 MAU for email/password and email link; TOTP MFA has no per-user charge (SMS MFA would) |
-| Cloud Scheduler (5 jobs) | ≈ 0.20 | 3 jobs free per billing account, then US$ 0.10 / job / month |
-| Secret Manager (≈ 6 secret versions) | ≈ 0 | 6 active versions free, then US$ 0.06 / version / month; access calls negligible |
-| Cloud Logging / Error Reporting | 0 | 50 GiB / month ingestion free per project; this system produces well under 1 GiB |
-| Resend (transactional email) | 0 | free tier 3,000 emails / month, 100 / day — enough for invitations and reminders |
-| **Total** | **≈ US$ 23–25 / month** (dev project ≈ US$ 10, same shape with Cloud Run at min 0) | |
+- pino JSON logs with `requestId`, `userId`, `actingForUserId`, route, duration, status; the provider's log viewer or the VM's `docker logs`. `/health` checks DB and bucket; the provider's uptime check alerts by email.
+- Transport: HTTPS everywhere (provider TLS or Caddy). Identity: provider token verified per request; email-link limited to the issuing app's domain; TOTP MFA optional/forced for Administradores (Firebase requires the Identity Platform upgrade for TOTP — a note in `auth/firebase-*.ts`, not an architectural dependency).
+- Authorization per route from the permission matrix; roles and grants in the database; cover mode audited.
+- Personal data (LFPDPPP): private buckets, presigned URLs 15 min, every view/download in `data_access_log`, aviso de privacidad at first candidate login, erasure job anonymizes `people` rows after retention.
+- Bank data: account/card numbers AES-GCM encrypted in the API, last 4 digits in clear, decrypted only in the bank-file writers; exports bucket lifecycle 90 days.
+- Payroll integrity: paid periods immutable (trigger), manual edits are incidents with author, attendance unlocks audited, `audit_log` append-only (trigger) and written in the same transaction.
+- Secrets: env vars only (`DATABASE_URL`, `S3_*`, `ENCRYPTION_KEY`, `INTERNAL_SECRET`, `FIREBASE_*`, `RESEND_API_KEY`); rotation = redeploy with new values.
+- Backups: the managed Postgres's automated backups + PITR, bucket versioning; a documented restore drill in `docs/HANDOFF.md`.
 
-Notes:
-- `db-f1-micro` is not covered by the Cloud SQL SLA and cannot run HA; acceptable for this workload. If the pre-payroll grid or reports feel slow at 150+ employees, the next step is `db-g1-small` (≈ 25) — a resize with a few minutes of downtime, no code change.
-- Automated backups and PITR are supported on shared-core instances; the only extra cost is the transaction-log storage (cents).
+---
+
+## 7. Cost estimate (production, monthly, USD)
+
+| Item | GCP (first provider) | DigitalOcean | Same VM |
+|---|---|---|---|
+| Postgres | Cloud SQL `db-f1-micro` + 10 GB + backups ≈ 10 | Managed PG 1 GB ≈ 15 | in the VM |
+| API container | Cloud Run, min 1 business hours ≈ 12 | App Platform basic ≈ 5 / Droplet shared | in the VM |
+| Scheduler container | Cloud Run min 1, 128 MB ≈ 4 | ≈ 0 (same Droplet) | in the VM |
+| Static apps | Firebase Hosting 0 | App Platform static 0 | in the VM |
+| Storage (≈ 20 GB) | Cloud Storage ≈ 1 | Spaces 5 (250 GB incl.) | in the VM |
+| Auth / email / logs | Firebase Auth 0 (≤ 50k MAU) · Resend 0 · logging 0 | same | same |
+| **Total** | **≈ US$ 27 / month** | **≈ US$ 25 / month** | **≈ US$ 12–24 / month** (2 vCPU / 4 GB Droplet or e2-small) + the Firebase/Resend free tiers |
+
+Notes: `db-f1-micro` has no SLA/HA (acceptable here; resize to `db-g1-small` ≈ 25 if the grid feels slow). Figures are mid-2026 list prices; check the provider's page before quoting.
 
 ---
 
@@ -184,24 +193,24 @@ ZONE A — "Usuarios" (left column, outside the GCP boundary). Four person cards
 
 LARGE BOUNDARY BOX labeled "Proyecto GCP del cliente — us-south1 (Dallas)" containing zones B–F.
 
-ZONE B — "Frontend" (inside boundary, left). One group container "Firebase Hosting" with three app cards side by side:
+ZONE B — "Frontend" (inside boundary, left). One group container "Firebase Hosting (archivos estáticos)" with three app cards side by side:
   • "Admin app" — Angular 22 — sub-label "Reclutamiento · Nómina · Usuarios"
   • "App de candidatos" — Angular 22 — sub-label "Perfil y documentos"
   • "Portal de clientes" — Angular 22 — sub-label "Avance de vacantes"
-  Below the group, a single card "Firebase Auth" — sub-label "Correo/contraseña · MFA TOTP · Enlace mágico" with a small chip "Identity Platform".
+  Below the group, a single card "Proveedor de identidad · Firebase Auth" — sub-label "Correo/contraseña · MFA TOTP · Enlace mágico" with a small chip "detrás de la interfaz AuthProvider".
 
-ZONE C — "Backend" (center). One group container "Cloud Run" containing one large card:
-  • "API · ASP.NET Core 9" — four small module chips inside the card: "Core", "Reclutamiento", "Nómina", "Bancos"
-  • Beneath it, one thin card "Motor de prenómina — decimal, auditable"
-  To the right of the API, a card "Cloud Build / Artifact Registry" with sub-label "CI/CD desde GitHub".
+ZONE C — "Backend" (center). One group container "Cloud Run (contenedores)" containing two cards:
+  • "platform-api · NestJS (Fastify)" — five small module chips inside the card: "Core", "Reclutamiento", "Nómina", "Bancos", "Jobs"; sub-label "Roles y permisos en la base de datos"
+  • Beneath it, one thin card "Motor de prenómina (libs/payroll) — decimal, auditable"
+  • A smaller card "scheduler · cron en contenedor" — sub-label "curl → POST /internal/jobs/*"
+  To the right of the group, a card "GitHub Actions / Artifact Registry" with sub-label "CI/CD · misma imagen en cualquier proveedor".
 
-ZONE D — "Datos" (right of backend). Three cards stacked vertically:
-  • "Cloud SQL · PostgreSQL 16" — sub-label "IP privada · PITR 7 días · pgAudit"; three tiny chips: "core", "recruiting", "payroll / bank"
-  • "Cloud Storage" — sub-label "Documentos (INE, CURP, RFC, NSS…) · Archivos bancarios"; chip "URLs firmadas 15 min"
-  • "Secret Manager" — sub-label "Contraseña BD · llave de cifrado · SMTP"
+ZONE D — "Datos" (right of backend). Two cards stacked vertically:
+  • "Cloud SQL · PostgreSQL 18" — sub-label "Conexión TCP · esquema platform · PITR 7 días · audit_log"; chips: "core", "recruiting", "payroll / bank"
+  • "Cloud Storage (API S3)" — sub-label "Documentos (INE, CURP, RFC, NSS…) · Archivos bancarios"; chip "URLs prefirmadas 15 min"
 
-ZONE E — "Tareas programadas" (bottom-center, under Backend). One card "Cloud Scheduler" with four job chips:
-  "Bloqueo de asistencia (cada 15 min)", "Apertura de períodos y estatus de empleados (diario)", "Vencimiento de documentos (diario)", "Verificación de respaldos (diario)"
+ZONE E — "Tareas programadas" (bottom-center, under Backend). One card "Jobs internos (idempotentes)" with four job chips:
+  "Bloqueo de asistencia (cada 15 min)", "Apertura de períodos y estatus de empleados (diario)", "Vencimiento de documentos (diario)", "Correos pendientes (diario)"
 
 ZONE F — "Observabilidad y respaldos" (bottom-right, under Datos). Two cards:
   • "Cloud Logging · Error Reporting" — sub-label "Logs de API y SQL · alertas"
@@ -217,27 +226,26 @@ ARROWS (solid = tráfico en tiempo real; dashed = programado o respaldo):
   solid: each user card → its app card in Firebase Hosting (Administrador and Reclutador both → Admin app)
   solid: the three app cards → Firebase Auth, pill label "inicio de sesión"
   solid: the three app cards → API card, pill label "HTTPS · token de Firebase"
-  solid: API → Cloud SQL, pill label "EF Core · numeric"
-  solid: API → Cloud Storage, pill label "URLs firmadas"
-  solid: API → Secret Manager (thin)
+  solid: API → Cloud SQL, pill label "Drizzle · numeric · misma transacción"
+  solid: API → Cloud Storage, pill label "URLs prefirmadas (S3)"
   solid: API → Resend, pill label "invitaciones · recordatorios"
-  dashed: Cloud Scheduler → API, pill label "OIDC · /jobs/*"
+  dashed: scheduler → API, pill label "INTERNAL_SECRET · /internal/jobs/*"
   dashed: Cloud SQL → Respaldos automáticos; Cloud Storage → Respaldos automáticos
   solid: API → Cloud Logging (thin); Cloud SQL → Cloud Logging (thin, "pgAudit")
   dashed, manual: Administrador → the three bank portals, pill label "sube el archivo generado"  (draw as a long dashed arrow along the top edge, labelled "manual")
-  solid: Cloud Build → Cloud Run and → Firebase Hosting, pill label "despliegue"
+  solid: GitHub Actions → Cloud Run and → Firebase Hosting, pill label "despliegue"
 
 NUMBERED FLOW STEPS (small numbered badges on the arrows, with a numbered list in the bottom-left corner):
   1 El usuario inicia sesión con Firebase Auth (MFA opcional para administradores).
-  2 La app llama a la API con el token; la API valida rol y permisos por módulo/cliente.
-  3 La API lee y escribe en PostgreSQL; documentos se suben directo a Cloud Storage con URL firmada.
-  4 Cloud Scheduler bloquea la asistencia del día y abre los períodos de prenómina.
+  2 La app llama a la API con el token; la API verifica el token y toma rol y permisos de la base de datos.
+  3 La API lee y escribe en PostgreSQL en una sola transacción; documentos se suben directo al bucket con URL prefirmada.
+  4 El contenedor de cron llama a los jobs internos: bloquea la asistencia del día y abre los períodos de prenómina.
   5 La API genera los archivos de Banorte, Banregio y Banco Azteca; el administrador los sube al portal del banco.
 
 LEGEND (bottom-left, below the steps): "Línea continua = tráfico en tiempo real · Línea discontinua = tarea programada / respaldo / paso manual".
 
 FOOTER CHIPS (bottom-right, three highlight chips):
-  "Infra ≈ US$ 25 / mes"  ·  "3 apps · 1 API · 1 base de datos"  ·  "Datos personales cifrados y auditados"
+  "Infra ≈ US$ 27 / mes"  ·  "3 apps · 1 API · 1 base de datos · portable a cualquier proveedor"  ·  "Datos personales cifrados y auditados"
 ```
 
 ---
@@ -576,13 +584,26 @@ Modify the existing prototype. Keep everything else exactly as it is. Only Nómi
 
 ---
 
-## 10. Risks and mitigations
+## 10. Decisions added by the architecture redesign (2026-10-16)
+
+| # | Decision |
+|---|---|
+| D33 | API is **NestJS on Fastify (TypeScript)**, not ASP.NET Core as in the original brief: one language across apps, API and libs; the pre-payroll engine is a pure TypeScript lib with golden tests. To be confirmed with the client; nothing he sees changes |
+| D34 | Provider-neutral infrastructure: Postgres over TCP, containers, static files, S3-compatible storage, env vars; no cloud SDKs, managed queues, secret managers, cloud schedulers or DB connectors. GCP first, DigitalOcean and same-VM documented |
+| D35 | One API (`platform-api`) and one Postgres schema (`platform`); DATA_MODEL modules are folders, not schemas |
+| D36 | Identity via Firebase Auth behind `AuthProvider`; roles and grants in the database, never in token claims; `GET /v1/me` |
+| D37 | `bigint` identity + `uuid uid` per table; FKs reference `uid`; API exposes `uid` as `id` |
+| D38 | Derived data computed server-side in the same transaction; no background consistency jobs; scheduled work only through `POST /internal/jobs/*` |
+| D39 | No realtime: `X-Invalidates` cache tags + «Actualizar» |
+
+## 11. Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
-| Bank portals change their layouts | Layouts are templates in `Platform.Bank/Templates/*.xlsx` with a version column; changing a column is a template edit, not a code change |
-| Pre-payroll rules differ per client beyond ECOVIA | Concept catalog per payroll group (DATA_MODEL §5.3); new client = configuration, not code; golden tests per group |
-| Field supervisors without reliable internet | Attendance screen is a PWA with offline queue (IndexedDB) that syncs when online; lock logic runs server-side on `recorded_at` |
-| Cold starts on Cloud Run hurting attendance capture | min instances = 1 in business hours |
-| Personal data breach | Private bucket, signed URLs, encryption of bank numbers, access log, MFA for admins, least-privilege service accounts |
-| Solo-consultant bus factor | Terraform for infra, one monorepo, README runbooks, Cloud SQL backups exportable to the client's own bucket |
+| Bank portals change their layouts | Layouts are pure definitions in `libs/bank-layouts` with a version; a column change is a lib edit with a test, not an API change |
+| Pre-payroll rules differ per client beyond ECOVIA | Concept catalog per payroll group (DATA_MODEL §5.3); new client = configuration; golden test per group |
+| Field supervisors without reliable internet | Attendance screen keeps an in-memory queue and retries; the lock rule uses `recorded_at` server-side (offline-first is explicitly out of scope for this architecture) |
+| Cold starts on the API hurting attendance capture | min 1 instance in business hours where the provider allows it; the same-VM variant has no cold starts |
+| Personal data breach | Private buckets, presigned URLs, encryption of bank numbers, access log, MFA for admins, env-var secrets, least-privilege DB roles |
+| Provider lock-in | The neutrality grep in CI; every provider doc uses the same images and env vars |
+| Solo-consultant bus factor | One monorepo, `docs/HANDOFF.md`, Compose files that run the whole thing on a laptop, Postgres backups restorable anywhere |
