@@ -9,10 +9,16 @@
 //       vacante exists. Candidate emails are rewritten to @local.test (capture emails an invitation since S5);
 //   S5  a Cliente user for HEB (heb@local.test) for the Clients app;
 //   S7  the payroll groups and puestos of data.js (ECOVIA validadores, HFC cuadrilla, HEB limpieza; every bonus inactive as SEM 38
-//       pays) and their 32 employees: people, payment accounts (valid card / CLABE numbers generated, three paid to a third
-//       party), card requests for the two without an account, status periods relative to today (two vacations, an
-//       incapacidad, a baja) and work schedules. Skipped once any payroll group exists.
+//       pays). ECOVIA's employees are the 115 rows of the client's SEM 38 workbook (examples/; since S9), HFC's and HEB's the 12
+//       of data.js: people, payment accounts (valid card / CLABE numbers generated — never the workbook's — at the bank its
+//       comments name, three paid to a third party), card requests for two without an account, status periods relative to
+//       today and after Semana 38 (two vacations, an incapacidad, two bajas) and work schedules. Skipped once any group exists;
+//   S8  a field supervisor (Asistencia, ECOVIA only), the current periods, today's ECOVIA capture and yesterday's via unlock;
+//   S9  Semana 38's attendance as the workbook implies (D84), written through the unlock path; periods 38 and 42 created; the
+//       lock job closes them to Revisión; the comments of SEM 38 without bank data; and the gate: Semana 38's grid totals
+//       334,654.83 payable and 334,655.149146 exact (D41), or the seed fails. Skipped once Semana 38 exists.
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
+import { GOLDEN, SEM38, sem38Rows, sem38Week } from './lib/sem38.mjs';
 import { addDays, candidatos as sampleCandidates, clients as sampleClients, empleados as sampleEmployees, payrollGroups as samplePayrollGroups, puestos as samplePositions, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
 
 export const LOCAL_OWNER = { email: 'edgar@local.test', password: 'plataforma-local', name: 'Edgar Rodríguez' };
@@ -247,7 +253,8 @@ if ((await api(token, 'GET', '/v1/payroll/groups')).body.length > 0) {
     for (const p of samplePositions().filter((x) => x.grupoId === g.id)) {
       const after = await api(token, 'POST', `/v1/payroll/groups/${body.id}/positions`, {
         name: p.nombre, dailySalaryPocket: p.sdb.toFixed(2), dailySalaryImss: p.imss.toFixed(2), hourlyRate: p.hora.toFixed(2),
-        daysWorkedBonus: p.bono.toFixed(2), validFrom: '2025-01-01',
+        // SEM 38's hire dates go back to 2023.
+        daysWorkedBonus: p.bono.toFixed(2), validFrom: g.id === 'PG1' ? '2020-01-01' : '2025-01-01',
       });
       positionIds[p.id] = after.body.positions.find((x) => x.name === p.nombre).id;
     }
@@ -259,12 +266,73 @@ if ((await api(token, 'GET', '/v1/payroll/groups')).body.length > 0) {
   const clabe = (bankCode, seed) => { const body = bankCode + '580' + digitsOf(seed, 11); const w = [3, 7, 1]; const sum = [...body].reduce((a, ch, i) => a + (+ch * w[i % 3]) % 10, 0); return body + ((10 - (sum % 10)) % 10); };
   const card = (seed) => luhn('415231' + digitsOf(seed, 9));
   const holder = (name) => name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const THIRD_PARTY = { 1: 'JOSE ALFREDO CERVANTES LARA', 4: 'LETICIA MORA SANCHEZ', 6: 'MARIA ELENA TORRES GARCIA' };
-  const NO_ACCOUNT = { 12: 'banorte', 16: 'banregio', 18: 'banorte' };
-
-  const employees = sampleEmployees();
+  const schedule = (employeeId, site, weekdays, start, end, validFrom, job) => api(token, 'POST', `/v1/employees/${employeeId}/schedules`, {
+    clientSiteId: siteIds[site], weekdays, oneOffDate: null, startTime: start, endTime: end, validFrom, validTo: null, jobDescription: job,
+  });
+  // Status periods start after Semana 38, so its golden week stays as the workbook has it.
+  const afterSem38 = (date) => (date > SEM38.end ? date : addDays(SEM38.end, 1));
   let created = 0;
-  for (const [i, e] of employees.entries()) {
+
+  // ECOVIA: the 115 rows of SEM 38.
+  const ecoviaPositions = Object.fromEntries(samplePositions().filter((p) => p.grupoId === 'PG1').map((p) => [p.nombre, p]));
+  const THIRD_PARTY = { 1: 'JOSE ALFREDO CERVANTES LARA', 4: 'LETICIA MORA SANCHEZ', 6: 'MARIA ELENA TORRES GARCIA' };
+  const NO_ACCOUNT = { 12: 'banorte', 16: 'banregio' };
+  const sem38 = sem38Rows();
+  // One incapacidad (the first row the workbook marks INCAPACIDAD).
+  const sickRow = sem38.find((x) => x.comments?.includes('INCAPACIDAD')).row;
+  for (const [k, r] of sem38.entries()) {
+    const person = (await api(token, 'POST', '/v1/people', {
+      firstNames: r.firstNames, lastNamePaternal: r.lastNamePaternal, lastNameMaternal: r.lastNameMaternal, birthDate: null, birthState: null,
+      gender: 'unspecified', isForeign: r.foreign, curp: null, rfc: null, nss: null, mobilePhone: null, email: null, street: null,
+      extNumber: null, neighborhood: null, postalCode: null, municipality: null, state: null, source: null, notes: null,
+    })).body;
+    const bankCode = r.bank ?? '127';
+    const isCard = bankCode === '127';
+    const bankAccount = k in NO_ACCOUNT ? null : {
+      bankId: banks[bankCode], accountType: isCard ? 'debit_card' : 'clabe', accountNumber: isCard ? card(k + 100) : clabe(bankCode, k + 100),
+      holderName: holder(r.fullName), alias: isCard ? 'Tarjeta' : 'CLABE', validFrom: r.hiredAt, makePrimary: true,
+    };
+    // A row paid at other rates than its puesto's carries them as overrides (row 94: a validador at supervisor rates).
+    const puesto = ecoviaPositions[r.puesto];
+    const own = r.rates.pocket !== puesto.sdb || r.rates.hourly !== puesto.hora || r.rates.imss !== puesto.imss;
+    const employee = (await api(token, 'POST', '/v1/employees', {
+      personId: person.id, payrollGroupId: groupIds.PG1, positionId: positionIds[puesto.id], shift: r.turno, hiredAt: r.hiredAt,
+      dailySalaryPocketOverride: own ? r.rates.pocket.toFixed(2) : null, dailySalaryImssOverride: own ? r.rates.imss.toFixed(2) : null,
+      hourlyRateOverride: own ? r.rates.hourly.toFixed(2) : null, daysWorkedBonusOverride: null,
+      notes: null, cardBank: bankAccount ? null : NO_ACCOUNT[k], candidateId: null, bankAccount,
+    })).body;
+    if (THIRD_PARTY[k]) {
+      await api(token, 'POST', `/v1/employees/${employee.id}/bank-accounts`, {
+        bankId: banks['127'], accountType: 'own_account', accountNumber: digitsOf(k + 50, 14), holderName: THIRD_PARTY[k],
+        alias: 'Cuenta familiar', validFrom: afterSem38(addDays(today, -30)), makePrimary: k === 6,
+      });
+    }
+    if (k === 18) {
+      // An account that is no longer valid: no principal and no request, so Personal offers «Solicitar tarjeta».
+      const accounts = (await api(token, 'GET', `/v1/employees/${employee.id}/bank-accounts`)).body;
+      await api(token, 'PUT', `/v1/employees/${employee.id}/bank-accounts/${accounts[0].id}`, { holderName: accounts[0].holderName, alias: accounts[0].alias, validTo: today });
+    }
+    const status = (s, start, end, reason = null, reference = null) =>
+      api(token, 'POST', `/v1/employees/${employee.id}/status`, { status: s, startDate: start, endDate: end, reason, reference });
+    if (k === 1) await status('vacation', afterSem38(addDays(today, -10)), today);
+    if (k === 10) await status('vacation', afterSem38(addDays(today, -2)), addDays(today, 5));
+    const baja = r.comments?.includes('BAJA');
+    if (baja) await status('terminated', afterSem38(addDays(today, -20)), null, 'Renuncia voluntaria');
+    if (r.row === sickRow) {
+      await status('sick_leave', afterSem38(addDays(today, -20)), addDays(today, 4), null, 'ST-7 448120');
+    }
+    // Lunes a domingo with one rest day, 12 h by turno; day shifts at Centro, night shifts at Norte.
+    if (!baja) {
+      const night = r.turno === 'C/NOCHE';
+      await schedule(employee.id, night ? 'ECOVIA — Estación Norte' : 'ECOVIA — Estación Centro', [1, 2, 3, 4, 5, 6, 7].filter((d) => d !== (k % 7) + 1),
+        night ? '19:00:00' : '07:00:00', night ? '07:00:00' : '19:00:00', r.hiredAt, null);
+    }
+    created++;
+  }
+
+  // HFC and HEB: the prototype's.
+  for (const [i, e] of sampleEmployees().entries()) {
+    if (e.cliente === 'ECOVIA') continue;
     // The prototype spaces hire dates 23 days apart from Feb 2025, which runs into 2027: later ones are kept in the past.
     const hiredAt = e.ingreso < today ? e.ingreso : addDays(today, -7 * (i - 20));
     const person = (await api(token, 'POST', '/v1/people', {
@@ -275,50 +343,18 @@ if ((await api(token, 'GET', '/v1/payroll/groups')).body.length > 0) {
     })).body;
     const bankName = ['BBVA', 'Banregio', 'Banco Azteca'][i % 3];
     const isClabe = bankName === 'BBVA';
-    // The worker's own account is typed at alta (no card request); the ones without an account are queued for a card.
-    const bankAccount = i in NO_ACCOUNT && i !== 18 ? null : {
-      bankId: banks[BANK_CODE[bankName]], accountType: isClabe ? 'clabe' : 'debit_card',
-      accountNumber: isClabe ? clabe(BANK_CODE[bankName], i) : card(i), holderName: holder(e.nombre),
-      alias: (isClabe ? 'CLABE ' : 'Tarjeta ') + bankName, validFrom: hiredAt, makePrimary: true,
-    };
     const employee = (await api(token, 'POST', '/v1/employees', {
       personId: person.id, payrollGroupId: groupIds[e.grupoId], positionId: positionIds[e.puestoId], shift: e.turno, hiredAt,
       dailySalaryPocketOverride: null, dailySalaryImssOverride: null, hourlyRateOverride: null, daysWorkedBonusOverride: null,
-      notes: null, cardBank: bankAccount ? null : NO_ACCOUNT[i], candidateId: null, bankAccount,
+      notes: null, cardBank: null, candidateId: null,
+      bankAccount: {
+        bankId: banks[BANK_CODE[bankName]], accountType: isClabe ? 'clabe' : 'debit_card',
+        accountNumber: isClabe ? clabe(BANK_CODE[bankName], i) : card(i), holderName: holder(e.nombre),
+        alias: (isClabe ? 'CLABE ' : 'Tarjeta ') + bankName, validFrom: hiredAt, makePrimary: true,
+      },
     })).body;
-    if (THIRD_PARTY[i]) {
-      await api(token, 'POST', `/v1/employees/${employee.id}/bank-accounts`, {
-        bankId: banks['127'], accountType: 'own_account', accountNumber: digitsOf(i + 50, 14), holderName: THIRD_PARTY[i],
-        alias: 'Cuenta familiar', validFrom: addDays(hiredAt, 120) < today ? addDays(hiredAt, 120) : today, makePrimary: i === 6,
-      });
-    }
-    if (i === 18) {
-      // An account that is no longer valid: no principal and no request, so Personal offers «Solicitar tarjeta».
-      const accounts = (await api(token, 'GET', `/v1/employees/${employee.id}/bank-accounts`)).body;
-      await api(token, 'PUT', `/v1/employees/${employee.id}/bank-accounts/${accounts[0].id}`, { holderName: accounts[0].holderName, alias: accounts[0].alias, validTo: today });
-    }
-
-    const status = (s, start, end, reason = null, reference = null) =>
-      api(token, 'POST', `/v1/employees/${employee.id}/status`, { status: s, startDate: start, endDate: end, reason, reference });
-    if (i === 1) await status('vacation', addDays(today, -10), today);
-    if (i === 10) await status('vacation', addDays(today, -2), addDays(today, 5));
-    if (i === 7) await status('sick_leave', addDays(today, -36), addDays(today, 4), null, 'ST-7 448120');
-    if (i === 14) await status('terminated', addDays(today, -20), null, 'Renuncia voluntaria');
-
-    const site = e.cliente === 'HEB' ? 'HEB — Oficinas Cumbres' : e.cliente === 'CONSTRUCTORA HFC' ? 'CONSTRUCTORA HFC — Obra Apodaca' : i < 12 ? 'ECOVIA — Estación Centro' : 'ECOVIA — Estación Norte';
-    const night = e.turno === 'C/NOCHE';
-    const schedule = e.cliente === 'ECOVIA'
-      // Lunes a domingo with one rest day (the prototype's), 12 h by turno.
-      ? { weekdays: [1, 2, 3, 4, 5, 6, 7].filter((d) => d !== (i % 6) + 1), start: night ? '19:00:00' : '07:00:00', end: night ? '07:00:00' : '19:00:00', job: null }
-      : e.cliente === 'HEB'
-        ? { weekdays: [1, 2, 3, 4, 5], start: '07:00:00', end: '15:00:00', job: 'Limpieza oficinas' }
-        : { weekdays: [1, 2, 3, 4, 5, 6], start: '08:00:00', end: '16:00:00', job: 'Obra Apodaca' };
-    if (i !== 14) {
-      await api(token, 'POST', `/v1/employees/${employee.id}/schedules`, {
-        clientSiteId: siteIds[site], weekdays: schedule.weekdays, oneOffDate: null, startTime: schedule.start, endTime: schedule.end,
-        validFrom: hiredAt, validTo: null, jobDescription: schedule.job,
-      });
-    }
+    if (e.cliente === 'HEB') await schedule(employee.id, 'HEB — Oficinas Cumbres', [1, 2, 3, 4, 5], '07:00:00', '15:00:00', hiredAt, 'Limpieza oficinas');
+    else await schedule(employee.id, 'CONSTRUCTORA HFC — Obra Apodaca', [1, 2, 3, 4, 5, 6], '08:00:00', '16:00:00', hiredAt, 'Obra Apodaca');
     created++;
   }
   // A one-off job: three técnicos of HFC on next Saturday's maintenance.
@@ -371,4 +407,53 @@ if ((await api(token, 'GET', '/v1/users')).body.some((u) => u.email === SUPERVIS
   }
   await internal('jobs/attendance-lock', {});
   console.log(`attendance: ${captured} ECOVIA days captured today, ${unlocked} yesterday through the unlock path`);
+}
+
+// ---- S9: Semana 38 as the client's workbook, and the gate ----
+{
+  const groups = (await api(token, 'GET', '/v1/payroll/groups')).body;
+  const ecoviaClient = (await api(token, 'GET', '/v1/clients')).body.find((c) => c.shortName === 'ECOVIA');
+  const ecovia = groups.find((g) => g.clientId === ecoviaClient.id);
+  const periods = (await api(token, 'GET', `/v1/payroll/periods?groupId=${ecovia.id}`)).body;
+  if (periods.some((p) => p.startDate === SEM38.start)) {
+    console.log('semana 38: already there, skipped');
+  } else {
+    // The two bajas of the workbook are terminated after Semana 38: still theirs to pay.
+    const employees = Object.fromEntries((await api(token, 'GET', `/v1/employees?clientId=${ecoviaClient.id}&includeTerminated=true`)).body
+      .map((e) => [e.fullName, e.id]));
+    const rows = sem38Rows();
+    const writes = rows.flatMap((r) => sem38Week(r).map((d) => ({ employeeId: employees[r.fullName], ...d })));
+    if (writes.some((w) => !w.employeeId)) throw new Error('SEM 38: an employee of the workbook is missing from ECOVIA');
+    // Every September day is locked: written as changes with a reason, eight at a time.
+    let next = 0;
+    const refused = [];
+    await Promise.all(Array.from({ length: 8 }, async () => {
+      while (next < writes.length) {
+        const w = writes[next++];
+        const { status, body } = await api(token, 'POST', '/v1/attendance/unlock', {
+          employeeId: w.employeeId, date: w.date, siteId: null, status: w.status, hoursWorked: w.hoursWorked, overtimeHours: w.overtimeHours,
+          note: null, reason: 'Carga inicial SEM 38',
+        });
+        if (status !== 200) refused.push(`${w.date} ${w.status}: ${body.detail ?? status}`);
+      }
+    }));
+    // api() lets a 409 through; here every refused day would break the golden week.
+    if (refused.length) throw new Error(`SEM 38: ${refused.length} days refused, e.g. ${refused.slice(0, 5).join('; ')}`);
+    // Semana 38 and the week the S8 seed captured yesterday in (42); the lock job closes both to Revisión.
+    const created38 = (await api(token, 'POST', `/v1/payroll/groups/${ecovia.id}/periods`, { date: SEM38.start })).body;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Monterrey' }).format(new Date());
+    await api(token, 'POST', `/v1/payroll/groups/${ecovia.id}/periods`, { date: addDays(today, -1) });
+    await internal('jobs/attendance-lock', {});
+
+    let grid = (await api(token, 'GET', `/v1/payroll/periods/${created38.id}`)).body;
+    const lines = Object.fromEntries(grid.rows.map((r) => [r.employeeId, r.lineId]));
+    for (const r of rows.filter((x) => x.comments)) {
+      await api(token, 'PUT', `/v1/payroll/lines/${lines[employees[r.fullName]]}/comments`, { comments: r.comments });
+    }
+    grid = (await api(token, 'GET', `/v1/payroll/periods/${created38.id}`)).body;
+    const got = { totalNet: grid.totalNet, totalNetExact: grid.totalNetExact, rows: grid.rows.length };
+    const same = +got.totalNet === +GOLDEN.totalNet && +got.totalNetExact === +GOLDEN.totalNetExact && got.rows === GOLDEN.rows;
+    if (!same) throw new Error(`SEM 38 gate failed: expected ${JSON.stringify(GOLDEN)}, the grid has ${JSON.stringify(got)}`);
+    console.log(`semana 38: ${writes.length} days loaded, ${grid.rows.length} lines in ${grid.period.status}; total ${got.totalNet} (exact ${got.totalNetExact}) = golden`);
+  }
 }
