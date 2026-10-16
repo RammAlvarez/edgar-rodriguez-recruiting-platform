@@ -6,16 +6,19 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { MatTooltip } from '@angular/material/tooltip';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
 import { confirm, openSidePanel } from '@platform/ui';
-import type { ContactDto, SiteDto } from '../data/api-types';
+import type { ContactDto, OpeningDetailDto, OpeningListItemDto, SiteDto } from '../data/api-types';
+import { OPENING_STATUS } from '../data/recruiting-labels';
+import { OpeningsRepository } from '../data/recruiting-repositories';
+import { OpeningPanel, type OpeningPanelData } from '../openings/opening-panel';
 import { CatalogsRepository, ClientsRepository, UsersRepository } from '../data/repositories';
 import { ClientPanel, type ClientPanelData } from './client-panel';
 import { ContactPanel, type ContactPanelData } from './contact-panel';
 import { SitePanel, type SitePanelData } from './site-panel';
 
-/** Reclutamiento → Clientes → detail (SPEC §4.5): Vacantes (S4), Contactos with «Invitar al portal», Sitios. */
+/** Reclutamiento → Clientes → detail (SPEC §4.5): counters, Vacantes with «Nueva vacante» (Cliente preset), Contactos with «Invitar al portal», Sitios. */
 @Component({
   selector: 'app-client-detail',
   imports: [MatTabGroup, MatTab, MatButton, MatIconButton, MatIcon, MatProgressBar, MatTooltip, RouterLink],
@@ -39,11 +42,34 @@ import { SitePanel, type SitePanelData } from './site-panel';
             <mat-icon fontSet="material-symbols-outlined">edit</mat-icon>Editar
           </button>
         </header>
+        <div class="kpis">
+          <div class="kpi"><div class="label">Vacantes abiertas</div><div class="value">{{ openCount() }}</div></div>
+          <div class="kpi"><div class="label">Cubiertas</div><div class="value">{{ filledCount() }}</div></div>
+          <div class="kpi"><div class="label">Contactos</div><div class="value">{{ c.contacts.length }}</div></div>
+          <div class="kpi"><div class="label">Sitios</div><div class="value">{{ c.sites.length }}</div></div>
+        </div>
         <mat-tab-group animationDuration="0ms">
           <mat-tab label="Vacantes">
-            <div class="empty-state">
-              <mat-icon fontSet="material-symbols-outlined">work</mat-icon>
-              <p>Sin vacantes. Las vacantes de este cliente aparecerán aquí.</p>
+            <div class="tab-actions">
+              <button matButton="filled" type="button" (click)="newOpening()">
+                <mat-icon fontSet="material-symbols-outlined">add</mat-icon>Nueva vacante
+              </button>
+            </div>
+            <div class="list-card">
+              @for (o of openings.value() ?? []; track o.id) {
+                <div class="list-row clickable" tabindex="0" (click)="openOpening(o.id)" (keydown.enter)="openOpening(o.id)">
+                  <mat-icon fontSet="material-symbols-outlined" class="muted">work</mat-icon>
+                  <div class="grow">
+                    <div class="title">
+                      {{ o.displayName }}
+                      <span class="pill" [class]="statusOf(o).tone">{{ statusOf(o).label }}</span>
+                    </div>
+                    <div class="muted">{{ o.hired }} de {{ o.headcountRequested }} contratados · {{ o.daysOpen }} días · {{ o.leadRecruiterName ?? 'Sin líder' }}</div>
+                  </div>
+                </div>
+              } @empty {
+                <p class="list-empty">Sin vacantes. Las vacantes de este cliente aparecerán aquí.</p>
+              }
             </div>
           </mat-tab>
           <mat-tab label="Contactos">
@@ -114,7 +140,6 @@ import { SitePanel, type SitePanelData } from './site-panel';
       }
     </div>
   `,
-  styleUrl: './client-detail.scss',
 })
 export class ClientDetail {
   /** Route param, read from the snapshot: the live query starts in the field initializer, before inputs are bound. */
@@ -127,6 +152,27 @@ export class ClientDetail {
   readonly client = this.repo.detail('recruiting', () => this.id());
   private readonly catalogs = inject(CatalogsRepository).catalogs();
   readonly zones = computed(() => this.catalogs.value()?.zones ?? []);
+  private readonly router = inject(Router);
+  readonly openings = inject(OpeningsRepository).list(() => this.id());
+  readonly openCount = computed(() => (this.openings.value() ?? []).filter((o) => o.status === 'open' || o.status === 'in_progress').length);
+  readonly filledCount = computed(() => (this.openings.value() ?? []).filter((o) => o.status === 'filled').length);
+
+  statusOf(o: OpeningListItemDto) {
+    return OPENING_STATUS[o.status];
+  }
+
+  openOpening(id: string): void {
+    void this.router.navigate(['/vacantes', id]);
+  }
+
+  /** SPEC §4.5: the same drawer as Vacantes with Cliente preset and locked. */
+  newOpening(): void {
+    openSidePanel<OpeningPanel, OpeningPanelData, OpeningDetailDto>(this.dialog, OpeningPanel, { clientId: this.id() })
+      .afterClosed()
+      .subscribe((created) => {
+        if (created) this.openOpening(created.id);
+      });
+  }
 
   contactLine(k: ContactDto): string {
     return [k.jobTitle, k.email, k.phone].filter(Boolean).join(' · ') || 'Sin datos de contacto';

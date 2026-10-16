@@ -1477,6 +1477,22 @@ export type components = {
             recruiters: components["schemas"]["OpeningRecruiterDto"][];
             stageCounts: components["schemas"]["StageCountDto"][];
         };
+        OpeningEventDto: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["OpeningEventKind"];
+            fromStatus: null | components["schemas"]["OpeningStatus"];
+            toStatus: null | components["schemas"]["OpeningStatus"];
+            reason: null | string;
+            /** Format: uuid */
+            recruiterId: null | string;
+            recruiterName: null | string;
+            author: null | string;
+            /** Format: date-time */
+            occurredAt: Date;
+        };
+        /** @enum {unknown} */
+        OpeningEventKind: "created" | "edited" | "status_changed" | "recruiter_assigned" | "recruiter_removed" | "lead_changed";
         OpeningListItemDto: {
             /** Format: uuid */
             id: string;
@@ -1893,6 +1909,8 @@ export type NoteRequest = components['schemas']['NoteRequest'];
 export type OpeningCommentDto = components['schemas']['OpeningCommentDto'];
 export type OpeningCommentRequest = components['schemas']['OpeningCommentRequest'];
 export type OpeningDetailDto = components['schemas']['OpeningDetailDto'];
+export type OpeningEventDto = components['schemas']['OpeningEventDto'];
+export type OpeningEventKind = components['schemas']['OpeningEventKind'];
 export type OpeningListItemDto = components['schemas']['OpeningListItemDto'];
 export type OpeningOptionDto = components['schemas']['OpeningOptionDto'];
 export type OpeningPriority = components['schemas']['OpeningPriority'];
@@ -4449,7 +4467,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["OpeningEventDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
         };
     };
@@ -4469,7 +4498,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["OpeningCommentDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
         };
     };

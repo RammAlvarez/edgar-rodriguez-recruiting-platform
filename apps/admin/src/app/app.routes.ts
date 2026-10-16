@@ -4,8 +4,10 @@ import { accessGuard, signedInGuard, signedOutGuard } from '@platform/ui/guards'
 import { Session } from '@platform/ui/session';
 import { ALL_NAV_ITEMS, homePath } from './shell/navigation';
 
-/** Screens delivered so far (S3); the other sections keep the «próxima entrega» placeholder. */
+/** Screens delivered so far (S4); the other sections keep the «próxima entrega» placeholder. */
 const SCREENS: Record<string, () => Promise<Type<unknown>>> = {
+  vacantes: () => import('./openings/openings-page').then((m) => m.OpeningsPage),
+  'mis-vacantes': () => import('./openings/openings-page').then((m) => m.OpeningsPage),
   usuarios: () => import('./users/users-page').then((m) => m.UsersPage),
   clientes: () => import('./clients/clients-page').then((m) => m.ClientsPage),
   'clientes-nomina': () => import('./clients/payroll-clients-page').then((m) => m.PayrollClientsPage),
@@ -34,7 +36,8 @@ export const routes: Routes = [
         path: item.path,
         loadComponent: SCREENS[item.path] ?? (() => import('@platform/ui/status-pages').then((m) => m.ComingSoonPage)),
         canActivate: [accessGuard(item.roles, item.grant)],
-        data: { title: item.label, icon: item.icon },
+        // «Mis vacantes» / «Mis candidatos»: the recruiter workspace, the same screens with the Administrador actions hidden.
+        data: { title: item.label, icon: item.icon, workspace: item.path.startsWith('mis-') },
         title: item.label,
       })),
       {
@@ -42,6 +45,19 @@ export const routes: Routes = [
         loadComponent: () => import('./clients/client-detail').then((m) => m.ClientDetail),
         canActivate: [accessGuard(navItem('clientes').roles, navItem('clientes').grant)],
         title: 'Cliente',
+      },
+      {
+        path: 'vacantes/:id',
+        loadComponent: () => import('./openings/opening-detail').then((m) => m.OpeningDetail),
+        canActivate: [accessGuard(navItem('vacantes').roles, navItem('vacantes').grant)],
+        title: 'Vacante',
+      },
+      {
+        path: 'mis-vacantes/:id',
+        loadComponent: () => import('./openings/opening-detail').then((m) => m.OpeningDetail),
+        canActivate: [accessGuard(navItem('mis-vacantes').roles)],
+        data: { workspace: true },
+        title: 'Vacante',
       },
       {
         path: 'clientes-nomina/:id',

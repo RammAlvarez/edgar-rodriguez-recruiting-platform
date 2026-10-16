@@ -6,14 +6,12 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Router } from '@angular/router';
 import { openSidePanel } from '@platform/ui';
-import type { ClientDetailDto, ClientListItemDto } from '../data/api-types';
+import type { ClientDetailDto, ClientListItemDto, OpeningListItemDto } from '../data/api-types';
+import { OpeningsRepository } from '../data/recruiting-repositories';
 import { ClientsRepository } from '../data/repositories';
 import { ClientPanel, type ClientPanelData } from './client-panel';
 
-/**
- * Reclutamiento → Clientes (SPEC §4.5): the clients used by recruiting. Vacante counters (abiertas, cubiertas, días
- * promedio) join this table with the vacantes of S4.
- */
+/** Reclutamiento → Clientes (SPEC §4.5): the clients used by recruiting, with their vacantes abiertas, cubiertas and días promedio. */
 @Component({
   selector: 'app-clients-page',
   imports: [MatTableModule, MatButton, MatIcon, MatProgressBar],
@@ -50,6 +48,18 @@ import { ClientPanel, type ClientPanelData } from './client-panel';
             <th mat-header-cell *matHeaderCellDef>Contacto principal</th>
             <td mat-cell *matCellDef="let c">{{ c.primaryContact?.fullName ?? '—' }}</td>
           </ng-container>
+          <ng-container matColumnDef="open">
+            <th mat-header-cell *matHeaderCellDef class="num">Vacantes abiertas</th>
+            <td mat-cell *matCellDef="let c" class="num">{{ stats(c).open }}</td>
+          </ng-container>
+          <ng-container matColumnDef="filled">
+            <th mat-header-cell *matHeaderCellDef class="num">Cubiertas</th>
+            <td mat-cell *matCellDef="let c" class="num">{{ stats(c).filled }}</td>
+          </ng-container>
+          <ng-container matColumnDef="avgDays">
+            <th mat-header-cell *matHeaderCellDef class="num">Días promedio</th>
+            <td mat-cell *matCellDef="let c" class="num">{{ stats(c).avgDays ?? '—' }}</td>
+          </ng-container>
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Estatus</th>
             <td mat-cell *matCellDef="let c">
@@ -70,7 +80,27 @@ export class ClientsPage {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   readonly clients = inject(ClientsRepository).list('recruiting');
-  readonly columns = ['name', 'legal', 'zone', 'contact', 'status'];
+  readonly columns = ['name', 'legal', 'zone', 'contact', 'open', 'filled', 'avgDays', 'status'];
+  private readonly openings = inject(OpeningsRepository).list();
+  /** Per client: open / in-process vacantes, filled ones, and the average días abierta of the filled ones (truncated). */
+  private readonly byClient = computed(() => {
+    const map = new Map<string, { open: number; filled: number; avgDays: number | null }>();
+    const groups = new Map<string, OpeningListItemDto[]>();
+    for (const o of this.openings.value() ?? []) groups.set(o.clientId, [...(groups.get(o.clientId) ?? []), o]);
+    for (const [id, list] of groups) {
+      const filled = list.filter((o) => o.status === 'filled');
+      map.set(id, {
+        open: list.filter((o) => o.status === 'open' || o.status === 'in_progress').length,
+        filled: filled.length,
+        avgDays: filled.length ? Math.trunc(filled.reduce((s, o) => s + Number(o.daysOpen), 0) / filled.length) : null,
+      });
+    }
+    return map;
+  });
+
+  stats(c: ClientListItemDto) {
+    return this.byClient().get(c.id) ?? { open: 0, filled: 0, avgDays: null };
+  }
   readonly rows = computed(() => (this.clients.value() ?? []).filter((c) => c.usesRecruiting));
 
   go(c: ClientListItemDto): void {

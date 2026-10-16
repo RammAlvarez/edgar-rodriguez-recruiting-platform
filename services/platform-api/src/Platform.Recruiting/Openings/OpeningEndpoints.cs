@@ -106,8 +106,10 @@ public static class OpeningEndpoints
             })
             .WithName("RemoveRecruiter").Mutation<RemoveRecruiterRequest>().RequireAccess(RecruitingScope.Manage);
 
-        g.MapGet("/{id:guid}/events", Events).WithName("ListOpeningEvents").RequireAccess(RecruitingScope.Staff);
-        g.MapGet("/{id:guid}/comments", Comments).WithName("ListOpeningComments").RequireAccess(RecruitingScope.Staff);
+        g.MapGet("/{id:guid}/events", Events).WithName("ListOpeningEvents").Produces<List<OpeningEventDto>>()
+            .ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(RecruitingScope.Staff);
+        g.MapGet("/{id:guid}/comments", Comments).WithName("ListOpeningComments").Produces<List<OpeningCommentDto>>()
+            .ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(RecruitingScope.Staff);
         g.MapPost("/{id:guid}/comments", PostComment).WithName("PostOpeningComment").Validate<OpeningCommentRequest>()
             .Produces<OpeningCommentDto>().ProducesProblem(StatusCodes.Status404NotFound).Invalidates(Tag)
             .RequireAccess(RecruitingScope.Staff);
