@@ -6,12 +6,14 @@ using Platform.Core.Access;
 using Platform.Core.Audit;
 using Platform.Core.Http;
 using Platform.Core.Persistence;
+using Platform.Core.Users;
 
 namespace Platform.Core.People;
 
 /// <summary>
-/// The people registry (SPEC §3.1). Administradores only for now: the recruiter's scope ("people of the candidates of my
-/// vacantes", DATA_MODEL §8) arrives with candidates in S4. Reading a profile is logged in <c>data_access_log</c>.
+/// The people registry (SPEC §3.1). Search, duplicates and create are open to staff so «Nuevo candidato» can find or add a
+/// person; reading or editing a profile is limited by <see cref="IPersonScope"/> (PLAN D73). Reading a profile is logged in
+/// <c>data_access_log</c>.
 /// </summary>
 public static class PeopleEndpoints
 {
@@ -19,7 +21,8 @@ public static class PeopleEndpoints
 
     public const string NotFound = "La persona no existe.";
 
-    private static readonly AccessRule Staff = AccessRule.Administrator();
+    /// <summary>Administradores and Reclutadores; profile reads and edits go through <see cref="IPersonScope"/> (D73).</summary>
+    private static readonly AccessRule Staff = AccessRule.ForRoles(UserRole.Administrator, UserRole.Recruiter);
 
     public static IEndpointRouteBuilder MapPeopleEndpoints(this IEndpointRouteBuilder v1)
     {
@@ -44,8 +47,10 @@ public static class PeopleEndpoints
                 TypedResults.Ok(await Duplicates(db, PersonText.Id(curp), PersonText.Id(rfc), excludeId, ct)))
             .WithName("FindDuplicatePeople").RequireAccess(Staff);
 
-        g.MapGet("/{id:guid}", async (Guid id, DbContext db, DataAccess log, CancellationToken ct) =>
+        g.MapGet("/{id:guid}", async (Guid id, DbContext db, DataAccess log, IPersonScope scope, CancellationToken ct) =>
             {
+                if (!await scope.CanAccessAsync(id, ct))
+                    return ApiResults.NotFound(NotFound);
                 if (await db.Set<Person>().AsNoTracking().SingleOrDefaultAsync(p => p.Uid == id && p.DeletedAt == null, ct) is not { } p)
                     return ApiResults.NotFound(NotFound);
                 await log.RecordAsync(p.Uid, DataAccessKind.ViewProfile, null, ct);
@@ -66,8 +71,10 @@ public static class PeopleEndpoints
             .WithName("CreatePerson").Validate<PersonRequest>().Produces<PersonDto>().ProducesProblem(StatusCodes.Status409Conflict)
             .RequireAccess(Staff).Invalidates(Tag);
 
-        g.MapPut("/{id:guid}", async (Guid id, PersonRequest r, DbContext db, CancellationToken ct) =>
+        g.MapPut("/{id:guid}", async (Guid id, PersonRequest r, DbContext db, IPersonScope scope, CancellationToken ct) =>
             {
+                if (!await scope.CanAccessAsync(id, ct))
+                    return ApiResults.NotFound(NotFound);
                 if (await db.Set<Person>().SingleOrDefaultAsync(p => p.Uid == id && p.DeletedAt == null, ct) is not { } person)
                     return ApiResults.NotFound(NotFound);
                 Apply(person, r);
@@ -99,7 +106,7 @@ public static class PeopleEndpoints
                 .OfType<string>()])).ToList();
     }
 
-    private static async Task<IResult?> DuplicateConflict(DbContext db, Person person, CancellationToken ct)
+    public static async Task<IResult?> DuplicateConflict(DbContext db, Person person, CancellationToken ct)
     {
         var duplicate = (await Duplicates(db, person.Curp, person.Rfc, person.Uid, ct)).FirstOrDefault();
         if (duplicate is null)
@@ -110,7 +117,7 @@ public static class PeopleEndpoints
             : $"Ya existe una persona con esa {field}: {duplicate.FullName}.");
     }
 
-    private static void Apply(Person p, PersonRequest r)
+    public static void Apply(Person p, PersonRequest r)
     {
         p.FirstNames = PersonText.Name(r.FirstNames);
         p.LastNamePaternal = PersonText.Name(r.LastNamePaternal);

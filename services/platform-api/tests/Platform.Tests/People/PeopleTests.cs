@@ -126,13 +126,17 @@ public sealed class PeopleTests(ApiFactory factory) : ApiTest(factory)
         Assert.Empty((await BodyOf(await admin.GetAsync("/v1/people?search=GARZA"))).EnumerateArray());
     }
 
-    [Theory]
-    [InlineData(UserRole.Recruiter)]
-    [InlineData(UserRole.Client)]
-    public async Task Only_administrators_use_the_registry_until_candidates_exist(UserRole role)
+    [Fact]
+    public async Task Clients_never_use_the_registry_and_recruiters_reach_only_their_candidates()
     {
-        var http = await As(role);
-        Assert.Equal(HttpStatusCode.Forbidden, (await http.GetAsync("/v1/people")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await http.PostAsJsonAsync("/v1/people", NewPerson())).StatusCode);
+        var client = await As(UserRole.Client);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/v1/people")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync("/v1/people", NewPerson())).StatusCode);
+
+        // PLAN D73: search and create are open so «Nuevo candidato» can find or add a person; the profile is scoped.
+        var id = (await BodyOf(await (await AsOwner()).PostAsJsonAsync("/v1/people", NewPerson()))).GetProperty("id").GetGuid();
+        var recruiter = await As(UserRole.Recruiter);
+        Assert.Single((await BodyOf(await recruiter.GetAsync($"/v1/people?search={Curp}"))).EnumerateArray());
+        Assert.Equal(HttpStatusCode.NotFound, (await recruiter.GetAsync($"/v1/people/{id}")).StatusCode);
     }
 }

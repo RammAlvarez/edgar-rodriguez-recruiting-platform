@@ -4,6 +4,10 @@
     <ProjectReference Include="..\Platform.Core\Platform.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="HtmlSanitizer" />
+  </ItemGroup>
+
   
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

@@ -170,15 +170,20 @@ public sealed class DocumentTests(ApiFactory factory) : ApiTest(factory)
         Assert.All(log, e => Assert.Equal(_person, e.PersonId));
     }
 
-    [Theory]
-    [InlineData(UserRole.Recruiter)]
-    [InlineData(UserRole.Client)]
-    public async Task Documents_are_not_reachable_by_recruiters_or_clients_yet(UserRole role)
+    [Fact]
+    public async Task Clients_never_reach_documents_and_recruiters_only_those_of_their_candidates()
     {
         await Arrange();
         var doc = (await BodyOf(await Upload("CURP"))).GetProperty("id").GetGuid();
-        var http = await As(role);
-        Assert.Equal(HttpStatusCode.Forbidden, (await http.GetAsync($"/v1/documents/{doc}/url")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await http.GetAsync($"/v1/people/{_person}/documents")).StatusCode);
+
+        var client = await As(UserRole.Client);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/v1/documents/{doc}/url")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/v1/people/{_person}/documents")).StatusCode);
+
+        // PLAN D73: this person is nobody's candidate, so a recruiter cannot tell it exists.
+        var recruiter = await As(UserRole.Recruiter);
+        Assert.Equal(HttpStatusCode.NotFound, (await recruiter.GetAsync($"/v1/documents/{doc}/url")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await recruiter.GetAsync($"/v1/people/{_person}/documents")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await recruiter.PostAsync($"/v1/documents/{doc}/validate", null)).StatusCode);
     }
 }

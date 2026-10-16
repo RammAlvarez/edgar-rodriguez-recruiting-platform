@@ -7,13 +7,15 @@ using Platform.Core.Access;
 using Platform.Core.Audit;
 using Platform.Core.Catalogs;
 using Platform.Core.Http;
+using Platform.Core.Users;
 
 namespace Platform.Core.People;
 
 /// <summary>
 /// The document vault (SPEC §3.2, ARCHITECTURE §4 "Files"): presigned PUT with a key decided here → the browser uploads →
 /// confirm records the metadata after checking the object; downloads are presigned GETs of 15 minutes, logged in
-/// <c>data_access_log</c>. Administradores only until S4/S5 add the recruiter and candidate scopes.
+/// <c>data_access_log</c>. Administradores and Reclutadores, each person checked through <see cref="IPersonScope"/> (PLAN D73);
+/// the candidate's own scope arrives with the Candidates app (S5).
 /// </summary>
 public static class DocumentEndpoints
 {
@@ -21,13 +23,14 @@ public static class DocumentEndpoints
 
     public const string NotFound = "El documento no existe.";
 
-    private static readonly AccessRule Staff = AccessRule.Administrator();
+    private static readonly AccessRule Staff = AccessRule.ForRoles(UserRole.Administrator, UserRole.Recruiter);
 
     public static IEndpointRouteBuilder MapDocumentEndpoints(this IEndpointRouteBuilder v1)
     {
-        v1.MapPost("/files/presign-upload", async (PresignUploadRequest r, DbContext db, IObjectStorage storage, CancellationToken ct) =>
+        v1.MapPost("/files/presign-upload", async (PresignUploadRequest r, DbContext db, IObjectStorage storage, IPersonScope scope,
+                CancellationToken ct) =>
             {
-                if (!await db.Set<Person>().AnyAsync(p => p.Uid == r.PersonId && p.DeletedAt == null, ct))
+                if (!await scope.CanAccessAsync(r.PersonId, ct) || !await db.Set<Person>().AnyAsync(p => p.Uid == r.PersonId && p.DeletedAt == null, ct))
                     return ApiResults.NotFound(PeopleEndpoints.NotFound);
                 if (await db.Set<DocumentType>().SingleOrDefaultAsync(t => t.Uid == r.DocumentTypeId && t.IsActive, ct) is not { } type)
                     return ApiResults.NotFound("El tipo de documento no existe.");
@@ -42,8 +45,10 @@ public static class DocumentEndpoints
 
         var people = v1.MapGroup("/people/{personId:guid}/documents").WithTags("Documents");
 
-        people.MapGet("", async (Guid personId, Guid? templateId, DbContext db, CancellationToken ct) =>
-                await Checklist(db, personId, templateId, ct) is { } list ? TypedResults.Ok(list) : ApiResults.NotFound(PeopleEndpoints.NotFound))
+        people.MapGet("", async (Guid personId, Guid? templateId, DbContext db, IPersonScope scope, CancellationToken ct) =>
+                await scope.CanAccessAsync(personId, ct) && await Checklist(db, personId, templateId, ct) is { } list
+                    ? TypedResults.Ok(list)
+                    : ApiResults.NotFound(PeopleEndpoints.NotFound))
             .WithName("GetDocumentChecklist").Produces<DocumentChecklistDto>().ProducesProblem(StatusCodes.Status404NotFound)
             .RequireAccess(Staff);
 
@@ -53,8 +58,8 @@ public static class DocumentEndpoints
 
         var docs = v1.MapGroup("/documents/{id:guid}").WithTags("Documents");
 
-        docs.MapPost("/validate", (Guid id, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
-                Review(db, id, d =>
+        docs.MapPost("/validate", (Guid id, DbContext db, RequestContext ctx, IClock clock, IPersonScope scope, CancellationToken ct) =>
+                Review(db, scope, id, d =>
                 {
                     d.Status = DocumentStatus.Validated;
                     d.ValidatedBy = ctx.RequiredPrincipal.UserId;
@@ -64,8 +69,9 @@ public static class DocumentEndpoints
             .WithName("ValidateDocument").Produces<PersonDocumentDto>().ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict).RequireAccess(Staff).Invalidates(Tag, PeopleEndpoints.Tag);
 
-        docs.MapPost("/reject", (Guid id, RejectDocumentRequest r, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
-                Review(db, id, d =>
+        docs.MapPost("/reject", (Guid id, RejectDocumentRequest r, DbContext db, RequestContext ctx, IClock clock, IPersonScope scope,
+                CancellationToken ct) =>
+                Review(db, scope, id, d =>
                 {
                     d.Status = DocumentStatus.Rejected;
                     d.RejectionReason = r.Reason.Trim();
@@ -77,9 +83,11 @@ public static class DocumentEndpoints
             .RequireAccess(Staff).Invalidates(Tag, PeopleEndpoints.Tag);
 
         // A GET that writes the read log: viewing (inline) or downloading (attachment) personal data is what is logged.
-        docs.MapGet("/url", async (Guid id, bool? download, DbContext db, IObjectStorage storage, DataAccess log, CancellationToken ct) =>
+        docs.MapGet("/url", async (Guid id, bool? download, DbContext db, IObjectStorage storage, DataAccess log, IPersonScope scope,
+                CancellationToken ct) =>
             {
-                if (await db.Set<PersonDocument>().AsNoTracking().SingleOrDefaultAsync(d => d.Uid == id, ct) is not { } doc)
+                if (await db.Set<PersonDocument>().AsNoTracking().SingleOrDefaultAsync(d => d.Uid == id, ct) is not { } doc
+                    || !await scope.CanAccessAsync(doc.PersonId, ct))
                     return ApiResults.NotFound(NotFound);
                 var attachment = download == true;
                 var url = await storage.PresignDownloadAsync(StorageBucket.Documents, doc.StorageKey,
@@ -93,9 +101,9 @@ public static class DocumentEndpoints
     }
 
     private static async Task<IResult> Confirm(Guid personId, ConfirmDocumentRequest r, DbContext db, IObjectStorage storage,
-        IClock clock, CancellationToken ct)
+        IClock clock, IPersonScope scope, CancellationToken ct)
     {
-        if (!await db.Set<Person>().AnyAsync(p => p.Uid == personId && p.DeletedAt == null, ct))
+        if (!await scope.CanAccessAsync(personId, ct) || !await db.Set<Person>().AnyAsync(p => p.Uid == personId && p.DeletedAt == null, ct))
             return ApiResults.NotFound(PeopleEndpoints.NotFound);
         if (await db.Set<DocumentType>().SingleOrDefaultAsync(t => t.Uid == r.DocumentTypeId, ct) is not { } type)
             return ApiResults.NotFound("El tipo de documento no existe.");
@@ -152,9 +160,10 @@ public static class DocumentEndpoints
         return TypedResults.Ok(PersonDocumentDto.From(doc));
     }
 
-    private static async Task<IResult> Review(DbContext db, Guid id, Action<PersonDocument> apply, CancellationToken ct)
+    private static async Task<IResult> Review(DbContext db, IPersonScope scope, Guid id, Action<PersonDocument> apply, CancellationToken ct)
     {
-        if (await db.Set<PersonDocument>().SingleOrDefaultAsync(d => d.Uid == id, ct) is not { } doc)
+        if (await db.Set<PersonDocument>().SingleOrDefaultAsync(d => d.Uid == id, ct) is not { } doc
+            || !await scope.CanAccessAsync(doc.PersonId, ct))
             return ApiResults.NotFound(NotFound);
         if (doc.SupersededBy is not null)
             return ApiResults.Conflict("Hay una versión más reciente de este documento; revisa esa.");

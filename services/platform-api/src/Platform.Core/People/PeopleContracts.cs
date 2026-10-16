@@ -60,7 +60,7 @@ public sealed record PersonRequest(
     CandidateSource? Source,
     string? Notes);
 
-internal sealed class PersonRequestValidator : AbstractValidator<PersonRequest>
+public sealed class PersonRequestValidator : AbstractValidator<PersonRequest>
 {
     public PersonRequestValidator()
     {
