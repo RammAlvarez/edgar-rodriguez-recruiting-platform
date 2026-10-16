@@ -204,4 +204,15 @@ public sealed class BankLayoutRuleTests
         Assert.Equal(["Estado de nacimiento", "FechaNac"], layout.Validate(
             [row with { BirthState = "TEXAS", BirthDate = new DateOnly(1990, 1, 2) }], Today).Select(i => i.Field).Order());
     }
+
+    [Fact]
+    public void Only_debit_cards_are_registered_as_frequent_accounts_until_Q13_is_answered()
+    {
+        var layout = AztecaFrequentAccounts.Layout(Banks);
+        Assert.Empty(layout.Validate([new FrequentAccountRow("hfc", "JUAN PEREZ", AccountType.DebitCard, Card, "012")], Today));
+        Assert.Equal([1, 2], layout.Validate([
+            new FrequentAccountRow("hfc", "JUAN PEREZ", AccountType.Clabe, Clabe, "012"),
+            new FrequentAccountRow("hfc", "JUAN PEREZ", AccountType.OwnAccount, "12345678901234", "127"),
+        ], Today).Select(i => i.Line));
+    }
 }

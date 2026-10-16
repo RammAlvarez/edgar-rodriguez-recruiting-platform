@@ -11,7 +11,8 @@ public sealed record FrequentAccountRow(
 /// <summary>
 /// Banco Azteca «cuentas frecuentes» (SPEC §5.5 step 3), as in <c>examples/cuentasfrec21sept.xlsx</c>: no header row;
 /// A client tag, B name, C tipo <c>03</c>, D account, E <c>MXP</c>, F bank code, G–I empty, J <c>03</c>. Both fixed
-/// <c>03</c> values are copied from the client's file (SPEC Q13 asks what they must be for a CLABE).
+/// <c>03</c> values are copied from the client's file, whose rows are all debit cards; until SPEC Q13 says what they are
+/// for a CLABE or an own account, only debit cards can be registered (PLAN D64).
 /// </summary>
 public static class AztecaFrequentAccounts
 {
@@ -39,8 +40,9 @@ public static class AztecaFrequentAccounts
                 new("F", "Banco", r => r.BankCode.Trim(), [Rules.Required, Rules.ExactDigits(3), knownBank]),
                 new("J", "Tipo (J)", _ => "03", []),
             ],
-            BatchRules = (rows, _) => rows.Select((r, i) => (i, Issue: AztecaMassPayment.AccountIssue(
-                    r.AccountType, BankText.Digits(r.AccountNumber), r.BankCode.Trim())))
+            BatchRules = (rows, _) => rows.Select((r, i) => (i, Issue: r.AccountType == AccountType.DebitCard
+                    ? AztecaMassPayment.AccountIssue(r.AccountType, BankText.Digits(r.AccountNumber), r.BankCode.Trim())
+                    : "Por ahora solo se registran tarjetas de débito como cuenta frecuente (pendiente de confirmar con Banco Azteca)."))
                 .Where(x => x.Issue is not null)
                 .Select(x => new LayoutIssue(x.i + 1, "Cuenta", x.Issue!)),
         };

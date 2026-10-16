@@ -488,6 +488,8 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 |---|---|---|
 | Q12 | `FESTIVO PRIMERA MITAD` in SEM 38: the rule (D14, 4 h × costo/hora × 3) gives 428.52 / 585.60, and the sheet types 428.5 / 585.7 on 39 rows, but 249.50 on rows 65, 83, 99, 117 and 178.60 on rows 81, 85, 87. Why did those seven get less (partial holiday shift? manual cap?) | the engine applies D14 to every entitled row; SEM 38 comes out $1,466.02 higher than the sheet until answered |
 | Q4 | Which bonus scheme is paid today? The current `SEM 38` tab declares `BONO DIAS TRABAJADOS` 450 / 600 in the header but no row pays it; the older `Formula` tab pays `BONO PUNTUALIDAD Y ASISTENCIA = 400/7 × días` and `BONO PRODUCTIVIDAD = 360/7 × días`. Options: (a) none, (b) fixed 450/600 under a condition (e.g. 6 días), (c) puntualidad + productividad per day | which concepts are active in the ECOVIA group; demo grid columns |
+| Q13 | Banco Azteca *cuentas frecuentes*: the sample file (`cuentasfrec21sept.xlsx`) has `03` in column C and again in column J, and both rows are debit cards. What do C and J hold for a CLABE (18 digits) or an Azteca own account (14/20)? | until answered the platform registers only debit cards as cuentas frecuentes (PLAN D64); CLABE accounts must be registered by hand |
+| Q14 | Banco Azteca *pagos masivos*: in `Lo HFC MAESTRO 14AGOSTO.xlsx` column E (between LEYENDA DEL CARGO and MONEDA) has no header and is empty; we take it to be the **importe**. Is that right, and does the bank expect a header text there and a number or a text cell? | the generated file writes the payable amount in E as a number with 2 decimals and leaves E1 blank, as in the master |
 
 ## 11. Delivery plan (suggested)
 
