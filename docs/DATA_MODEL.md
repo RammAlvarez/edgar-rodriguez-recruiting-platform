@@ -71,7 +71,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | Module | Tables |
 |---|---|
 | `core` | users, user_permissions, clients, client_contacts, client_sites, people, person_documents, person_bank_accounts, document_types, document_templates, document_template_items, banks, catalogs (zones, positions_catalog, education_levels, benefits, sources, holidays), notifications |
-| `recruiting` | job_openings, job_opening_recruiters, candidates, candidate_stage_history, candidate_notes, interviews, opening_comments |
+| `recruiting` | job_openings, job_opening_events, job_opening_recruiters, candidates, candidate_stage_history, candidate_notes, interviews, opening_comments |
 | `payroll` | payroll_groups, positions, payroll_group_concepts, pay_concepts, employees, employee_bank_numbers, card_requests, work_schedules, attendance_records, attendance_unlocks, incidents, payroll_periods, prepayroll_lines, prepayroll_line_items |
 | `bank` | paying_accounts, payment_batches, payment_batch_rows, registration_batches, registration_batch_rows |
 | `audit` | audit_log, data_access_log |

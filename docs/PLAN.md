@@ -1,6 +1,6 @@
 # PLAN — Plataforma de Reclutamiento y Prenómina
 
-> **Status:** v1 — P1–P5, P7 resolved; E1–E8 applied; **S0–S4 done 2026-10-16** (see §2.1); P6 open · **Written:** 2026-10-16 (kickoff)
+> **Status:** v1 — P1–P5, P7 resolved; E1–E10 applied; **S0–S4 done 2026-10-16** (see §2.1); P6 open · **Written:** 2026-10-16 (kickoff)
 > **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
 > **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
 
