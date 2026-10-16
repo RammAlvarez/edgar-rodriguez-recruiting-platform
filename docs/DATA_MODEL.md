@@ -1,8 +1,8 @@
 # DATA MODEL — Plataforma de Reclutamiento y Prenómina
 
-> **Database:** PostgreSQL 18 (any Postgres reachable over TCP — managed or a container) · **ORM:** Drizzle + drizzle-kit migrations, owned by `services/platform-api` · **Schema:** one, `platform` (the API owns its migrations); the sections below (`core`, `recruiting`, `payroll`, `bank`, `audit`) are **modules** of that API, not Postgres schemas — see ARCHITECTURE §2
+> **Database:** PostgreSQL 18 (any Postgres reachable over TCP — managed or a container) · **ORM:** EF Core 10 (Npgsql) with migrations as the only way to change DDL, owned by `services/platform-api` · **Schema:** one, `platform` (the API owns its migrations); the sections below (`core`, `recruiting`, `payroll`, `bank`, `audit`) are **modules** of that API, not Postgres schemas — see ARCHITECTURE §2
 > **Companion docs:** [SPEC.md](./SPEC.md) · [ARCHITECTURE.md](./ARCHITECTURE.md)
-> **Conventions:** English identifiers, `snake_case` in SQL / `camelCase` in TypeScript. Every table has `id bigint generated always as identity` (internal, never exposed) and `uid uuid not null unique default gen_random_uuid()`; every foreign key references `uid`; the API returns `uid` as `id`. Column lines below written as `… | uuid FK …` mean "uuid referencing that table's `uid`". Business codes (`legacy_code`, `short_name`, `spei_code`) are unique columns. Every table has `created_at / created_by / updated_at / updated_by` stamped by the API; soft delete only where stated (`deleted_at`). Money is always `numeric(12,2)`, rates `numeric(12,4)`, never `float`/`real`; on the wire money is a decimal **string**, computed with `decimal.js` in `libs/payroll`. Timestamps are `timestamptz`; business dates are `date` keys (`yyyy-MM-dd`) computed on the server in the payroll group's IANA time zone (`payroll_groups.time_zone`, default `America/Monterrey`), never from the server's UTC clock. Nested value objects (e.g. a bank batch's fixed header snapshot) may be `jsonb` typed by `libs/shared`; anything queried or joined is rows. Derived data (statuses, counters, totals, prepayroll lines) is server-only and written in the same transaction as the change that causes it; the API ignores it if a client sends it.
+> **Conventions:** English identifiers, `snake_case` in SQL / `PascalCase` in C# (EF naming convention `UseSnakeCaseNamingConvention`) / `camelCase` in the generated TypeScript. Every table has `id bigint generated always as identity` (internal, never exposed) and `uid uuid not null unique default gen_random_uuid()`; every foreign key references `uid`; the API returns `uid` as `id`. Column lines below written as `… | uuid FK …` mean "uuid referencing that table's `uid`". Business codes (`legacy_code`, `short_name`, `spei_code`) are unique columns. Every table has `created_at / created_by / updated_at / updated_by` stamped by the API; soft delete only where stated (`deleted_at`). Money is always `numeric(12,2)`, rates `numeric(12,4)`, never `float`/`real`; on the wire money is a decimal **string**; on the server it is `decimal` (`Platform.Payroll.Engine`), never `double`. Timestamps are `timestamptz`; business dates are `date` keys (`yyyy-MM-dd`) computed on the server in the payroll group's IANA time zone (`payroll_groups.time_zone`, default `America/Monterrey`), never from the server's UTC clock. Nested value objects (e.g. a bank batch's fixed header snapshot) may be `jsonb` mapped to an owned C# record (and the matching generated TS type); anything queried or joined is rows. Derived data (statuses, counters, totals, prepayroll lines) is server-only and written in the same transaction as the change that causes it; the API ignores it if a client sends it.
 
 ---
 
@@ -205,7 +205,7 @@ Indexes: `(curp)`, `(rfc)`, trigram on `full_name`, `(mobile_phone)`.
 | person_id | uuid FK | |
 | bank_id | uuid FK banks | |
 | account_type | bank_account_type | drives length validation: debit_card 16, clabe 18, own_account 14/20 |
-| account_number_enc | bytea NOT NULL | AES-256-GCM in the API (`libs/crypto`, key from env `ENCRYPTION_KEY`, key id prefix for rotation); decrypted only in the bank-file writers |
+| account_number_enc | bytea NOT NULL | AES-256-GCM in the API (`AesGcm`, key from env `ENCRYPTION_KEY`, key id prefix for rotation); decrypted only in the bank-file writers |
 | account_last4 | text NOT NULL | for display `•••• 4562` |
 | holder_name | text NOT NULL ≤ 40 | titular — defaults to the person's `full_name`; may be a third party (spouse, relative). Goes into the Azteca file as NOMBRE DEL BENEFICIARIO |
 | alias | text | "Tarjeta Azteca", "Cuenta de mi esposa" |
@@ -625,7 +625,7 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 | total_net | numeric(14,2) | snapshot at `paid` |
 | UNIQUE | (payroll_group_id, year, period_number) | |
 
-Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (by generating the period payment batch). No backward transitions. While `capturing`/`in_review`, `prepayroll_lines` are **recomputed by the API in the same transaction as every attendance/incident/status change** for that employee (idempotent upsert keyed by period+employee; the engine is the pure function in `libs/payroll`); at `paid` they freeze (trigger). Periods are created ahead by the daily `period-roll` job from the group's cut-off weekday. An incident whose `incident_date` falls in a `paid` period is stored with `origin_period_id` = that period and `payroll_period_id` = the next open period, under concept `RETROACTIVE`.
+Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (by generating the period payment batch). No backward transitions. While `capturing`/`in_review`, `prepayroll_lines` are **recomputed by the API in the same transaction as every attendance/incident/status change** for that employee (idempotent upsert keyed by period+employee; the engine is the pure `Platform.Payroll.Engine`); at `paid` they freeze (trigger). Periods are created ahead by the daily `period-roll` job from the group's cut-off weekday. An incident whose `incident_date` falls in a `paid` period is stored with `origin_period_id` = that period and `payroll_period_id` = the next open period, under concept `RETROACTIVE`.
 
 ### 5.11 `prepayroll_lines` (one row per employee per period — the Excel row)
 
@@ -800,7 +800,7 @@ data_access_log(id bigserial, occurred_at, user_id, person_id uuid, document_id 
 
 ## 8. Permission matrix (enforced per route in the API; one test per row)
 
-Input to every decision: `uid` from `AuthProvider.verify`, `role` and `is_active` from the `users` row, grants from `user_permissions`, scope (assigned vacantes, client) from the DB. A denied route returns 403 with the user-facing message; validation failures return 400 with the Zod issues.
+Input to every decision: `uid` from `IAuthProvider.VerifyAsync`, `role` and `is_active` from the `users` row, grants from `user_permissions`, scope (assigned vacantes, client) from the DB. A denied route returns 403 with the user-facing message; validation failures return 400 with field-level issues.
 
 | Role | Rule |
 |---|---|

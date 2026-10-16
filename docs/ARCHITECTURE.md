@@ -15,14 +15,14 @@
   Cliente                    ──▶ apps/clients     ─┘
                                         │  HTTPS · Bearer <provider token> · X-Invalidates on every write
                                         ▼
-                      services/platform-api  (NestJS on Fastify · one container · stateless)
+                      services/platform-api  (ASP.NET Core 10 (.NET 10 LTS) · one container · stateless)
                         AuthProvider.verify(token) → uid → users row → role, grants, scope
                         modules: core · recruiting · payroll · bank · audit · jobs
                         │                    │                           ▲
                         ▼                    ▼                           │ POST /internal/jobs/{name}
               PostgreSQL 18            S3-compatible storage      services/scheduler
               schema `platform`        (documents, exports)       (alpine + crontab + curl)
-              Drizzle migrations       presigned URLs only        INTERNAL_SECRET header
+              EF Core migrations       presigned URLs only        INTERNAL_SECRET header
 ```
 
 Sized for the client: ~10 internal users, ~150 employees, ~500 candidates a year, one solo consultant operating it. No queues, no vendor SDKs, no realtime; consistency lives in the database transaction of the write that causes it.
@@ -34,17 +34,17 @@ Sized for the client: ~10 internal users, ~150 employees, ~500 candidates a year
 | Component | What it is | Why |
 |---|---|---|
 | **apps/admin** · **apps/candidates** · **apps/clients** | Three Angular 22 SPAs (standalone components + signals, Angular Material 3 with the RASS `azure-blue` theme from `design-reference/_ds`, Firebase JS SDK only inside `apps/*/auth/firebase-*.ts`). Built to static files. | Three audiences, three sign-in flows, three deploy targets; shared UI in `libs/ui`. Subdomain per app keeps email-link sign-in scoped per audience |
-| **services/platform-api** | One NestJS (Fastify adapter) API, TypeScript, Zod validation, Drizzle ORM, pino JSON logs. Modules mirror DATA_MODEL: `core`, `recruiting`, `payroll`, `bank`, `audit`, `jobs`. Owns Postgres schema `platform` and its migrations. | One codebase, one deploy, one schema. The module folders already match the split (`recruiting-api` / `payroll-api`) if it is ever needed; cross-module writes (candidate → employee) are in-process today and would become internal endpoints then. **Replaces the ASP.NET Core API of the original brief** (D33) |
-| **libs/shared** | Wire types + Zod schemas for every request/response, enums, money-as-string helpers | Single source of shapes for apps and API |
+| **services/platform-api** | One ASP.NET Core 10 (.NET 10 LTS) API (minimal APIs, `decimal` end-to-end for money), FluentValidation, EF Core 10 + migrations (Npgsql), Serilog JSON logs. Projects mirror DATA_MODEL: `Platform.Core`, `Platform.Recruiting`, `Platform.Payroll`, `Platform.Bank`, `Platform.Audit`, `Platform.Jobs`, plus `Platform.Api` (host) and `Platform.Infrastructure` (EF, storage, email, crypto). Owns Postgres schema `platform` and its migrations. | **Kept from the brief (D33): .NET's `decimal` is the reason** — payroll and bank amounts never touch a binary float. One codebase, one deploy, one schema; the project split already matches a future `recruiting-api` / `payroll-api` if ever needed |
+| **libs/shared** | TypeScript wire types generated from the API's OpenAPI document (`openapi-typescript`), plus Zod schemas for client-side form validation and money-as-string helpers | The API's C# DTOs are the single source of shapes; the TS side is generated in CI, never hand-written |
 | **libs/api-client** | fetch wrapper: auth header from the client `AuthProvider`, ISO-date reviver, `ApiError` (400 → field issues, 403 → message), cache tags, `X-Invalidates` handling, presigned upload client | Components never call `fetch` |
-| **libs/payroll** | Pure pre-payroll engine: period + attendance + incidents + rates → lines and items, `decimal.js`, no I/O. Golden test reproduces `SEM 38` to the cent | The one piece of logic the client will argue about; must be testable without a database |
-| **libs/bank-layouts** | Column definitions and validation rules of the Banorte alta, Banregio alta, Banco Azteca pagos masivos and cuentas frecuentes layouts (pure); the API renders them with `exceljs` | Layouts change by template edit, not by touching the API |
-| **libs/crypto** | AES-256-GCM for account/card numbers, key from `ENCRYPTION_KEY` (with key-id prefix for rotation) | Bank data encrypted at rest without a vendor KMS |
+| **Platform.Payroll.Engine** (C#) | Pure pre-payroll engine: period + attendance + incidents + rates → lines and items, `decimal` with `MidpointRounding.AwayFromZero` once per item, no I/O. Golden test reproduces `SEM 38` to the cent | The one piece of logic the client will argue about; must be testable without a database, and must use `decimal` |
+| **Platform.Bank.Layouts** (C#) | Column definitions and validation rules of the Banorte alta, Banregio alta, Banco Azteca pagos masivos and cuentas frecuentes layouts (pure); rendered with ClosedXML | Layouts change by editing a definition with a test, not the endpoints |
+| **Platform.Infrastructure/Crypto** | AES-256-GCM (`System.Security.Cryptography.AesGcm`) for account/card numbers, key from `ENCRYPTION_KEY` with a key-id prefix for rotation | Bank data encrypted at rest without a vendor KMS |
 | **services/scheduler** | `alpine` + `crontab` + `curl` → `POST /internal/jobs/{name}` with the `INTERNAL_SECRET` header | Cron is cron everywhere; jobs are idempotent and safe to re-run |
 | **PostgreSQL 18** | One database, schema `platform`, `bigint` identity + `uuid uid` per table, append-only `audit_log`, roles in `db/roles.sql` | Relational integrity, audit trail, permissions — the shape of this domain |
 | **S3-compatible storage** | Bucket `documents` (person documents, private) and `exports` (generated Excel/PDF/bank files, 90-day lifecycle); AWS SDK v3 with checksum mode `WHEN_REQUIRED`; MinIO locally, GCS S3-interop / Spaces / S3 in production | Presigned PUT/GET from the API; the API never streams files |
-| **Auth provider: Firebase Auth** | Email/password (+ optional TOTP MFA) for the admin app, email-link for candidates and clients. Server side: `AuthProvider { verify(token) → uid }` with the Firebase Admin SDK only in `services/platform-api/src/auth/firebase-*.ts`; client side: sign-in / token / sign-out behind the same interface. | Zero-ops identity; swappable (Keycloak, Auth0) by replacing one adapter. **Roles and grants are rows in `users` / `user_permissions`, never token claims**; the client learns them from `GET /v1/me` |
-| **Email: Resend** | Invitations, document reminders, period-ready notices, behind `EmailSender` with the adapter in `services/platform-api/src/email/resend-*.ts` | Free tier covers the volume; swappable |
+| **Auth provider: Firebase Auth** | Email/password (+ optional TOTP MFA) for the admin app, email-link for candidates and clients. Server side: `IAuthProvider.VerifyAsync(token) → uid` with the `FirebaseAdmin` package only in `Platform.Api/Auth/Firebase*.cs`; client side: sign-in / token / sign-out behind the same interface, Firebase JS SDK only in `apps/*/src/auth/firebase-*.ts`. | Zero-ops identity; swappable (Keycloak, Auth0) by replacing one adapter. **Roles and grants are rows in `users` / `user_permissions`, never token claims**; the client learns them from `GET /v1/me` |
+| **Email: Resend** | Invitations, document reminders, period-ready notices, behind `IEmailSender` with the adapter in `Platform.Infrastructure/Email/Resend*.cs` (plain HTTP, no vendor SDK) | Free tier covers the volume; swappable |
 
 Deliberately absent: Kubernetes, queues, Cloud Functions, managed secret stores, cloud schedulers, DB connectors, custom claims, WebSockets, PostgreSQL RLS (authorization is per route, from the permission matrix).
 
@@ -59,16 +59,20 @@ edgar-rodriguez-recruiting-platform/
 │   ├── candidates/         Angular 22 — perfil + documentos (mobile-first)
 │   └── clients/            Angular 22 — portal de vacantes (mobile-first)
 ├── services/
-│   ├── platform-api/       NestJS on Fastify · Zod · Drizzle + drizzle-kit · pino
-│   │   └── src/{auth,core,recruiting,payroll,bank,audit,jobs,storage,email,crypto}
+│   ├── platform-api/       ASP.NET Core 10 (.NET 10 LTS) · EF Core 10 + migrations · FluentValidation · Serilog
+│   │   ├── src/Platform.Api/             host, minimal APIs, Auth/ (IAuthProvider + Firebase adapter), Jobs/
+│   │   ├── src/Platform.Core/            people, documents, clients, users, catalogs
+│   │   ├── src/Platform.Recruiting/      openings, candidates, notes, reports
+│   │   ├── src/Platform.Payroll/         groups, employees, attendance, incidents, periods
+│   │   ├── src/Platform.Payroll.Engine/  pure engine (decimal), golden tests
+│   │   ├── src/Platform.Bank/            card requests, payment batches, Layouts/ (pure) + ClosedXML writers
+│   │   ├── src/Platform.Infrastructure/  DbContext + migrations, Storage/ (S3), Email/, Crypto/, audit helper
+│   │   └── tests/                        xUnit: engine golden test, layouts, one test per permission row / server rule
 │   └── scheduler/          alpine + crontab + curl
 ├── libs/
-│   ├── shared/             wire types + Zod schemas (single source of shapes)
+│   ├── shared/             TS wire types generated from the API's OpenAPI + Zod schemas for client forms
 │   ├── api-client/         fetch wrapper, cache tags, ApiError, upload client
-│   ├── ui/                 shared Angular components (tables, document checklist, money/date pipes es-MX)
-│   ├── payroll/            pure pre-payroll engine + golden tests
-│   ├── bank-layouts/       pure layout definitions + validation rules
-│   └── crypto/             AES-GCM helpers
+│   └── ui/                 shared Angular components (tables, document checklist, money/date pipes es-MX)
 ├── db/                     docker-compose.yml (Postgres 18 :5433, MinIO, scheduler), roles.sql
 ├── deploy/                 Dockerfiles, docker-compose.same-vm.yml, providers/{gcp,digitalocean}.md
 ├── scripts/                seed (through the API), bootstrap (first admin), import-excel (one-off, SPEC §10 of DATA_MODEL)
@@ -81,13 +85,13 @@ edgar-rodriguez-recruiting-platform/
 
 ## 4. API shape
 
-- REST, JSON, under `/v1`; every DTO is a Zod schema from `libs/shared`; dates travel as ISO-8601 strings; money as decimal strings.
+- REST, JSON, under `/v1`; DTOs are C# records validated with FluentValidation and published as OpenAPI; `libs/shared` is generated from it. Dates travel as ISO-8601 strings; money as decimal strings (`decimal` on the server, string on the wire so no client ever parses it to a float).
 - Authentication: `Authorization: Bearer <token>` → `AuthProvider.verify` → `uid` → `users` row (`is_active`, `role`) → grants and scope from the DB. Cover mode: `X-Acting-For: <recruiter uid>`, accepted only for `administrator`, stamped as `acting_for_user_id` (DATA_MODEL §7, §8).
-- Authorization: one guard per route built from the permission matrix (DATA_MODEL §8); 403 carries the user-facing message, 400 the Zod issues.
+- Authorization: one endpoint filter per route built from the permission matrix (DATA_MODEL §8); 403 carries the user-facing message, 400 the validation issues (field → message), so the client shows field errors.
 - Derived data (prepayroll lines, period status, employee status, opening `filled`, document completeness, batch totals) is computed **in the same transaction** as the write that causes it, or on read when cheap; clients cannot write it.
 - No realtime: every mutating route declares the cache tags it invalidates and returns them in `X-Invalidates` (also on errors); `libs/api-client` re-fetches the live queries tagged with them; the shell has an «Actualizar» action for other users' changes.
 - Files: `POST /v1/files/presign-upload` → presigned PUT (key decided by the API, file name sanitized, content type and size limits) → `POST /v1/people/:id/documents` records metadata; downloads are presigned GET for 15 minutes and logged in `data_access_log`.
-- Exports (period Excel/PDF, bank files) are generated by the API with `exceljs` / `pdfmake` into the `exports` bucket and returned as presigned GET; bank files are the exact layouts in `libs/bank-layouts`.
+- Exports (period Excel/PDF, bank files) are generated by the API with ClosedXML / QuestPDF into the `exports` bucket and returned as presigned GET; bank files are the exact layouts in `Platform.Bank.Layouts`.
 - Jobs: `POST /internal/jobs/{name}` guarded by the `INTERNAL_SECRET` header (also used service-to-service). Idempotent:
 
 | Job | Cadence | What it does |
@@ -99,7 +103,7 @@ edgar-rodriguez-recruiting-platform/
 | `notifications-digest` | daily 08:00 | sends pending email notifications through `EmailSender` |
 
 - Time zones: each payroll group has an IANA zone; "today", lock times and `yyyy-MM-dd` date keys are computed in that zone on the server.
-- Composition over inheritance: audit stamps, soft delete, pagination, authorization and storage are small injectables or plain functions; no base service/repository/entity classes.
+- Composition over inheritance: audit stamps, soft delete, pagination, authorization and storage are small injected services or static helpers; no base service/repository/entity classes, no generic repositories.
 
 ### 4.1 The two signature flows
 
@@ -123,13 +127,13 @@ edgar-rodriguez-recruiting-platform/
 |---|---|---|---|
 | Postgres | `db/docker-compose.yml` :5433 | managed Postgres, smallest tier | managed Postgres (provider's smallest with backups + PITR) |
 | Storage | MinIO (compose) | provider bucket (S3 API) | provider bucket, versioning on, `exports` lifecycle 90 d |
-| API | `npm run api` | one container, min 0 | one container, min 1 during business hours where the provider allows it |
+| API | `dotnet run` (`npm run api`) | one container, min 0 | one container, min 1 during business hours where the provider allows it |
 | Scheduler | compose service | container | container (or the host's cron in the same-VM variant) |
 | Apps | `npm start` | static host | static host + CDN, custom domains |
 | Auth | Firebase emulator | Firebase project `-staging` | Firebase project `-prod` |
 | Config | `.env` | env vars | env vars |
 
-CI (GitHub Actions): lint · type-check · all tests (Vitest; API tests against a throw-away Postgres with a fake `AuthProvider`; the Firebase adapter against the emulator) · builds · **neutrality grep** (Firebase SDK only in `*/auth/firebase-*.ts`, no cloud SDKs anywhere, S3 client only in `storage/`) · `drizzle-kit check`. Migrations run from the API image before the new revision takes traffic.
+CI (GitHub Actions): lint (`dotnet format`, eslint) · type-check · all tests (xUnit for the API against a throw-away Postgres with a fake `IAuthProvider`, the Firebase adapter against the emulator; Vitest for the TS libs and apps) · builds · **neutrality grep** (`FirebaseAdmin` only in `Platform.Api/Auth/Firebase*.cs` and the Firebase JS SDK only in `apps/*/src/auth/firebase-*.ts`, no cloud SDKs anywhere, `AWSSDK.S3` only in `Platform.Infrastructure/Storage/`) · `dotnet ef migrations has-pending-model-changes` must be clean. Migrations run from the API image (`dotnet ef database update` or the migration bundle) before the new revision takes traffic.
 
 Deployment is documented per provider in `deploy/providers/*.md`, same images and env vars everywhere:
 
@@ -145,8 +149,8 @@ No cloud commands are run by an agent; the docs and scripts are written, a human
 
 ## 6. Observability, security and compliance
 
-- pino JSON logs with `requestId`, `userId`, `actingForUserId`, route, duration, status; the provider's log viewer or the VM's `docker logs`. `/health` checks DB and bucket; the provider's uptime check alerts by email.
-- Transport: HTTPS everywhere (provider TLS or Caddy). Identity: provider token verified per request; email-link limited to the issuing app's domain; TOTP MFA optional/forced for Administradores (Firebase requires the Identity Platform upgrade for TOTP — a note in `auth/firebase-*.ts`, not an architectural dependency).
+- Serilog JSON logs with `requestId`, `userId`, `actingForUserId`, route, duration, status; the provider's log viewer or the VM's `docker logs`. `/health` checks DB and bucket; the provider's uptime check alerts by email.
+- Transport: HTTPS everywhere (provider TLS or Caddy). Identity: provider token verified per request; email-link limited to the issuing app's domain; TOTP MFA optional/forced for Administradores (Firebase requires the Identity Platform upgrade for TOTP — a note in the Firebase adapter, not an architectural dependency).
 - Authorization per route from the permission matrix; roles and grants in the database; cover mode audited.
 - Personal data (LFPDPPP): private buckets, presigned URLs 15 min, every view/download in `data_access_log`, aviso de privacidad at first candidate login, erasure job anonymizes `people` rows after retention.
 - Bank data: account/card numbers AES-GCM encrypted in the API, last 4 digits in clear, decrypted only in the bank-file writers; exports bucket lifecycle 90 days.
@@ -200,8 +204,8 @@ ZONE B — "Frontend" (inside boundary, left). One group container "Firebase Hos
   Below the group, a single card "Proveedor de identidad · Firebase Auth" — sub-label "Correo/contraseña · MFA TOTP · Enlace mágico" with a small chip "detrás de la interfaz AuthProvider".
 
 ZONE C — "Backend" (center). One group container "Cloud Run (contenedores)" containing two cards:
-  • "platform-api · NestJS (Fastify)" — five small module chips inside the card: "Core", "Reclutamiento", "Nómina", "Bancos", "Jobs"; sub-label "Roles y permisos en la base de datos"
-  • Beneath it, one thin card "Motor de prenómina (libs/payroll) — decimal, auditable"
+  • "platform-api · ASP.NET Core 10 (.NET 10 LTS)" — five small module chips inside the card: "Core", "Reclutamiento", "Nómina", "Bancos", "Jobs"; sub-label "Roles y permisos en la base de datos"
+  • Beneath it, one thin card "Motor de prenómina — decimal, auditable"
   • A smaller card "scheduler · cron en contenedor" — sub-label "curl → POST /internal/jobs/*"
   To the right of the group, a card "GitHub Actions / Artifact Registry" with sub-label "CI/CD · misma imagen en cualquier proveedor".
 
@@ -226,7 +230,7 @@ ARROWS (solid = tráfico en tiempo real; dashed = programado o respaldo):
   solid: each user card → its app card in Firebase Hosting (Administrador and Reclutador both → Admin app)
   solid: the three app cards → Firebase Auth, pill label "inicio de sesión"
   solid: the three app cards → API card, pill label "HTTPS · token de Firebase"
-  solid: API → Cloud SQL, pill label "Drizzle · numeric · misma transacción"
+  solid: API → Cloud SQL, pill label "EF Core · numeric · misma transacción"
   solid: API → Cloud Storage, pill label "URLs prefirmadas (S3)"
   solid: API → Resend, pill label "invitaciones · recordatorios"
   dashed: scheduler → API, pill label "INTERNAL_SECRET · /internal/jobs/*"
@@ -588,7 +592,7 @@ Modify the existing prototype. Keep everything else exactly as it is. Only Nómi
 
 | # | Decision |
 |---|---|
-| D33 | API is **NestJS on Fastify (TypeScript)**, not ASP.NET Core as in the original brief: one language across apps, API and libs; the pre-payroll engine is a pure TypeScript lib with golden tests. To be confirmed with the client; nothing he sees changes |
+| D33 | API stays **ASP.NET Core on .NET 10 LTS** (supported to Nov 2028; .NET 9 is STS and ends Nov 2026) as in the brief: `decimal` for every payroll and bank amount is non-negotiable, so the engine is a pure C# project (`Platform.Payroll.Engine`) with golden tests. The portable-platform template's Node/NestJS defaults are mapped to .NET equivalents (EF Core migrations, FluentValidation, Serilog, xUnit, OpenAPI → generated TS client) |
 | D34 | Provider-neutral infrastructure: Postgres over TCP, containers, static files, S3-compatible storage, env vars; no cloud SDKs, managed queues, secret managers, cloud schedulers or DB connectors. GCP first, DigitalOcean and same-VM documented |
 | D35 | One API (`platform-api`) and one Postgres schema (`platform`); DATA_MODEL modules are folders, not schemas |
 | D36 | Identity via Firebase Auth behind `AuthProvider`; roles and grants in the database, never in token claims; `GET /v1/me` |
@@ -600,7 +604,7 @@ Modify the existing prototype. Keep everything else exactly as it is. Only Nómi
 
 | Risk | Mitigation |
 |---|---|
-| Bank portals change their layouts | Layouts are pure definitions in `libs/bank-layouts` with a version; a column change is a lib edit with a test, not an API change |
+| Bank portals change their layouts | Layouts are pure definitions in `Platform.Bank.Layouts` with a version; a column change is a definition edit with a test, not an endpoint change |
 | Pre-payroll rules differ per client beyond ECOVIA | Concept catalog per payroll group (DATA_MODEL §5.3); new client = configuration; golden test per group |
 | Field supervisors without reliable internet | Attendance screen keeps an in-memory queue and retries; the lock rule uses `recorded_at` server-side (offline-first is explicitly out of scope for this architecture) |
 | Cold starts on the API hurting attendance capture | min 1 instance in business hours where the provider allows it; the same-VM variant has no cold starts |

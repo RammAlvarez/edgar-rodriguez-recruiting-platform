@@ -435,7 +435,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | Requirement | Decision |
 |---|---|
 | Responsive | Desktop-first for Admin (tables, Kanban); mobile-first for Asistencia capture, Candidates app and Clients app |
-| Robust accounting | All money as `numeric(12,2)` in PostgreSQL, decimal strings on the wire and `decimal.js` in the engine; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
+| Robust accounting | All money as `numeric(12,2)` in PostgreSQL, decimal strings on the wire and C# `decimal` in the engine; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
 | Language | es-MX UI, dates `dd/MM/yyyy`, currency `$ 1,234.56 MXN`, time zone America/Monterrey |
 | Security | Firebase Auth behind `AuthProvider`, optional MFA for Admin, roles/grants in the database checked per route, client scoping in every query, encrypted card/CLABE numbers (AES-GCM in the API), presigned URLs for documents (15 min), append-only audit log written in the same transaction, personal-data read log, audited attendance unlocks |
 | Audit | `audit_log` for create/update/delete on people, documents, attendance, incidents, periods, bank batches, users |
@@ -450,7 +450,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | # | Decision | Source |
 |---|---|---|
 | D1 | One platform, shared people registry + document vault, two modules | brief / quote spec |
-| D2 | Stack: Angular 22 SPAs · **NestJS on Fastify (TypeScript)** API in a container · PostgreSQL · S3-compatible storage · Firebase Auth behind an interface · cron container for jobs · env-var config. Provider-neutral; GCP is the first provider (Cloud Run, Cloud SQL, Firebase Hosting, Cloud Storage S3 API). Supersedes the brief's ASP.NET Core / Cloud Scheduler / Secret Manager (ARCHITECTURE D33–D39, 2026-10-16) | brief + architecture redesign |
+| D2 | Stack: Angular 22 SPAs · **ASP.NET Core 10 (.NET 10 LTS)** API in a container (`decimal` for all money) · PostgreSQL · S3-compatible storage · Firebase Auth behind an interface · cron container for jobs · env-var config. Provider-neutral; GCP is the first provider (Cloud Run, Cloud SQL over TCP, Firebase Hosting, Cloud Storage S3 API). Supersedes the brief's Cloud Scheduler / Secret Manager (ARCHITECTURE D33–D39, 2026-10-16) | brief + architecture redesign |
 | D3 | Pre-nómina only, no CFDI/timbrado | brief / quote spec |
 | D4 | Attendance captured daily, locked after cut-off, unlock audited | meeting 2026-09-25 |
 | D5 | Reports restricted to the owner via permission grant | meeting 2026-09-25 |

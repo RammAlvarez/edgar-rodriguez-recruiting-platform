@@ -16,8 +16,9 @@ UI reference: `design-reference/` holds the Claude Design export of the interact
 
 Secrets and config are env vars. No cloud-vendor SDKs, managed queues, secret managers, cloud schedulers,
 DB connectors or vendor-specific auth checks. Identity comes from **Firebase Auth** only, behind an
-`AuthProvider` interface on the server (`verify(token) → uid`) and on the client (sign-in, token, sign-out).
-The vendor SDK may only be imported in `*/auth/firebase-*.ts`, and CI greps for it. Roles are **not** token
+`IAuthProvider` interface on the server (`VerifyAsync(token) → uid`) and an `AuthProvider` on the client
+(sign-in, token, sign-out). The vendor SDK may only be referenced in `Platform.Api/Auth/Firebase*.cs`
+(server) and `apps/*/src/auth/firebase-*.ts` (client), and CI greps for it. Roles are **not** token
 claims: they live in a `users` table; the client learns them from `GET /v1/me`.
 
 **Everything in English** except text shown to end users (Spanish, es-MX): folders, files, tables,
@@ -28,16 +29,17 @@ columns, identifiers, env vars, commit messages.
 apps/admin            Angular 22 standalone + signals — Reclutamiento, Nómina, Usuarios (desktop-first)
 apps/candidates       Angular 22 — candidate profile + documents (mobile-first, email-link sign-in)
 apps/clients          Angular 22 — client portal (mobile-first, email-link sign-in)
-services/platform-api Node (version in .nvmrc), TypeScript, NestJS on Fastify, Zod validation,
-                      Drizzle ORM + drizzle-kit migrations, pino JSON logs; modules core, recruiting,
-                      payroll, bank, audit, jobs, storage, email, crypto
+services/platform-api ASP.NET Core 10 (.NET 10 LTS) (version in global.json), minimal APIs, FluentValidation,
+                      EF Core 10 + migrations (Npgsql, snake_case), Serilog JSON logs; projects
+                      Platform.Api (host, Auth/, Jobs/), Platform.Core, Platform.Recruiting,
+                      Platform.Payroll, Platform.Payroll.Engine (pure, decimal), Platform.Bank
+                      (Layouts/ pure + ClosedXML writers), Platform.Infrastructure (DbContext,
+                      Storage/ S3, Email/, Crypto/, audit helper), tests/ (xUnit)
 services/scheduler    alpine + crontab + curl → POST /internal/jobs/{name}
-libs/shared           wire types + Zod schemas shared by apps and API (the single source of shapes)
+libs/shared           TS wire types GENERATED from the API's OpenAPI (openapi-typescript) + Zod schemas for
+                      client-side form validation; the C# DTOs are the single source of shapes
 libs/api-client       fetch wrapper: auth header, ISO-date reviver, ApiError, cache tags, file upload client
 libs/ui               shared Angular components (tables, document checklist, money/date pipes es-MX)
-libs/payroll          pure pre-payroll engine (decimal.js), no I/O, golden-tested against SEM 38
-libs/bank-layouts     pure definitions + validation rules of the Banorte, Banregio and Banco Azteca layouts
-libs/crypto           AES-256-GCM helpers for account/card numbers (key from ENCRYPTION_KEY)
 db/                   docker-compose.yml (Postgres 18, MinIO, scheduler), roles.sql
 deploy/               Dockerfiles, a same-VM docker-compose variant, providers/{gcp,digitalocean}.md
 scripts/              local seed (through the API), production bootstrap (first admin), import-excel (one-off)
@@ -61,8 +63,9 @@ examples/             the client's Excel files (read-only)
   delete where the model says so.
 - An append-only `audit_log` (before / after JSON, with `acting_for_user_id` for cover mode) is written in
   the same transaction as the change. A DB trigger blocks updates and deletes on it.
-- Money is `numeric(12,2)` (rates `numeric(12,4)`), decimal strings on the wire, `decimal.js` in code;
-  never `float`.
+- Money is `numeric(12,2)` (rates `numeric(12,4)`), decimal strings on the wire, C# `decimal` on the
+  server (`MidpointRounding.AwayFromZero`, once per line item); never `double`/`float` anywhere, and
+  the TypeScript side never parses money into a number.
 
 **Server logic:**
 - Derived data (aggregates, counters, totals, statuses — prepayroll lines, period status, employee
@@ -78,8 +81,8 @@ examples/             the client's Excel files (read-only)
 - From the permission matrix in `docs/DATA_MODEL.md` §8: uid from `AuthProvider.verify`, role and status
   from the users row, grants from `user_permissions`, scope (assigned openings, client) from the DB.
   Cover mode (`X-Acting-For`) only for Administrador, always audited.
-- 403 carries the user-facing permission message; 400 carries the Zod issues, so the client can show
-  field messages.
+- 403 carries the user-facing permission message; 400 carries the FluentValidation issues (field →
+  message), so the client can show field messages.
 
 **No realtime:**
 - Every mutating route declares the cache tags it invalidates and returns them in an `X-Invalidates`
@@ -110,12 +113,12 @@ examples/             the client's Excel files (read-only)
 - No system codes in the UI (SPEC D30): a vacante is shown as "Cliente – Puesto"; people by name.
 
 ## Testing and CI
-- Vitest in libs, scripts and APIs.
-- API tests run against a throw-away Postgres (truncated between tests) with a fake `AuthProvider`.
+- xUnit in the API and its projects; Vitest in the TS libs, apps and scripts.
+- API tests run against a throw-away Postgres (truncated between tests) with a fake `IAuthProvider`.
   The real Firebase adapter is tested against the Firebase emulator.
-- One test per permission-matrix row and per server rule; the `libs/payroll` golden test reproduces
-  `examples/PRENOMINA SEM 38 …xlsx` row by row; `libs/bank-layouts` tests reproduce the headers and
-  validation rules of the four bank files in `examples/`.
+- One test per permission-matrix row and per server rule; the `Platform.Payroll.Engine` golden test
+  reproduces `examples/PRENOMINA SEM 38 …xlsx` row by row with `decimal`; `Platform.Bank.Layouts` tests
+  reproduce the headers and validation rules of the four bank files in `examples/`.
 - Browser checks follow `docs/TEST_PLAN.md`; results go in `docs/tests/YYYY-MM-DD-NN-*.md`, with a
   defect register (D-001…) in `docs/tests/README.md`.
 - CI runs:
@@ -123,15 +126,17 @@ examples/             the client's Excel files (read-only)
   - type-check;
   - all tests;
   - builds;
-  - the neutrality grep (Firebase SDK only in `*/auth/firebase-*.ts`, no cloud SDKs, the S3 client only in
-    `storage/`);
-  - `drizzle-kit check`.
+  - the neutrality grep (`FirebaseAdmin` only in `Platform.Api/Auth/Firebase*.cs`, Firebase JS SDK only
+    in `apps/*/src/auth/firebase-*.ts`, no cloud SDKs, `AWSSDK.S3` only in
+    `Platform.Infrastructure/Storage/`);
+  - `dotnet ef migrations has-pending-model-changes` clean, and `npm run generate:api-types` produces
+    no diff in `libs/shared`.
 
 ## Local environment
 - `npm run db:up` (Postgres :5433 + MinIO + scheduler);
-- `npm run db:migrate`;
+- `npm run db:migrate` (`dotnet ef database update`);
 - the Firebase emulator (auth);
-- `npm run api`;
+- `npm run api` (`dotnet watch` on `Platform.Api`);
 - `npm start` (`--project admin | candidates | clients`);
 - `npm run seed` (sample data created **through the API** so derived data is computed by the real code:
   the 11 clients, 6 recruiters, ECOVIA payroll group with VALIDADOR / SUPERVISOR rates, and the
@@ -164,5 +169,5 @@ No cloud commands from the agent: write the docs and scripts; a human runs them.
 - Auth provider: Firebase Auth; sign-in methods: email/password + optional TOTP MFA (admin app), email link (candidates, clients). Local: Firebase emulator.
 - Tenancy / scoping unit: single company (the owner's); data scoped by **client** (`clients`) for the Cliente role and for client-scoped grants, and by **payroll group** (`payroll_groups`) for time zones and periods. Time zone: `America/Monterrey` default, per payroll group.
 - Scheduled jobs: `attendance-lock` — every 15 min — lock attendance past each group's lock time, move finished periods to in_review · `period-roll` — daily 02:00 — create next periods · `status-roll` — daily 02:05 — expire vacation/sick-leave/suspension periods · `document-expiry` — daily 03:00 — mark expired documents, queue reminders · `notifications-digest` — daily 08:00 — send pending emails.
-- External integrations: Firebase Auth (`auth/firebase-*.ts`), Resend transactional email (`email/resend-*.ts` behind `EmailSender`), S3-compatible storage (`storage/`), bank file layouts as Excel generated with `exceljs` from `libs/bank-layouts` (no bank APIs), PDF exports with `pdfmake`.
+- External integrations: Firebase Auth (`Platform.Api/Auth/Firebase*.cs`, `apps/*/src/auth/firebase-*.ts`), Resend transactional email (`Platform.Infrastructure/Email/Resend*.cs` behind `IEmailSender`, plain HTTP), S3-compatible storage (`Platform.Infrastructure/Storage/`, AWSSDK.S3), bank file layouts as Excel generated with ClosedXML from `Platform.Bank.Layouts` (no bank APIs), PDF exports with QuestPDF.
 - First provider to deploy to: Google Cloud — Cloud Run (API + scheduler containers), Cloud SQL for PostgreSQL over TCP, Firebase Hosting (3 sites), Cloud Storage through its S3 interoperability endpoint. Second: DigitalOcean. Cheapest: same-VM docker-compose.
