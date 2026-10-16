@@ -1,5 +1,6 @@
 import { inject, type Type } from '@angular/core';
 import { type CanActivateFn, Router, type Routes } from '@angular/router';
+import type { PermissionModule, UserRole } from '@platform/shared';
 import { accessGuard, signedInGuard, signedOutGuard } from '@platform/ui/guards';
 import { Session } from '@platform/ui/session';
 import { CoverMode } from './shell/cover-mode';
@@ -26,6 +27,18 @@ const homeRedirect: CanActivateFn = () => {
   return inject(Router).createUrlTree([home ?? (me ? '/sin-acceso' : '/entrar')]);
 };
 
+/**
+ * A screen of the other staff role (a Reclutador typing /vacantes) goes back home instead of «Sin acceso», which is for
+ * people this app does not serve at all (a Cliente user).
+ */
+const staffGuard =
+  (roles: readonly UserRole[], grant?: PermissionModule): CanActivateFn =>
+  (route, state) => {
+    const me = inject(Session).me();
+    if (me && me.role !== 'client' && !roles.includes(me.role)) return inject(Router).createUrlTree(['/']);
+    return accessGuard(roles, grant)(route, state);
+  };
+
 /** «Mis vacantes» / «Mis candidatos»: a Reclutador, or an Administrador covering one (SPEC §4.4). */
 const workspaceGuard: CanActivateFn = () => {
   const me = inject(Session).me();
@@ -46,7 +59,7 @@ export const routes: Routes = [
       ...ALL_NAV_ITEMS.map((item) => ({
         path: item.path,
         loadComponent: SCREENS[item.path] ?? (() => import('@platform/ui/status-pages').then((m) => m.ComingSoonPage)),
-        canActivate: [item.path.startsWith('mis-') ? workspaceGuard : accessGuard(item.roles, item.grant)],
+        canActivate: [item.path.startsWith('mis-') ? workspaceGuard : staffGuard(item.roles, item.grant)],
         // «Mis vacantes» / «Mis candidatos»: the recruiter workspace, the same screens with the Administrador actions hidden.
         data: { title: item.label, icon: item.icon, workspace: item.path.startsWith('mis-') },
         title: item.label,
@@ -54,13 +67,13 @@ export const routes: Routes = [
       {
         path: 'clientes/:id',
         loadComponent: () => import('./clients/client-detail').then((m) => m.ClientDetail),
-        canActivate: [accessGuard(navItem('clientes').roles, navItem('clientes').grant)],
+        canActivate: [staffGuard(navItem('clientes').roles, navItem('clientes').grant)],
         title: 'Cliente',
       },
       {
         path: 'vacantes/:id',
         loadComponent: () => import('./openings/opening-detail').then((m) => m.OpeningDetail),
-        canActivate: [accessGuard(navItem('vacantes').roles, navItem('vacantes').grant)],
+        canActivate: [staffGuard(navItem('vacantes').roles, navItem('vacantes').grant)],
         title: 'Vacante',
       },
       {
@@ -73,7 +86,7 @@ export const routes: Routes = [
       {
         path: 'candidatos/:id',
         loadComponent: () => import('./candidates/candidate-detail').then((m) => m.CandidateDetail),
-        canActivate: [accessGuard(navItem('candidatos').roles, navItem('candidatos').grant)],
+        canActivate: [staffGuard(navItem('candidatos').roles, navItem('candidatos').grant)],
         title: 'Candidato',
       },
       {
@@ -86,13 +99,13 @@ export const routes: Routes = [
       {
         path: 'reclutadores/:id',
         loadComponent: () => import('./recruiters/recruiter-detail').then((m) => m.RecruiterDetail),
-        canActivate: [accessGuard(navItem('reclutadores').roles, navItem('reclutadores').grant)],
+        canActivate: [staffGuard(navItem('reclutadores').roles, navItem('reclutadores').grant)],
         title: 'Reclutador',
       },
       {
         path: 'clientes-nomina/:id',
         loadComponent: () => import('./clients/payroll-client-detail').then((m) => m.PayrollClientDetail),
-        canActivate: [accessGuard(navItem('clientes-nomina').roles, navItem('clientes-nomina').grant)],
+        canActivate: [staffGuard(navItem('clientes-nomina').roles, navItem('clientes-nomina').grant)],
         title: 'Cliente (nómina)',
       },
     ],

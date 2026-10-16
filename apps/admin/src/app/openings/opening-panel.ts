@@ -3,7 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocomplete, MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
-import { MatError, MatFormField, MatHint, MatLabel, MatPrefix } from '@angular/material/form-field';
+import { MatError, MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
@@ -41,7 +41,6 @@ const today = () => {
     MatLabel,
     MatError,
     MatHint,
-    MatPrefix,
     MatInput,
     MatSelect,
     MatOption,
@@ -65,14 +64,13 @@ const today = () => {
           <mat-error>{{ s.msg('clientId') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
-          <mat-label>Zona</mat-label>
+          <mat-label>Zona (municipio)</mat-label>
           <mat-select formControlName="zoneId">
             <mat-option [value]="null">Sin zona</mat-option>
             @for (z of zones(); track z.id) {
               <mat-option [value]="z.id">{{ z.nameEs }}</mat-option>
             }
           </mat-select>
-          <mat-hint>Municipio donde se trabaja</mat-hint>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Puesto</mat-label>
@@ -91,8 +89,8 @@ const today = () => {
         </mat-form-field>
         <mat-form-field>
           <mat-label>Sueldo mensual</mat-label>
-          <span matTextPrefix>$&nbsp;</span>
           <input matInput formControlName="monthlySalary" inputmode="decimal" autocomplete="off" />
+          <mat-hint>En pesos, por ejemplo 9500.00</mat-hint>
           <mat-error>{{ s.msg('monthlySalary') }}</mat-error>
         </mat-form-field>
         <mat-form-field>

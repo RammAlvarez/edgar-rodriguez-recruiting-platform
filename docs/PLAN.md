@@ -1,6 +1,6 @@
 # PLAN — Plataforma de Reclutamiento y Prenómina
 
-> **Status:** v1 — P1–P5, P7 resolved; E1–E8 applied; **S0–S3 done 2026-10-16** (see §2.1); P6 open · **Written:** 2026-10-16 (kickoff)
+> **Status:** v1 — P1–P5, P7 resolved; E1–E8 applied; **S0–S4 done 2026-10-16** (see §2.1); P6 open · **Written:** 2026-10-16 (kickoff)
 > **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
 > **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
 
@@ -77,7 +77,7 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | S1 | **done** 2026-10-16 | `Platform.Payroll.Engine` + 4 golden tests on SEM 38 (115 rows, every column, D41 totals 334,655.149166… exact / 334,654.83 payable; with the sheet's O 333,188.81) + 25 rule tests; D-004 found and fixed |
 | S2 | **done** 2026-10-16 | `Platform.Bank/Layouts` (Azteca pagos masivos, cuentas frecuentes, Banorte Alta Masiva NH, Banregio alta) + 6 tests on the four client files (rejected rows = the bad rows found independently in the client data; written files match sheets, headers, bands, catalogs and cells) + 43 rule tests; client questions Q13, Q14 |
 | S3 | **done** 2026-10-16 | catalogs (+ reference data in the migration), clients/contacts/sites from both entries, people with CURP/RFC duplicates, document vault (presign, versions, review, completeness view, logged view/download), Usuarios with Resend `IEmailSender`; screens Usuarios, Clientes, Clientes (nómina), Catálogos; 180 xUnit (incl. MinIO and the emulator), 36 Vitest (libs) + 11 (apps); D-005 found and fixed; browser check [`tests/2026-10-16-02-s3-core-registry.md`](tests/2026-10-16-02-s3-core-registry.md); P7 |
-| S4 | **in progress** | step 1 ✔ Vacantes API (`ed67feb`) · step 2 ✔ Candidatos API + demo path 1–3c test (203 xUnit) · step 3 ✔ seed (13 vacantes, 32 candidatos, notes) · step 4 ✔ Vacantes screens (list, drawer, detail + Kanban, client Vacantes tab) · step 5 ✔ Candidatos screens (list, «Nuevo candidato», detail with Notas/Tiptap, document checklist in `libs/ui`, Entrevistas, Historial; first browser upload to MinIO) · step 6 ✔ Reclutadores + detail + «Asignar vacante», workspace (Mis vacantes / Mis candidatos), cover-mode banner and sidebar · 7 browser check |
+| S4 | **done** 2026-10-16 | Vacantes (derived status D70, líder/apoyo D71, Actividad), Candidatos (stage machine D72, notes D74, interviews, Historial), recruiter scope and cover mode (D73), seed of 13 vacantes / 32 candidatos; screens Vacantes + Kanban, Candidatos + detail (Tiptap, document checklist in `libs/ui`), Reclutadores + «Asignar vacante», recruiter workspace, cover banner. 203 xUnit (incl. `DemoPathTests` for demo steps 1–3c), 36 + 13 Vitest; browser check [`tests/2026-10-16-03-s4-reclutamiento.md`](tests/2026-10-16-03-s4-reclutamiento.md) — first browser upload to MinIO, 390 px checked; D-006–D-008 fixed |
 
 ## 3. Open questions (block the slice named)
 

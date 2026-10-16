@@ -57,5 +57,16 @@ Data: `npm run seed` (owner, 11 clients, 6 recruiters, LFT holidays, puestos). E
 9. 390 px (carried from S0 step 6).
 10. P5 / D69: invite an Administrador with only *Asistencia* → after setting the password the sidebar shows only Calendario and Asistencia; `/clientes` and `/catalogos` typed in the address bar go back to the home screen.
 
-### S4–S12
+### S4 — Reclutamiento
+Data: `npm run seed` (S3 data plus 13 vacantes, 32 candidatos, two notes). Recruiters sign in with `<name>@local.test` / `plataforma-local`. API-level: `DemoPathTests` walks demo steps 1–3c; the portal half of step 3 (the client sees the name) is S5's gate.
+1. *Vacantes*: 13 rows; HEB's two open CAJERO vacantes show the solicitud date; GTS *Cubierta*, NM FIRE *Pausada*, CONSTRUCTORA HFC *Cancelada*.
+2. «Nueva vacante» HEB / Auxiliar de limpieza / 3 → «HEB – AUXILIAR DE LIMPIEZA», *Abierta*, and in HEB's client detail (Vacantes tab).
+3. Pipeline → «Nuevo candidato» (crear nueva persona) → the card in Nuevo, the vacante *En proceso*.
+4. Drag a card to Apto, to No apto (motivo asked), to Contratado (fecha de ingreso asked; toast «… : n de m cubiertas»; the vacante *Cubierta* at its headcount).
+5. Candidate detail: a note with an H2 and a bulleted list; upload a PDF to a document (browser → MinIO), Validar → completeness changes; Entrevistas → programar; Historial lists the moves.
+6. *Reclutadores* → Mónica Soto → «Asignar vacante» as Líder (note «… pasará a Apoyo») → «Ver como reclutador»: banner, recruiter sidebar, the vacante in Mis vacantes; move a candidate → Historial «Edgar Rodríguez (cubriendo a Mónica Soto)» → «Salir».
+7. Sign in as monica.soto@local.test: only Mis vacantes / Mis candidatos with her data; typing /reclutadores goes back home.
+8. 390 px: no page-level horizontal scroll on Mis vacantes, the vacante detail, Mis candidatos and the candidate detail.
+
+### S5–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

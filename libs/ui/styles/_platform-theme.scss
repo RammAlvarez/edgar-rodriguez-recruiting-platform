@@ -126,7 +126,8 @@
   .panel-form {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    // Room for a hint above the next field's floated label.
+    gap: 10px;
     padding-top: 8px;
     mat-form-field {
       width: 100%;

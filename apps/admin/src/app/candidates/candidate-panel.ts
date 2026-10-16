@@ -157,8 +157,8 @@ interface Duplicate {
         </mat-form-field>
         <mat-form-field>
           <mat-label>Sueldo ofrecido</mat-label>
-          <span matTextPrefix>$&nbsp;</span>
           <input matInput formControlName="offeredSalary" inputmode="decimal" autocomplete="off" />
+          <mat-hint>Mensual, en pesos</mat-hint>
           <mat-error>{{ s.msg('offeredSalary') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
