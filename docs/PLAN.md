@@ -1,6 +1,6 @@
 # PLAN — Plataforma de Reclutamiento y Prenómina
 
-> **Status:** v1 — P1–P3 resolved by the owner 2026-10-16; E1–E3, E5 applied with S0 unless the owner objects; D51 confirmed · **Written:** 2026-10-16 (kickoff)
+> **Status:** v1 — P1–P4 resolved; E1–E7 applied; **S0 done 2026-10-16** (see §2.1); P5 open · **Written:** 2026-10-16 (kickoff)
 > **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
 > **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
 
@@ -69,6 +69,12 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 
 ---
 
+### 2.1 Progress
+
+| Slice | Status | Evidence |
+|---|---|---|
+| S0 | **done** 2026-10-16 | 41 xUnit (incl. the Firebase adapter on the emulator), 36 Vitest (libs) + 6 (apps), lint, neutrality, migrations, generated types clean; browser check [`tests/2026-10-16-01-s0-foundation.md`](tests/2026-10-16-01-s0-foundation.md) |
+
 ## 3. Open questions (block the slice named)
 
 | # | Question | Blocks | Proposed default |
@@ -76,7 +82,8 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | ~~P1~~ | **Resolved → D42.** Rounding level — a doc–doc contradiction. SPEC §5.5: "rounding half-up at the line level, never on intermediates". Kickoff + DATA_MODEL §5.12: round once per **line item** (items are `numeric(12,2)` and `total_net = Σ items` is a DB invariant). On SEM 38 they give 333,188.98 vs 333,188.95; the Excel prints 333,189.13 because it never rounds. | S1 | **Per line item** (keeps the stored breakdown and the invariant exact; each Excel column the clerk sees is then a rounded number that sums to the total). SPEC §5.5 changes to say "once per line item". Golden test per D41. |
 | ~~P2~~ | **Resolved → D43** (SPEC Q12 sent to the client). FESTIVO PRIMERA MITAD. D14 says 4 h × hourly × 3 = 428.52 / 585.60; the sheet types 428.5 / 585.7 (≈ SD bolsillo), gives 585.7 to two VALIDADORES, and 249.5 / 178.6 to seven rows with no rule. | S1 | Engine implements D14. The golden test loads column O **as per-row input** (an imported `HOLIDAY_FIRST_HALF` incident with the sheet's amount) so every other column is still checked against the rule; ask the client what 249.5 / 178.6 and the supervisor amount on VALIDADOR rows mean. |
 | ~~P3~~ | **Resolved → D50.** Pensión alimenticia. Row 30 says `PENSION DEL 39%` but its total has no deduction. Either the Excel is pre-pension (the 39 % is deducted elsewhere) or D16 is not how it works today. | S1 | Golden runs with `alimony_pct = NULL` for row 30 (the Excel is pre-pension); D16 stays and has its own unit test; confirm with the client. |
-| **P4** | **.NET 10 SDK** is not installed (only 8.0.101). The Homebrew cask (10.0.402) needs `sudo`, which the agent cannot type. | S0 | The owner runs `brew install --cask dotnet-sdk`; `global.json` pins 10.0.x. |
+| ~~P4~~ | **Resolved:** the owner installed .NET 10.0.402. **.NET 10 SDK** was not installed (only 8.0.101). The Homebrew cask (10.0.402) needs `sudo`, which the agent cannot type. | S0 | The owner runs `brew install --cask dotnet-sdk`; `global.json` pins 10.0.x. |
+| **P5** | **Supervisor scope.** SPEC §5.3 / D19: a field supervisor is an Administrador with only `payroll_attendance` and "sees nothing else". `permission_module` has no grant for Reclutamiento (Vacantes, Candidatos, Reclutadores, Clientes) nor for Inicio, so under DATA_MODEL §8 that account still sees all of recruiting. Options: (a) add a `recruiting` module (default on for new Administradores, off for supervisors); (b) rule: an Administrador whose grants are only payroll ones sees no recruiting. | S4 (recruiting routes need the rule) | (a): explicit, one more checkbox in Usuarios |
 | Q12 | Why do rows 65, 81, 83, 85, 87, 99, 117 of SEM 38 get 249.50 / 178.60 of festivo 1ª mitad instead of 428.52 (SPEC §10)? | nothing (known diff in the golden) | D14 for every entitled row |
 | Q4 | Bonus scheme (SPEC §10) — still open. | S9 demo columns only | All `BONUS_*` concepts inactive for ECOVIA until answered (that is what SEM 38 pays). |
 
@@ -86,11 +93,11 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 
 | # | Doc | Change | Why |
 |---|---|---|---|
-| E1 | ARCHITECTURE §2 | Drop `Platform.Audit` and `Platform.Jobs` from the project list: jobs live in `Platform.Api/Jobs/`, the audit helper in `Platform.Infrastructure` (as §3 and the kickoff layout say) | §2 contradicts §3 |
-| E2 | SPEC §2.2, §5.9 | Permission modules written as the enum values (`recruiting_reports`, `payroll_prepayroll`, …) | SPEC uses dots, DATA_MODEL the enum |
-| E3 | DATA_MODEL §4.7, §5.13 | Views join on `uid` (`cl.uid = o.client_id`, D37); `open_openings_aging` drops `o.code` (removed by D30) and adds the display name | the views as written do not compile against D37 |
+| ~~E1~~ applied | ARCHITECTURE §2 | Drop `Platform.Audit` and `Platform.Jobs` from the project list: jobs live in `Platform.Api/Jobs/`, the audit helper in `Platform.Infrastructure` (as §3 and the kickoff layout say) | §2 contradicts §3 |
+| ~~E2~~ applied | SPEC §2.2, §5.9 | Permission modules written as the enum values (`recruiting_reports`, `payroll_prepayroll`, …) | SPEC uses dots, DATA_MODEL the enum |
+| ~~E3~~ applied | DATA_MODEL §4.7, §5.13 | Views join on `uid` (`cl.uid = o.client_id`, D37); `open_openings_aging` drops `o.code` (removed by D30) and adds the display name | the views as written do not compile against D37 |
 | ~~E4~~ applied | DATA_MODEL §5.12 | "lines of a `closed`/`paid` period" → "lines of a `paid` period" | `closed` is not a `period_status` |
-| E5 | DATA_MODEL §1 | `card_requests`, `employee_bank_numbers` stay in the `payroll` table list; ARCHITECTURE §3 `Platform.Bank` reads "card-request batches, payment batches, Layouts/" | module table and repository tree disagree on card requests |
+| ~~E5~~ applied | DATA_MODEL §1 | `card_requests`, `employee_bank_numbers` stay in the `payroll` table list; ARCHITECTURE §3 `Platform.Bank` reads "card-request batches, payment batches, Layouts/" | module table and repository tree disagree on card requests |
 | ~~E6~~ applied | DATA_MODEL §10 | "`SEM 38` header rates (row 2) are stale; rates come from the rows" | avoid importing 328.57 / 27.38 |
 | ~~E7~~ applied | SPEC §5.4–5.5, §5.9, §8, D16, §10; DATA_MODEL conventions, §5.3, §5.4, §5.11–5.12, §10; ARCHITECTURE §2 engine row | Never-round + truncate (D42), pensión removed (D50), Q12 | P1–P3 |
 
@@ -109,9 +116,20 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | D46 | **Money on the wire:** a `System.Text.Json` converter writes `decimal` as a string with exactly the column's scale; OpenAPI declares `type: string, format: decimal`; the generated TS type is a branded `Money` string; Zod validates `^-?\d+(\.\d{1,2})?$`; the pipe formats without `Number()` (string arithmetic only for display). |
 | D47 | **Period numbering:** weekly `period_number` = ISO-8601 week of the period's end date (Semana 38 = 11–17 sep 2026, end Thursday 17 sep → ISO week 38); biweekly = 1–24 by end date. Checked against SEM 38; confirm on the next client file. |
 | D48 | **Tests against Postgres:** the docker Postgres on :5433 with a dedicated `platform_test` database migrated once per run and truncated between tests; a fixed `IClock` injected everywhere "today" or lock times matter. |
-| D49 | **Toolchain:** .NET 10 SDK pinned in `global.json` (`rollForward: latestFeature`), Node 24 LTS (`.nvmrc`), npm workspaces, Angular 22 CLI; rich text with Tiptap in `apps/admin`, server sanitizer `HtmlSanitizer` with the DATA_MODEL §4.4b allowlist. |
+| D49 | **Toolchain:** .NET 10 SDK pinned in `global.json` (10.0.402, `rollForward: latestFeature`), central NuGet versions (`Directory.Packages.props`), Node 24 LTS (`.nvmrc`), one Angular 22 workspace with TS path aliases for the libs (no npm workspaces needed), `openapi-typescript` with a scoped npm override for TypeScript 6; rich text with Tiptap in `apps/admin`, server sanitizer `HtmlSanitizer` with the DATA_MODEL §4.4b allowlist. |
 | D50 | **No pensión alimenticia** (owner, 2026-10-16; revises SPEC D16): not deducted, not recorded — `employees.alimony_pct`, the `ALIMONY` concept and `concept_calc.percent_of_net` are removed; the import keeps a "PENSION …" comment as plain text in `employees.notes`. The prototype's 39 % pensión and Desglose row are not built. |
 | D51 | **Festivo 1ª mitad entitlement** (confirmed by the owner 2026-10-16): an employee is entitled for each date in the period that is in `holidays` and whose attendance record has status `holiday` (the day is a festivo, not worked); `holiday_worked` pays FESTIVO LABORADO instead. In SEM 38, 46 of 115 rows were entitled, so it is not automatic for everyone. The golden fixture reads entitlement from column `O` being filled. |
+| D52 | **Identity interface:** `IAuthProvider` lives in `Platform.Core/Access` (module services need it for invitations) and returns `VerifiedIdentity(uid, email, emailVerified)` — the candidate rule of DATA_MODEL §8 needs the verified email — plus `CreateUserAsync` and `CreatePasswordSetupLinkAsync`. The only implementation that touches the vendor is `Platform.Api/Auth/FirebaseAuthProvider.cs`; tests use `FakeAuthProvider`; the adapter is tested against the Auth emulator. |
+| D53 | **Log tables** (`audit_log`, `data_access_log`) carry `id`, `uid`, `occurred_at`, `user_id`, `acting_for_user_id` instead of the four stamp columns (they are never updated). Monthly partitions 2026-10 … 2027-12 plus a DEFAULT partition, created by the migration (raw SQL); more months are added by a later migration. Append-only trigger for every role; the API role has INSERT/SELECT only. |
+| D54 | **Local S3 = `bitnamilegacy/minio:2025.7.23`.** `minio/minio` images are no longer published (Docker Hub and Quay refuse the pull); the frozen Bitnami build is the same server, local only, buckets created from `MINIO_DEFAULT_BUCKETS`. Production uses the provider's S3-compatible bucket. |
+| D55 | **Wire types:** OpenAPI `format: date-time` → `Date` (revived by `libs/api-client`), `format: date` → branded `DateKey` string (never a `Date`), `format: decimal` → branded `Decimal` string. All C# `decimal` values travel as strings (`DecimalStringJsonConverter`); JSON numbers are rejected for them. Enums travel as snake_case strings, matching the Postgres enum labels. |
+| D56 | **`uid` is created by the entity** (`Guid.CreateVersion7()`, EF `ValueGeneratedNever`) so the audit row and FK fix-up know it before the insert; the column default `gen_random_uuid()` remains for raw SQL. |
+| D57 | **Runtime config per app:** each app reads `/config.json` (API URL, auth project, emulator URL) before bootstrapping, so one build deploys to any static host and environment; the deploy writes the file. |
+| D58 | **Local ports:** API 5080, apps 4300/4301/4302, Auth emulator 9199 (UI 4010), Postgres `PLATFORM_DB_PORT` (default 5433), MinIO `PLATFORM_S3_PORT` (default 9000). Moved off the framework defaults because other local projects use them; the repo-root `.env` overrides the database/S3 host ports. |
+| D59 | **Database roles** (`db/roles.sql`): `platform_owner` owns schema `platform` and runs migrations; `platform_api` is what the API connects as (DML via default privileges, no TRUNCATE, logs insert/select only); `platform_readonly` for other services. Tests connect as `platform_api` like production and truncate as the owner. |
+| D60 | **Bootstrap and seed:** `POST /internal/bootstrap` (INTERNAL_SECRET) creates the first Administrador with every grant and returns a password-setup link, and refuses once an administrator exists; `scripts/bootstrap.mjs` calls it in production. The local seed signs the owner up in the emulator (`edgar@local.test` / `plataforma-local`) and calls the same endpoint; it refuses a non-local `DATABASE_URL`. |
+| D61 | **Cover mode transport:** `X-Acting-For` is accepted on any `/v1` route for an Administrador covering an *active* Recruiter (else 403); it sets the recruiter scope (`RequestContext.ScopeUserId`) and `acting_for_user_id` on every audit row. The admin app keeps the covered recruiter in a signal and the api-client sends the header. |
+| D62 | **Bundles:** routes lazy-load every screen and import `libs/ui` per file (`@platform/ui/<file>`), so each app's initial bundle stays within Angular's default budget (≈ 420 kB raw, ≈ 115 kB transferred, most of it the Auth SDK). |
 
 ---
 

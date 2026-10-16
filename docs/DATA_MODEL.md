@@ -307,7 +307,7 @@ SELECT o.id,
        || CASE WHEN count(*) OVER (PARTITION BY o.client_id, lower(o.position_name))
                     FILTER (WHERE o.status IN ('open','in_progress')) > 1
                THEN ' · ' || to_char(o.requested_at, 'DD/MM/YYYY') ELSE '' END AS display_name
-FROM platform.job_openings o JOIN platform.clients cl ON cl.id = o.client_id;
+FROM platform.job_openings o JOIN platform.clients cl ON cl.uid = o.client_id;
 ```
 Every DTO that references a vacante carries `display_name`; the UI never shows ids.
 
@@ -367,6 +367,8 @@ Never exposed to `client` or candidate scopes.
 
 ### 4.7 Reporting views (SPEC §4.7)
 
+Joins follow D37: every foreign key holds the referenced row's `uid`; views expose `uid AS id` where they return a row id, and the display name comes from `platform.job_opening_display` (no codes, D30).
+
 ```sql
 -- 1 Rendimiento por reclutador (BD_RECLUTADORES)
 CREATE VIEW platform.recruiter_performance AS
@@ -379,7 +381,7 @@ SELECT r.user_id AS recruiter_id, c.job_opening_id, o.client_id, o.position_name
             ELSE round(count(c.id) FILTER (WHERE c.is_hired)::numeric / count(c.id), 4) END AS conversion_rate,
        o.filled_at - o.requested_at                 AS days_to_fill
 FROM platform.job_opening_recruiters r
-JOIN platform.job_openings o ON o.id = r.job_opening_id
+JOIN platform.job_openings o ON o.uid = r.job_opening_id
 LEFT JOIN platform.candidates c ON c.job_opening_id = r.job_opening_id AND c.recruiter_id = r.user_id
 GROUP BY 1,2,3,4,5,6,7,8;
 -- recruiter totals (vacantes asignadas / cubiertas / % efectividad) aggregated in the API over this view
@@ -394,7 +396,7 @@ LANGUAGE sql STABLE AS $$ ... WHERE o.requested_at BETWEEN p_from AND p_to GROUP
 
 -- 3 Vacantes abiertas y envejecimiento (snapshot)
 CREATE VIEW platform.open_openings_aging AS
-SELECT o.id, o.code, o.client_id, o.position_name, o.priority, o.headcount_requested,
+SELECT o.uid AS id, o.client_id, o.position_name, o.priority, o.headcount_requested,
        count(c.id) FILTER (WHERE c.is_hired) AS hired,
        current_date - o.requested_at         AS days_open,
        o.lead_recruiter_id,
@@ -402,8 +404,8 @@ SELECT o.id, o.code, o.client_id, o.position_name, o.priority, o.headcount_reque
        greatest(max(h.changed_at), max(c.captured_at)::timestamptz, o.updated_at) AS last_activity_at,
        current_date - greatest(max(h.changed_at), max(c.captured_at)::timestamptz, o.updated_at)::date AS idle_days
 FROM platform.job_openings o
-LEFT JOIN platform.candidates c ON c.job_opening_id = o.id
-LEFT JOIN platform.candidate_stage_history h ON h.candidate_id = c.id
+LEFT JOIN platform.candidates c ON c.job_opening_id = o.uid
+LEFT JOIN platform.candidate_stage_history h ON h.candidate_id = c.uid
 WHERE o.status IN ('open','in_progress')
 GROUP BY o.id;
 
@@ -413,15 +415,15 @@ SELECT c.job_opening_id, o.client_id, c.recruiter_id, c.source, h.to_stage AS st
        lead(h.changed_at) OVER (PARTITION BY c.id ORDER BY h.changed_at) - h.changed_at AS time_in_stage,
        c.discard_reason
 FROM platform.candidate_stage_history h
-JOIN platform.candidates c ON c.id = h.candidate_id
-JOIN platform.job_openings o ON o.id = c.job_opening_id;
+JOIN platform.candidates c ON c.uid = h.candidate_id
+JOIN platform.job_openings o ON o.uid = c.job_opening_id;
 -- API: count entries per stage in range, drop-off = entries(stage n) − entries(stage n+1), avg(time_in_stage)
 
 -- 5 Fuentes de reclutamiento
 CREATE VIEW platform.source_effectiveness AS
 SELECT c.source, o.client_id, c.recruiter_id, c.captured_at,
        c.is_suitable, c.is_hired, c.hired_at - c.captured_at AS days_to_hire
-FROM platform.candidates c JOIN platform.job_openings o ON o.id = c.job_opening_id;
+FROM platform.candidates c JOIN platform.job_openings o ON o.uid = c.job_opening_id;
 -- API groups by source within the range
 
 -- 6 Vacantes por cliente
@@ -429,7 +431,7 @@ CREATE VIEW platform.client_openings AS
 SELECT o.client_id, o.id AS job_opening_id, o.requested_at, o.status, o.headcount_requested,
        count(c.id) FILTER (WHERE c.is_hired) AS hired, count(c.id) AS candidates_presented,
        o.filled_at - o.requested_at AS days_to_fill
-FROM platform.job_openings o LEFT JOIN platform.candidates c ON c.job_opening_id = o.id
+FROM platform.job_openings o LEFT JOIN platform.candidates c ON c.job_opening_id = o.uid
 GROUP BY o.id;
 -- fill rate = Σ hired / Σ headcount_requested per client in the range
 ```
@@ -667,10 +669,10 @@ SELECT p.id AS period_id, p.year, p.period_number, p.start_date, p.end_date, g.c
        count(DISTINCT l.employee_id) AS employees_paid,
        sum(i.amount) AS amount
 FROM platform.payroll_periods p
-JOIN platform.payroll_groups g ON g.id = p.payroll_group_id
-JOIN platform.prepayroll_lines l ON l.payroll_period_id = p.id
-JOIN platform.prepayroll_line_items i ON i.prepayroll_line_id = l.id
-JOIN platform.pay_concepts c ON c.id = i.pay_concept_id
+JOIN platform.payroll_groups g ON g.uid = p.payroll_group_id
+JOIN platform.prepayroll_lines l ON l.payroll_period_id = p.uid
+JOIN platform.prepayroll_line_items i ON i.prepayroll_line_id = l.uid
+JOIN platform.pay_concepts c ON c.uid = i.pay_concept_id
 GROUP BY 1,2,3,4,5,6,7,8;
 -- week-over-week Δ computed in the API with LAG() over (client_id ORDER BY start_date)
 
@@ -678,7 +680,7 @@ GROUP BY 1,2,3,4,5,6,7,8;
 CREATE VIEW platform.period_payment_summary AS
 SELECT b.payroll_period_id, b.id AS batch_id, b.kind, b.status, r.receiving_bank_code, r.payment_type, r.status AS row_status,
        count(*) AS rows, sum(r.amount) AS amount
-FROM platform.payment_batches b JOIN platform.payment_batch_rows r ON r.payment_batch_id = b.id
+FROM platform.payment_batches b JOIN platform.payment_batch_rows r ON r.payment_batch_id = b.uid
 GROUP BY 1,2,3,4,5,6,7;
 -- plus prepayroll_lines WHERE payment_status IN ('missing_account','invalid_account','rejected') for the blocker list
 
@@ -687,7 +689,7 @@ CREATE VIEW platform.period_incidents AS
 SELECT i.payroll_period_id, i.origin_period_id, i.incident_date, i.employee_id, c.code AS concept_code,
        i.quantity, i.unit_value, i.amount, i.reason, i.reported_by,
        CASE WHEN c.code = 'MANUAL_ADJUSTMENT' THEN 'manual' WHEN i.origin_period_id IS NOT NULL THEN 'retroactive' ELSE 'incident' END AS origin
-FROM platform.incidents i JOIN platform.pay_concepts c ON c.id = i.pay_concept_id;
+FROM platform.incidents i JOIN platform.pay_concepts c ON c.uid = i.pay_concept_id;
 
 -- 4 Asistencia por empleado: counts per status in a date range (function, range param)
 CREATE FUNCTION platform.attendance_summary(p_from date, p_to date, p_client uuid DEFAULT NULL)
@@ -705,7 +707,7 @@ SELECT g.client_id, date_trunc('month', d.month) AS month,
                              AND e.terminated_at - e.hired_at <= 30)               AS early_terminations,
        count(e.id) FILTER (WHERE e.hired_at < d.month + interval '1 month'
                              AND (e.terminated_at IS NULL OR e.terminated_at >= d.month + interval '1 month')) AS headcount_end
-FROM platform.employees e JOIN platform.payroll_groups g ON g.id = e.payroll_group_id
+FROM platform.employees e JOIN platform.payroll_groups g ON g.uid = e.payroll_group_id
 CROSS JOIN generate_series(date_trunc('month', e.hired_at), now(), interval '1 month') d(month)
 GROUP BY 1,2;
 -- antigüedad promedio and motivo de baja distribution computed in the API from the same rows
@@ -718,10 +720,10 @@ SELECT e.id AS employee_id, g.client_id,
        NOT coalesce(a.is_frequent_account_registered,false) AS not_frequent_registered,
        cr.bank AS card_request_bank, cr.status AS card_request_status
 FROM platform.employees e
-JOIN platform.people p ON p.id = e.person_id
-JOIN platform.payroll_groups g ON g.id = e.payroll_group_id
-LEFT JOIN platform.person_bank_accounts a ON a.id = e.primary_bank_account_id
-LEFT JOIN platform.card_requests cr ON cr.employee_id = e.id AND cr.status NOT IN ('received','cancelled')
+JOIN platform.people p ON p.uid = e.person_id
+JOIN platform.payroll_groups g ON g.uid = e.payroll_group_id
+LEFT JOIN platform.person_bank_accounts a ON a.uid = e.primary_bank_account_id
+LEFT JOIN platform.card_requests cr ON cr.employee_id = e.uid AND cr.status NOT IN ('received','cancelled')
 WHERE e.status = 'active';
 ```
 

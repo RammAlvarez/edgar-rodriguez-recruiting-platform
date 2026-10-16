@@ -76,14 +76,14 @@ Three Angular apps, one API, one database.
 The owner wants to hand specific tabs to specific people ("alta masiva Banorte — un botón, le doy permiso a uno de mis muchachos") and keep *Reportes* for himself only. Rather than inventing more roles, an **Administrador** user can have an optional set of **permission grants**, each scoped to a module and optionally to a client:
 
 ```
-module ∈ { recruiting.reports, payroll.prepayroll, payroll.attendance, payroll.incidents,
-           payroll.staff, payroll.payment_files, payroll.card_requests, users }
+module ∈ { recruiting_reports, payroll_prepayroll, payroll_attendance, payroll_incidents,
+           payroll_staff, payroll_payment_files, payroll_card_requests, users }      (DATA_MODEL enum permission_module)
 client_id ∈ { null = all clients, <client> }
 ```
 
 - A freshly created Administrador has **all** grants (owner behaviour).
 - The owner can uncheck grants to produce e.g. "prenómina ECOVIA only" (review the grid, no payment files) or "payment files only".
-- `recruiting.reports` is unchecked by default for anyone except the owner (decision from the meeting: reports are password-protected and personal).
+- `recruiting_reports` is unchecked by default for anyone except the owner (decision from the meeting: reports are password-protected and personal).
 
 ### 2.3 Authentication and security
 
@@ -236,9 +236,9 @@ Per client, read-only:
 - **Comentarios**: a thread per vacante between the client and the recruiter (optional, cheap, high perceived value).
 - No exports, no personal documents, no salaries of other candidates.
 
-### 4.7 Reportes (Administrador with `recruiting.reports`)
+### 4.7 Reportes (Administrador with `recruiting_reports`)
 
-Same layout as Nómina reports: a **report selector** on the left, filters on top (**Cliente** Todos/one, **Reclutador** Todos/one, **Rango de fechas** with presets *Este mes / Trimestre / Año en curso* — default *Año en curso*, like the DASHBOARD tab; report 3 is a snapshot with no date), Excel/PDF export. The whole section is behind `recruiting.reports` (owner only, D5).
+Same layout as Nómina reports: a **report selector** on the left, filters on top (**Cliente** Todos/one, **Reclutador** Todos/one, **Rango de fechas** with presets *Este mes / Trimestre / Año en curso* — default *Año en curso*, like the DASHBOARD tab; report 3 is a snapshot with no date), Excel/PDF export. The whole section is behind `recruiting_reports` (owner only, D5).
 
 | # | Report | Content | Source tab |
 |---|---|---|---|
@@ -299,8 +299,8 @@ Decision from the meeting: *attendance is captured every day in the system; if n
 
 - One **attendance record** per employee per calendar day: `presente` (with hours; default = shift hours, e.g. 12), `horas incompletas` (hours < shift → paid per hour, see 5.5), `falta`, `descanso`, `descanso laborado`, `festivo`, `festivo laborado`, `incapacidad`, `permiso con/sin goce`, `vacaciones`.
 - Capture UI: by client site and date, a roster of expected employees with one-tap status + hours; bulk "todos presentes"; mobile-first.
-- Who captures: field supervisors get an **Administrador** account with only the `payroll.attendance` grant scoped to their client (SPEC §2.2) — they see nothing else.
-- Cut-off: each record locks at `attendance_lock_time` (default 23:59 of the same day, configurable per payroll group); after lock only an Administrador with `payroll.attendance` can unlock a day, and the unlock + the change are audited (who, when, before/after).
+- Who captures: field supervisors get an **Administrador** account with only the `payroll_attendance` grant scoped to their client (SPEC §2.2) — they see nothing else.
+- Cut-off: each record locks at `attendance_lock_time` (default 23:59 of the same day, configurable per payroll group); after lock only an Administrador with `payroll_attendance` can unlock a day, and the unlock + the change are audited (who, when, before/after).
 - Missing day = falta automatically when the period closes (explicit record created, flagged `auto`).
 - Weekly summary per employee: días laborados, horas extra, festivos, faltas — this is the `DIAS LABORADOS` / `FESTIVO` / `HORAS EXTRA` input of the Excel, now derived.
 
@@ -369,7 +369,7 @@ There is no separate "Cerrado": generating the bank file *is* the close, because
 
 **Grid = the Excel + payment columns.** Same columns and order as `SEM 38` (Fecha ingreso … Total neto a pagar, Comentarios) plus, at the right, the columns that today live inside COMENTARIOS: **Banco**, **Cuenta** (masked, last 4), **Tipo de cuenta** (tarjeta de débito / CLABE / cuenta Azteca), **Titular** (only if not the employee) and **Estado de pago** (Listo / Sin cuenta / Cuenta inválida / Pendiente / Pagado / Rechazado). A warning icon on the row explains any blocker. Comments remain free text (`EXTRANJERO`, `AGREGAR PRIMA`…) but no longer carry bank data.
 
-**Generar archivos de pago** (single button, Revisión only, grant `payroll.payment_files`):
+**Generar archivos de pago** (single button, Revisión only, grant `payroll_payment_files`):
 
 1. Validates every line: amount > 0, account present, digit length matches the account type (14/16/18/20), receiving bank code known.
 2. Builds the **Banco Azteca pagos masivos** file from the paying account MAXIMA REPARACION Y LIMPIEZA SA DE CV (fixed header: cuenta de cargo, titular, RFC, leyenda "PAGO", MXP) with one row per payable line: clave del banco receptor, tipo de cuenta (`1` / `3` / `40`), número de cuenta, nombre del beneficiario (= titular of the primary account), leyenda, tipo de pago (`3` traspaso BAZ when the receiving bank is Azteca, `1` SPEI otherwise — derived, not typed).
@@ -467,7 +467,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | D16 | ~~Pensión alimenticia is a percentage of net pay~~ **Revised 2026-10-16 (PLAN D50):** pensión alimenticia is not deducted in the pre-payroll and is not recorded; the golden SEM 38 pays row 30 in full | answers 2026-10-07 (Q5), revised 2026-10-16 |
 | D17 | MAXIMA REPARACION Y LIMPIEZA SA DE CV is the **owner's own company**: one paying account (Banco Azteca) pays workers of all clients; beneficiaries are grouped by client for filtering only | answers 2026-10-07 (Q6) |
 | D18 | `cuentasfrec` (frequent-accounts registration) export is kept | answers 2026-10-07 (Q7) |
-| D19 | Field supervisors capture attendance with **Administrador accounts limited by grants** (`payroll.attendance`, scoped to their client); no fourth role | answers 2026-10-07 (Q8) |
+| D19 | Field supervisors capture attendance with **Administrador accounts limited by grants** (`payroll_attendance`, scoped to their client); no fourth role | answers 2026-10-07 (Q8) |
 | D20 | Clients **do** see the sueldo ofrecido of candidates from *Apto* on | answers 2026-10-07 (Q9) |
 | D21 | Notifications by **email only** (no WhatsApp integration in v1) | answers 2026-10-07 (Q10) |
 | D22 | Sexo and Edad on vacantes are **internal only** — never shown in the Clients app or in exports shared with clients | answers 2026-10-07 (Q11) |

@@ -1,59 +1,34 @@
-# Platform
+# Plataforma de Reclutamiento y Prenómina
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.3.
+Back-office platform (es-MX) for a Mexican recruiting and professional-services company: recruiting pipeline, client
+portal, candidate documents, daily attendance, weekly pre-payroll and the bank files it ends in.
 
-## Development server
+- What it does: [docs/SPEC.md](docs/SPEC.md) · data and permissions: [docs/DATA_MODEL.md](docs/DATA_MODEL.md)
+- How it is built: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · slice order and decisions: [docs/PLAN.md](docs/PLAN.md)
+- Tests: [docs/TEST_PLAN.md](docs/TEST_PLAN.md) · runs and defects: [docs/tests/](docs/tests/README.md)
 
-To start a local development server, run:
+## Layout
 
-```bash
-ng serve
+```
+apps/admin · apps/candidates · apps/clients   Angular 22 (Material 3, RASS theme)
+services/platform-api                         ASP.NET Core 10 · EF Core 10 · Postgres schema `platform`
+services/scheduler                            cron → POST /internal/jobs/{name}
+libs/shared · libs/api-client · libs/ui        generated wire types · fetch wrapper · shared Angular pieces
+db/  deploy/  scripts/  docs/
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Run locally
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Requirements: .NET SDK 10.0.402, Node 24, Docker, Java 21+ (Firebase emulator), `firebase-tools`.
 
 ```bash
-ng generate component component-name
+npm ci && dotnet tool restore
+# optional: a .env with PLATFORM_DB_PORT / PLATFORM_S3_PORT when 5433 / 9000 are taken (.env.example documents production vars)
+npm run db:up && npm run db:migrate
+npm run emulators           # separate terminal
+npm run api                 # separate terminal — http://localhost:5080
+npm run seed                # owner: edgar@local.test / plataforma-local
+npm start -- admin          # http://localhost:4300  (candidates :4301, clients :4302)
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Checks: `npm test` · `npm run lint` · `npm run check:neutrality` · `npm run check:migrations` · `npm run generate:api-types`.
