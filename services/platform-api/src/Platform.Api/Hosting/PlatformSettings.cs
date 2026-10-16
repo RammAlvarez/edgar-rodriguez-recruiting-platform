@@ -1,5 +1,6 @@
 using Platform.Api.Auth;
 using Platform.Core.Abstractions;
+using Platform.Core.Security;
 using Platform.Infrastructure.Email;
 using Platform.Infrastructure.Storage;
 
@@ -13,7 +14,8 @@ public sealed record PlatformSettings(
     FirebaseSettings Firebase,
     S3Settings S3,
     EmailSettings Email,
-    AppLinks Links)
+    AppLinks Links,
+    EncryptionSettings Encryption)
 {
     public static PlatformSettings FromConfiguration(IConfiguration c, bool allowDefaults)
     {
@@ -41,6 +43,8 @@ public sealed record PlatformSettings(
             new AppLinks(
                 Get("ADMIN_APP_URL", "http://localhost:4300"),
                 Get("CANDIDATES_APP_URL", "http://localhost:4301"),
-                Get("CLIENTS_APP_URL", "http://localhost:4302")));
+                Get("CLIENTS_APP_URL", "http://localhost:4302")),
+            // The local key is public (it is in this file): it only ever protects sample data on a developer's machine.
+            EncryptionSettings.Parse(Get("ENCRYPTION_KEY", "bG9jYWwtb25seS1rZXktbm90LWZvci1yZWFsLWRhdGE="), c["ENCRYPTION_KEY_ID"]));
     }
 }

@@ -30,6 +30,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "audit_action", new[] { "insert", "update", "delete", "unlock", "export", "login" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "bank_account_type", new[] { "own_account", "debit_card", "clabe" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "candidate_source", new[] { "facebook", "linkedin", "whatsapp", "referral", "job_board", "other" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "candidate_stage", new[] { "new", "contacted", "interview", "suitable", "not_suitable", "hired", "discarded" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "data_access_kind", new[] { "view_profile", "view_document", "download_document", "decrypt_account" });
@@ -552,7 +553,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasName("pk_document_types");
 
                     b.HasAlternateKey("Uid")
-                        .HasName("ak_document_type_uid");
+                        .HasName("ak_document_types_uid");
 
                     b.HasIndex("Code")
                         .IsUnique()
@@ -1180,6 +1181,117 @@ namespace Platform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_people_postal_code", "postal_code ~ '^\\d{5}$'");
 
                             t.HasCheckConstraint("ck_people_rfc", "rfc ~ '^[A-ZÑ&]{4}\\d{6}[A-Z0-9]{3}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Core.People.PersonBankAccount", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AccountLast4")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("account_last4");
+
+                    b.Property<byte[]>("AccountNumberEnc")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("account_number_enc");
+
+                    b.Property<BankAccountType>("AccountType")
+                        .HasColumnType("platform.bank_account_type")
+                        .HasColumnName("account_type");
+
+                    b.Property<string>("Alias")
+                        .HasColumnType("text")
+                        .HasColumnName("alias");
+
+                    b.Property<Guid>("BankId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bank_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("HolderName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("holder_name");
+
+                    b.Property<bool>("IsFrequentAccountRegistered")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_frequent_account_registered");
+
+                    b.Property<bool>("IsPrimary")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_primary");
+
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("person_id");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.HasKey("Id")
+                        .HasName("pk_person_bank_accounts");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_person_bank_accounts_uid");
+
+                    b.HasIndex("BankId")
+                        .HasDatabaseName("ix_person_bank_accounts_bank_id");
+
+                    b.HasIndex("PersonId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_person_bank_accounts_primary")
+                        .HasFilter("is_primary");
+
+                    b.ToTable("person_bank_accounts", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_person_bank_accounts_holder", "length(holder_name) BETWEEN 1 AND 40");
+
+                            t.HasCheckConstraint("ck_person_bank_accounts_last4", "account_last4 ~ '^\\d{4}$'");
+
+                            t.HasCheckConstraint("ck_person_bank_accounts_primary_current", "NOT is_primary OR valid_to IS NULL");
+
+                            t.HasCheckConstraint("ck_person_bank_accounts_validity", "valid_to IS NULL OR valid_to >= valid_from");
                         });
                 });
 
@@ -1984,7 +2096,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasName("pk_job_openings");
 
                     b.HasAlternateKey("Uid")
-                        .HasName("ak_job_opening_uid");
+                        .HasName("ak_job_openings_uid");
 
                     b.HasIndex("DocumentTemplateId")
                         .HasDatabaseName("ix_job_openings_document_template_id");
@@ -2298,6 +2410,25 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasPrincipalKey("Uid")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_client_sites_zones_zone_id");
+                });
+
+            modelBuilder.Entity("Platform.Core.People.PersonBankAccount", b =>
+                {
+                    b.HasOne("Platform.Core.Catalogs.Bank", null)
+                        .WithMany()
+                        .HasForeignKey("BankId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_person_bank_accounts_banks_bank_id");
+
+                    b.HasOne("Platform.Core.People.Person", null)
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_person_bank_accounts_person_person_id");
                 });
 
             modelBuilder.Entity("Platform.Core.People.PersonDocument", b =>

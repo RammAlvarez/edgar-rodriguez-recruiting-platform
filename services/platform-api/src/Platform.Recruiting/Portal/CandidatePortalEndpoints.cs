@@ -7,6 +7,7 @@ using Platform.Core.Access;
 using Platform.Core.Http;
 using Platform.Core.People;
 using Platform.Core.Persistence;
+using Platform.Core.Security;
 using Platform.Core.Users;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
@@ -45,6 +46,30 @@ public static class CandidatePortalEndpoints
             })
             .WithName("UpdateCandidateProfile").Validate<CandidateProfileRequest>().Produces<CandidateProfileDto>()
             .ProducesProblem(StatusCodes.Status409Conflict).RequireAccess(AccessRule.Candidate).Invalidates(Tag, PeopleEndpoints.Tag);
+
+        // «Cuenta para tu pago» (SPEC §7, PLAN D77 → S7): the candidate adds the account they want to be paid to once hired; it
+        // becomes their principal account. Only the last four digits ever come back.
+        g.MapGet("/bank-accounts", async (RequestContext ctx, DbContext db, IClock clock, CancellationToken ct) =>
+                TypedResults.Ok(await BankAccounts.ListAsync(db, ctx.Candidate!.PersonId, clock.Today(), ct)))
+            .WithName("ListCandidateBankAccounts").RequireAccess(AccessRule.Candidate);
+
+        g.MapPost("/bank-accounts", async (BankAccountRequest r, RequestContext ctx, DbContext db, IFieldCipher cipher, IClock clock,
+                CancellationToken ct) =>
+            {
+                var person = await db.Set<Person>().SingleAsync(p => p.Uid == ctx.Candidate!.PersonId, ct);
+                var (_, errors) = await BankAccounts.AddAsync(db, cipher, person, r with { MakePrimary = true, ValidFrom = null }, clock.Today(), ct);
+                if (errors is not null)
+                    return ApiResults.Validation(errors);
+                await db.SaveChangesAsync(ct);
+                return TypedResults.Ok(await BankAccounts.ListAsync(db, person.Uid, clock.Today(), ct));
+            })
+            .WithName("AddCandidateBankAccount").Validate<BankAccountRequest>().Produces<List<BankAccountDto>>()
+            .RequireAccess(AccessRule.Candidate).Invalidates(Tag);
+
+        g.MapGet("/banks", async (DbContext db, CancellationToken ct) =>
+                TypedResults.Ok(await db.Set<Platform.Core.Catalogs.Bank>().Where(b => b.IsActive).OrderBy(b => b.Name)
+                    .Select(b => new BankOptionDto(b.Uid, b.Name, b.SpeiCode)).ToListAsync(ct)))
+            .WithName("ListCandidateBanks").RequireAccess(AccessRule.Candidate);
 
         g.MapPost("/privacy-notice", async (RequestContext ctx, DbContext db, IClock clock, CancellationToken ct) =>
             {

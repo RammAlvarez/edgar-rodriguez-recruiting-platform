@@ -56,3 +56,25 @@ internal sealed class PersonDocumentConfiguration : IEntityTypeConfiguration<Per
         b.HasOne<PersonDocument>().WithMany().HasForeignKey(d => d.SupersededBy).HasPrincipalKey(d => d.Uid).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal sealed class PersonBankAccountConfiguration : IEntityTypeConfiguration<PersonBankAccount>
+{
+    public void Configure(EntityTypeBuilder<PersonBankAccount> b)
+    {
+        b.ToTable("person_bank_accounts", t =>
+        {
+            t.HasCheckConstraint("ck_person_bank_accounts_last4", @"account_last4 ~ '^\d{4}$'");
+            t.HasCheckConstraint("ck_person_bank_accounts_holder", "length(holder_name) BETWEEN 1 AND 40");
+            t.HasCheckConstraint("ck_person_bank_accounts_validity", "valid_to IS NULL OR valid_to >= valid_from");
+            t.HasCheckConstraint("ck_person_bank_accounts_primary_current", "NOT is_primary OR valid_to IS NULL");
+        });
+        b.HasIdentityAndUid();
+        b.HasStamps();
+        b.Property(a => a.IsPrimary).HasDefaultValue(false).HasSentinel(false);
+        b.Property(a => a.IsFrequentAccountRegistered).HasDefaultValue(false).HasSentinel(false);
+        // One primary account per person: the pay goes there (SPEC §5.8).
+        b.HasIndex(a => a.PersonId).IsUnique().HasFilter("is_primary").HasDatabaseName("ux_person_bank_accounts_primary");
+        b.HasOne<Person>().WithMany().HasForeignKey(a => a.PersonId).HasPrincipalKey(p => p.Uid).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<Bank>().WithMany().HasForeignKey(a => a.BankId).HasPrincipalKey(x => x.Uid).OnDelete(DeleteBehavior.Restrict);
+    }
+}

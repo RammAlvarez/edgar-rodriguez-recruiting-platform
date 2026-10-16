@@ -37,6 +37,7 @@ public static class PostgresEnums
         Of<OpeningEventKind>("opening_event_kind"),
         Of<CandidateStage>("candidate_stage"),
         Of<InterviewOutcome>("interview_outcome"),
+        Of<BankAccountType>("bank_account_type"),
     ];
 
     private static Entry Of<T>(string name) where T : struct, Enum => new(

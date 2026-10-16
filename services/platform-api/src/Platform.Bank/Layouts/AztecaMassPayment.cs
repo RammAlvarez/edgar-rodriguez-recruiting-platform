@@ -45,12 +45,12 @@ public static class AztecaMassPayment
     /// <summary>`3` traspaso entre cuentas BAZ when the receiving bank is Azteca, `1` SPEI otherwise — derived, never typed.</summary>
     public static string PaymentType(string receivingBankCode) => receivingBankCode == AztecaBankCode ? "3" : "1";
 
-    public static int[] AccountLengths(AccountType type) => type switch
+    public static int[] AccountLengths(AccountType type) => Platform.Core.People.AccountNumbers.Lengths(type switch
     {
-        AccountType.DebitCard => [16],
-        AccountType.Clabe => [18],
-        _ => [14, 20],
-    };
+        AccountType.DebitCard => Platform.Core.People.BankAccountType.DebitCard,
+        AccountType.Clabe => Platform.Core.People.BankAccountType.Clabe,
+        _ => Platform.Core.People.BankAccountType.OwnAccount,
+    });
 
     public static BankLayout<AztecaPaymentRow> Layout(AztecaPayingAccount payer, IReadOnlySet<string> knownBankCodes)
     {
@@ -115,26 +115,16 @@ public static class AztecaMassPayment
         }
     }
 
-    public static string? AccountIssue(AccountType type, string digits, string bankCode)
-    {
-        if (digits.Length == 0)
-        {
-            return null;
-        }
-        var lengths = AccountLengths(type);
-        if (!lengths.Contains(digits.Length))
-        {
-            return $"Para este tipo de cuenta el número debe tener {string.Join(" o ", lengths)} dígitos (tiene {digits.Length}).";
-        }
-        return type switch
-        {
-            AccountType.Clabe when !BankText.IsClabe(digits) => "CLABE inválida: el dígito verificador no coincide.",
-            AccountType.Clabe when !digits.StartsWith(bankCode, StringComparison.Ordinal) =>
-                $"La CLABE es de otro banco (empieza con {digits[..3]}, el banco receptor es {bankCode}).",
-            AccountType.DebitCard when !BankText.IsLuhn(digits) => "Número de tarjeta inválido: el dígito verificador no coincide.",
-            _ => null,
-        };
-    }
+    /// <summary>The capture checks of <see cref="Platform.Core.People.AccountNumbers"/> (PLAN D82), on the layout's codes.</summary>
+    public static string? AccountIssue(AccountType type, string digits, string bankCode) =>
+        digits.Length == 0
+            ? null
+            : Platform.Core.People.AccountNumbers.Issue(type switch
+            {
+                AccountType.DebitCard => Platform.Core.People.BankAccountType.DebitCard,
+                AccountType.Clabe => Platform.Core.People.BankAccountType.Clabe,
+                _ => Platform.Core.People.BankAccountType.OwnAccount,
+            }, digits, bankCode);
 
     private static readonly FieldRule Cents = v =>
         decimal.TryParse(v, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var d)

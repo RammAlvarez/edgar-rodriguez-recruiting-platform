@@ -68,41 +68,11 @@ public static partial class BankText
 
     public static bool IsEmail(string value) => EmailPattern().IsMatch(value);
 
-    /// <summary>CLABE: 18 digits, weights 3-7-1 over the first 17, control digit = (10 − Σ mod 10) mod 10.</summary>
-    public static bool IsClabe(string value)
-    {
-        if (value.Length != 18 || !value.All(char.IsAsciiDigit))
-        {
-            return false;
-        }
-        int[] weights = [3, 7, 1];
-        var sum = 0;
-        for (var i = 0; i < 17; i++)
-        {
-            sum += (value[i] - '0') * weights[i % 3] % 10;
-        }
-        return (10 - sum % 10) % 10 == value[17] - '0';
-    }
+    /// <inheritdoc cref="Platform.Core.People.AccountNumbers.IsClabe"/>
+    public static bool IsClabe(string value) => Platform.Core.People.AccountNumbers.IsClabe(value);
 
-    /// <summary>Luhn check of a card number.</summary>
-    public static bool IsLuhn(string value)
-    {
-        if (value.Length == 0 || !value.All(char.IsAsciiDigit))
-        {
-            return false;
-        }
-        var sum = 0;
-        for (var i = 0; i < value.Length; i++)
-        {
-            var d = value[value.Length - 1 - i] - '0';
-            if (i % 2 == 1)
-            {
-                d = d * 2 > 9 ? d * 2 - 9 : d * 2;
-            }
-            sum += d;
-        }
-        return sum % 10 == 0;
-    }
+    /// <inheritdoc cref="Platform.Core.People.AccountNumbers.IsLuhn"/>
+    public static bool IsLuhn(string value) => Platform.Core.People.AccountNumbers.IsLuhn(value);
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Spaces();

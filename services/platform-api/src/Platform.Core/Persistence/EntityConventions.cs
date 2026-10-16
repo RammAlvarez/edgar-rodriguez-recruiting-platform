@@ -19,7 +19,9 @@ public static class EntityConventions
         // The entity creates its own uid (Guid.CreateVersion7) so the audit trail and FKs know it before the insert;
         // the column default only serves raw SQL inserts.
         b.Property<Guid>("Uid").HasDefaultValueSql("gen_random_uuid()").ValueGeneratedNever();
-        b.HasAlternateKey("Uid");
+        // Named after the table (call after ToTable): a relationship configured before the principal's own configuration
+        // would otherwise name the key after the entity type and rename it in the next migration.
+        b.HasAlternateKey("Uid").HasName($"ak_{b.Metadata.GetTableName()}_uid");
     }
 
     public static void HasStamps<T>(this EntityTypeBuilder<T> b) where T : class, IStamped
