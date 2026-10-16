@@ -102,6 +102,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | `card_request_status` | `queued`, `in_batch`, `uploaded`, `received`, `cancelled` |
 | `payment_batch_kind` | `period_payment`, `pending_payment`, `frequent_accounts` |
 | `registration_bank` | `banorte`, `banregio` |
+| `document_template_scope` | `candidate`, `employee` |
 | `payment_type` | `spei` (1), `tef` (2), `baz_transfer` (3) |
 | `notification_kind` | `document_expiring`, `document_uploaded`, `opening_idle`, `attendance_missing`, `period_ready`, `user_invited`, `comment_posted` |
 
@@ -230,9 +231,11 @@ Seed: 002 Banamex, 012 BBVA, 014 Santander, 019 Banjército, 021 HSBC, 030 Bají
 
 ```
 document_types(id, code UNIQUE, name_es, has_expiry bool, default_validity_days int NULL, sort_order, is_active)
-document_templates(id, name_es, scope enum('candidate','employee'), is_default bool)
-document_template_items(template_id FK, document_type_id FK, is_required bool, PK(template_id, document_type_id))
+document_templates(id, name_es UNIQUE, scope document_template_scope, is_default bool)   -- one default per scope (partial unique index)
+document_template_items(id, template_id FK, document_type_id FK, is_required bool, UNIQUE(template_id, document_type_id))
 ```
+
+`default_validity_days` only when `has_expiry` (CHECK). Reference rows (13 types, a default template per scope) are inserted by the S3 migration (`ReferenceDataSql`), never overwritten afterwards.
 
 Seed codes: `INE`, `CURP`, `RFC`, `NSS`, `ACTA_NAC`, `DOMICILIO`, `ESTUDIOS`, `CUENTA_BANCO`, `ANTECEDENTES`, `RECOMENDACION`, `CV`, `FOTO`, `CONTRATO`.
 
@@ -257,13 +260,15 @@ View `platform.person_document_completeness(person_id, template_id) → numeric(
 ### 3.11 Catalogs
 
 ```
-zones(id, name_es, state, is_active)                                  -- municipios NL + custom
-positions_catalog(id, name_es, is_active)                              -- "AUXILIAR", "MECÁNICO", "VALIDADOR" (recruiting side)
-education_levels(id, name_es, sort_order)                              -- primaria … maestría
-benefits(id, name_es, is_default)                                      -- "De ley", "Aguinaldo 30 días", "Vales"
-holidays(id, date UNIQUE, name_es, is_mandatory)                       -- LFT art. 74 + client-specific
+zones(id, name_es, state, is_active, UNIQUE(state, name_es))          -- the 51 municipios NL (migration) + custom
+positions_catalog(id, name_es UNIQUE, is_active)                       -- "AUXILIAR", "MECÁNICO", "VALIDADOR" (recruiting side)
+education_levels(id, name_es UNIQUE, sort_order, is_active)            -- primaria … maestría
+benefits(id, name_es UNIQUE, is_default, is_active)                    -- "Prestaciones de ley", "Vales de despensa", …
+holidays(id, date UNIQUE, name_es, is_mandatory)                       -- LFT art. 74 (generated per year) + client-specific
 notifications(id, user_id FK, kind notification_kind, payload jsonb, read_at, created_at)
 ```
+
+Catalog rows are deactivated (`is_active`), never deleted, so past records keep their labels; only `holidays` rows are deleted (a wrong date). `POST /v1/catalogs/holidays/statutory {year}` adds the LFT art. 74 days of a year (fraction IX, election days, by hand).
 
 ---
 

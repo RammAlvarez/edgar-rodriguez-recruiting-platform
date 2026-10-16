@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Platform.Core.People;
 
 namespace Platform.Bank.Layouts;
 
@@ -31,31 +32,18 @@ public static partial class BankText
     /// <summary>Only digits, spaces and separators removed (account and phone numbers typed with spaces).</summary>
     public static string Digits(string? value) => value is null ? "" : NonDigits().Replace(value, "");
 
-    public static bool IsCurp(string value) => CurpPattern().IsMatch(value) && CurpBirthDate(value) is not null;
+    public static bool IsCurp(string value) => MexicanIds.IsCurp(value);
 
-    /// <summary>Birth date in positions 5–10 (YYMMDD); position 17 is a digit before 2000 and a letter from 2000.</summary>
-    public static DateOnly? CurpBirthDate(string curp)
-    {
-        if (curp.Length != 18)
-        {
-            return null;
-        }
-        var century = char.IsDigit(curp[16]) ? 1900 : 2000;
-        return int.TryParse(curp.AsSpan(4, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var yy)
-            && int.TryParse(curp.AsSpan(6, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var mm)
-            && int.TryParse(curp.AsSpan(8, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var dd)
-            && mm is >= 1 and <= 12 && dd >= 1 && dd <= DateTime.DaysInMonth(century + yy, mm)
-                ? new DateOnly(century + yy, mm, dd)
-                : null;
-    }
+    /// <inheritdoc cref="MexicanIds.CurpBirthDate"/>
+    public static DateOnly? CurpBirthDate(string curp) => MexicanIds.CurpBirthDate(curp);
 
-    /// <summary>Positions 12–13 are the birth state; <c>NE</c> means born abroad.</summary>
-    public static bool CurpIsForeignBorn(string curp) => curp.Length == 18 && curp.AsSpan(11, 2) is "NE";
+    /// <inheritdoc cref="MexicanIds.CurpIsForeignBorn"/>
+    public static bool CurpIsForeignBorn(string curp) => MexicanIds.CurpIsForeignBorn(curp);
 
     public static int AgeOn(DateOnly birth, DateOnly today) =>
         today.Year - birth.Year - (today < birth.AddYears(today.Year - birth.Year) ? 1 : 0);
 
-    public static bool IsRfc13(string value) => RfcPattern().IsMatch(value);
+    public static bool IsRfc13(string value) => MexicanIds.IsPersonRfc(value);
 
     /// <summary>10 digits, not one repeated digit and not a run going up or down (1111111111, 0123456789).</summary>
     public static bool IsMobile(string value)
@@ -122,11 +110,7 @@ public static partial class BankText
     [GeneratedRegex(@"\D")]
     private static partial Regex NonDigits();
 
-    [GeneratedRegex(@"^[A-Z]{4}\d{6}[A-Z]{6}[A-Z0-9]{2}$")]
-    private static partial Regex CurpPattern();
 
-    [GeneratedRegex(@"^[A-Z&]{4}\d{6}[A-Z0-9]{3}$")]
-    private static partial Regex RfcPattern();
 
     [GeneratedRegex(@"^\d{10}$")]
     private static partial Regex TenDigits();

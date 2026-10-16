@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using Platform.Core.Audit;
-using Platform.Core.Users;
 
 namespace Platform.Infrastructure.Persistence;
 
@@ -24,10 +22,8 @@ public static class PersistenceServices
     public static NpgsqlDataSource BuildDataSource(string connectionString)
     {
         var builder = new NpgsqlDataSourceBuilder(connectionString).EnableDynamicJson();
-        builder.MapEnum<UserRole>($"{PlatformDbContext.Schema}.user_role");
-        builder.MapEnum<PermissionModule>($"{PlatformDbContext.Schema}.permission_module");
-        builder.MapEnum<AuditAction>($"{PlatformDbContext.Schema}.audit_action");
-        builder.MapEnum<DataAccessKind>($"{PlatformDbContext.Schema}.data_access_kind");
+        foreach (var e in PostgresEnums.All)
+            e.MapOnDataSource(builder);
         return builder.Build();
     }
 
@@ -36,10 +32,8 @@ public static class PersistenceServices
             .UseNpgsql(dataSource, npgsql =>
             {
                 npgsql.MigrationsHistoryTable("__ef_migrations_history", PlatformDbContext.Schema);
-                npgsql.MapEnum<UserRole>("user_role", PlatformDbContext.Schema);
-                npgsql.MapEnum<PermissionModule>("permission_module", PlatformDbContext.Schema);
-                npgsql.MapEnum<AuditAction>("audit_action", PlatformDbContext.Schema);
-                npgsql.MapEnum<DataAccessKind>("data_access_kind", PlatformDbContext.Schema);
+                foreach (var e in PostgresEnums.All)
+                    e.MapInEf(npgsql);
             })
             .UseSnakeCaseNamingConvention();
 }

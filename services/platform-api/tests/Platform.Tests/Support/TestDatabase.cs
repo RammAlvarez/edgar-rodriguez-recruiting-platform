@@ -1,4 +1,5 @@
 using Npgsql;
+using Platform.Infrastructure.Persistence.MigrationSql;
 
 namespace Platform.Tests.Support;
 
@@ -19,7 +20,10 @@ public static class TestDatabase
         Environment.GetEnvironmentVariable("TEST_MIGRATIONS_DATABASE_URL")
         ?? $"Host=localhost;Port={Port};Database=platform_test;Username=platform_owner;Password=platform_owner;Include Error Detail=true";
 
-    /// <summary>Empties every table of schema <c>platform</c> except the migrations history.</summary>
+    /// <summary>
+    /// Empties every table of schema <c>platform</c> except the migrations history, then puts back the reference
+    /// catalogs the migrations insert (banks, document types, zones, …) as a fresh installation has them.
+    /// </summary>
     public static async Task TruncateAsync()
     {
         await using var connection = new NpgsqlConnection(OwnerConnectionString);
@@ -38,6 +42,8 @@ public static class TestDatabase
                 END IF;
             END $$;
             """;
+        await command.ExecuteNonQueryAsync();
+        command.CommandText = ReferenceDataSql.Up;
         await command.ExecuteNonQueryAsync();
     }
 

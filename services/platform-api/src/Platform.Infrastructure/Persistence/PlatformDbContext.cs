@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Platform.Core.Audit;
 using Platform.Core.Users;
 
 namespace Platform.Infrastructure.Persistence;
@@ -22,10 +21,8 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.HasPostgresExtension("citext");
-        modelBuilder.HasPostgresEnum<UserRole>(Schema, "user_role");
-        modelBuilder.HasPostgresEnum<PermissionModule>(Schema, "permission_module");
-        modelBuilder.HasPostgresEnum<AuditAction>(Schema, "audit_action");
-        modelBuilder.HasPostgresEnum<DataAccessKind>(Schema, "data_access_kind");
+        foreach (var e in PostgresEnums.All)
+            e.Declare(modelBuilder);
         foreach (var assembly in ModuleAssemblies)
             modelBuilder.ApplyConfigurationsFromAssembly(assembly);
     }

@@ -1,9 +1,11 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Platform.Core.Access;
+using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
 
 namespace Platform.Tests.Support;
@@ -74,4 +76,29 @@ public abstract class ApiTest(ApiFactory factory) : IAsyncLifetime
         await work(db);
         return true;
     });
+
+    /// <summary>A signed-in client for a new user of that role (Administrador: with exactly <paramref name="grants"/>).</summary>
+    protected async Task<HttpClient> As(UserRole role, params PermissionModule[] grants)
+    {
+        var user = await WithDb(async db =>
+        {
+            Guid? clientId = role == UserRole.Client ? (await db.AddClient($"CLIENTE-{Guid.NewGuid():N}")).Uid : null;
+            return await db.AddUser(role, grants: grants.Select(m => new UserPermission { Module = m }), clientId: clientId);
+        });
+        return Client(user.AuthUid);
+    }
+
+    /// <summary>An Administrador holding every grant (the owner).</summary>
+    protected Task<HttpClient> AsOwner() => As(UserRole.Administrator, [.. PermissionModules.All]);
+
+    protected static async Task<JsonElement> BodyOf(HttpResponseMessage response) =>
+        JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.Clone();
+
+    /// <summary>The problem-details <c>detail</c> (403/404/409 message).</summary>
+    protected static async Task<string?> DetailOf(HttpResponseMessage response) =>
+        (await BodyOf(response)).TryGetProperty("detail", out var d) ? d.GetString() : null;
+
+    /// <summary>The 400 field → messages map.</summary>
+    protected static async Task<Dictionary<string, string[]>> ErrorsOf(HttpResponseMessage response) =>
+        (await BodyOf(response)).GetProperty("errors").Deserialize<Dictionary<string, string[]>>()!;
 }

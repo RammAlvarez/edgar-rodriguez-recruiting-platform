@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Platform.Core.Audit;
+using Platform.Core.Catalogs;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
 
@@ -26,7 +27,9 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "audit_action", new[] { "insert", "update", "delete", "unlock", "export", "login" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "data_access_kind", new[] { "view_profile", "view_document", "download_document", "decrypt_account" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "document_template_scope", new[] { "candidate", "employee" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "permission_module", new[] { "recruiting_reports", "payroll_prepayroll", "payroll_attendance", "payroll_incidents", "payroll_staff", "payroll_payment_files", "payroll_card_requests", "users" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "registration_bank", new[] { "banorte", "banregio" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "user_role", new[] { "administrator", "recruiter", "client" });
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -149,6 +152,592 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Platform.Core.Catalogs.Bank", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("SpeiCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("spei_code");
+
+                    b.Property<bool>("SupportsMassivePayment")
+                        .HasColumnType("boolean")
+                        .HasColumnName("supports_massive_payment");
+
+                    b.Property<RegistrationBank?>("SupportsRegistration")
+                        .HasColumnType("platform.registration_bank")
+                        .HasColumnName("supports_registration");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_banks");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_banks_uid");
+
+                    b.HasIndex("SpeiCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_banks_spei_code");
+
+                    b.ToTable("banks", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_banks_spei_code", "spei_code ~ '^\\d{3}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.Benefit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_benefits");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_benefits_uid");
+
+                    b.HasIndex("NameEs")
+                        .IsUnique()
+                        .HasDatabaseName("ix_benefits_name_es");
+
+                    b.ToTable("benefits", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.CatalogPosition", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_positions_catalog");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_positions_catalog_uid");
+
+                    b.HasIndex("NameEs")
+                        .IsUnique()
+                        .HasDatabaseName("ix_positions_catalog_name_es");
+
+                    b.ToTable("positions_catalog", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.DocumentTemplate", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<DocumentTemplateScope>("Scope")
+                        .HasColumnType("platform.document_template_scope")
+                        .HasColumnName("scope");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_document_templates");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_document_templates_uid");
+
+                    b.HasIndex("NameEs")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_templates_name_es");
+
+                    b.HasIndex("Scope")
+                        .IsUnique()
+                        .HasDatabaseName("ux_document_templates_default")
+                        .HasFilter("is_default");
+
+                    b.ToTable("document_templates", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.DocumentTemplateItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DocumentTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_type_id");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_required");
+
+                    b.Property<Guid>("TemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("template_id");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_document_template_items");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_document_template_items_uid");
+
+                    b.HasIndex("DocumentTypeId")
+                        .HasDatabaseName("ix_document_template_items_document_type_id");
+
+                    b.HasIndex("TemplateId", "DocumentTypeId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_template_items_template_id_document_type_id");
+
+                    b.ToTable("document_template_items", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.DocumentType", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int?>("DefaultValidityDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("default_validity_days");
+
+                    b.Property<bool>("HasExpiry")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_expiry");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_document_types");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_document_type_uid");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_types_code");
+
+                    b.ToTable("document_types", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_document_types_code", "code ~ '^[A-Z][A-Z0-9_]*$'");
+
+                            t.HasCheckConstraint("ck_document_types_validity", "default_validity_days IS NULL OR (has_expiry AND default_validity_days > 0)");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.EducationLevel", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_education_levels");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_education_levels_uid");
+
+                    b.HasIndex("NameEs")
+                        .IsUnique()
+                        .HasDatabaseName("ix_education_levels_name_es");
+
+                    b.ToTable("education_levels", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.Holiday", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_mandatory");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_holidays");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_holidays_uid");
+
+                    b.HasIndex("Date")
+                        .IsUnique()
+                        .HasDatabaseName("ix_holidays_date");
+
+                    b.ToTable("holidays", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.Zone", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("state");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_zones");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_zones_uid");
+
+                    b.HasIndex("State", "NameEs")
+                        .IsUnique()
+                        .HasDatabaseName("ix_zones_state_name_es");
+
+                    b.ToTable("zones", "platform");
+                });
+
             modelBuilder.Entity("Platform.Core.Clients.Client", b =>
                 {
                     b.Property<long>("Id")
@@ -192,7 +781,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasColumnName("short_name");
 
                     b.Property<Guid>("Uid")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("uid")
                         .HasDefaultValueSql("gen_random_uuid()");
@@ -303,7 +891,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasColumnName("role");
 
                     b.Property<Guid>("Uid")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("uid")
                         .HasDefaultValueSql("gen_random_uuid()");
@@ -369,7 +956,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasColumnName("module");
 
                     b.Property<Guid>("Uid")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("uid")
                         .HasDefaultValueSql("gen_random_uuid()");
@@ -406,6 +992,25 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("user_permissions", "platform");
                 });
 
+            modelBuilder.Entity("Platform.Core.Catalogs.DocumentTemplateItem", b =>
+                {
+                    b.HasOne("Platform.Core.Catalogs.DocumentType", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_template_items_document_type_document_type_id");
+
+                    b.HasOne("Platform.Core.Catalogs.DocumentTemplate", null)
+                        .WithMany("Items")
+                        .HasForeignKey("TemplateId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_template_items_document_templates_template_id");
+                });
+
             modelBuilder.Entity("Platform.Core.Users.User", b =>
                 {
                     b.HasOne("Platform.Core.Clients.Client", null)
@@ -432,6 +1037,11 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_user_permissions_users_user_id");
+                });
+
+            modelBuilder.Entity("Platform.Core.Catalogs.DocumentTemplate", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Platform.Core.Users.User", b =>
