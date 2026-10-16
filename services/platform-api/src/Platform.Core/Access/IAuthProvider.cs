@@ -15,6 +15,9 @@ public interface IAuthProvider
     /// <summary>Creates the provider account for an invited user (or returns the existing one with that email) and returns its uid.</summary>
     Task<string> CreateUserAsync(string email, string displayName, CancellationToken cancellationToken);
 
+    /// <summary>Changes the sign-in email of an account whose invitation was not accepted yet.</summary>
+    Task UpdateEmailAsync(string uid, string email, CancellationToken cancellationToken);
+
     /// <summary>A one-time link the user opens to set their password (admin app, email/password sign-in).</summary>
     Task<string> CreatePasswordSetupLinkAsync(string email, CancellationToken cancellationToken);
 }

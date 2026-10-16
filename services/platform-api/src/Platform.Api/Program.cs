@@ -13,6 +13,7 @@ using Platform.Core.Clients;
 using Platform.Core.Http;
 using Platform.Core.People;
 using Platform.Core.Users;
+using Platform.Infrastructure.Email;
 using Platform.Infrastructure.Persistence;
 using Platform.Infrastructure.Storage;
 using Serilog;
@@ -53,6 +54,12 @@ builder.Services.AddSingleton(settings.S3);
 builder.Services.AddSingleton<IObjectStorage, S3ObjectStorage>();
 builder.Services.AddSingleton(settings.Firebase);
 builder.Services.AddSingleton<IAuthProvider, FirebaseAuthProvider>();
+builder.Services.AddSingleton(settings.Links);
+builder.Services.AddSingleton(settings.Email);
+if (settings.Email.ResendApiKey is { Length: > 0 })
+    builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>(c => c.BaseAddress = ResendEmailSender.BaseAddress);
+else
+    builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 builder.Services.AddValidatorsFromAssemblyContaining<MeDto>(includeInternalTypes: true);
 
@@ -91,6 +98,7 @@ v1.MapCatalogEndpoints();
 v1.MapClientEndpoints();
 v1.MapPeopleEndpoints();
 v1.MapDocumentEndpoints();
+v1.MapUserEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

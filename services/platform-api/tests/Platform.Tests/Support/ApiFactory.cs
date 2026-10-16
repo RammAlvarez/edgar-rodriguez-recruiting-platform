@@ -20,6 +20,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public FakeObjectStorage Storage { get; } = new();
 
+    public FakeEmailSender Email { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -29,6 +31,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             services.AddSingleton<IAuthProvider>(Auth);
             services.AddSingleton<IObjectStorage>(Storage);
+            services.AddSingleton<IEmailSender>(Email);
         });
     }
 
@@ -90,6 +93,13 @@ public abstract class ApiTest(ApiFactory factory) : IAsyncLifetime
             return await db.AddUser(role, grants: grants.Select(m => new UserPermission { Module = m }), clientId: clientId);
         });
         return Client(user.AuthUid);
+    }
+
+    /// <summary>A new user with exactly these grants and a client signed in as them.</summary>
+    protected async Task<(User User, HttpClient Http)> SignedIn(UserRole role, params UserPermission[] grants)
+    {
+        var user = await WithDb(db => db.AddUser(role, $"Usuario {role}", grants: grants));
+        return (user, Client(user.AuthUid));
     }
 
     /// <summary>An Administrador holding every grant (the owner).</summary>

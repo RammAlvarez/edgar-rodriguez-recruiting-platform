@@ -1,4 +1,6 @@
 using Platform.Api.Auth;
+using Platform.Core.Abstractions;
+using Platform.Infrastructure.Email;
 using Platform.Infrastructure.Storage;
 
 namespace Platform.Api.Hosting;
@@ -9,7 +11,9 @@ public sealed record PlatformSettings(
     string InternalSecret,
     IReadOnlyList<string> AppOrigins,
     FirebaseSettings Firebase,
-    S3Settings S3)
+    S3Settings S3,
+    EmailSettings Email,
+    AppLinks Links)
 {
     public static PlatformSettings FromConfiguration(IConfiguration c, bool allowDefaults)
     {
@@ -31,6 +35,12 @@ public sealed record PlatformSettings(
                 Get("S3_SECRET_ACCESS_KEY", "minioadmin"),
                 Get("S3_BUCKET_DOCUMENTS", "documents"),
                 Get("S3_BUCKET_EXPORTS", "exports"),
-                bool.Parse(Get("S3_FORCE_PATH_STYLE", "true"))));
+                bool.Parse(Get("S3_FORCE_PATH_STYLE", "true"))),
+            // Locally an empty key logs the emails instead of sending them (LogEmailSender).
+            new EmailSettings(Get("EMAIL_FROM", "Plataforma (local) <no-reply@localhost>"), allowDefaults ? c["RESEND_API_KEY"] : Get("RESEND_API_KEY", "")),
+            new AppLinks(
+                Get("ADMIN_APP_URL", "http://localhost:4300"),
+                Get("CANDIDATES_APP_URL", "http://localhost:4301"),
+                Get("CLIENTS_APP_URL", "http://localhost:4302")));
     }
 }

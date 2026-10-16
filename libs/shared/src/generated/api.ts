@@ -18,6 +18,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StartSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/files/presign-upload": {
         parameters: {
             query?: never;
@@ -562,6 +578,54 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListUsers"];
+        put?: never;
+        post: operations["InviteUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{id}/resend-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResendInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -798,6 +862,20 @@ export type components = {
                 [key: string]: string[];
             };
         };
+        InviteResultDto: {
+            user: components["schemas"]["UserDto"];
+            invitationSent: boolean;
+        };
+        InviteUserRequest: {
+            email: string;
+            displayName: string;
+            role: components["schemas"]["UserRole"];
+            /** Format: uuid */
+            clientId: null | string;
+            grants: null | components["schemas"]["GrantDto"][];
+            /** Format: uuid */
+            clientContactId: null | string;
+        };
         MeDto: {
             /** Format: uuid */
             id: string;
@@ -975,6 +1053,35 @@ export type components = {
             notes: null | string;
             isActive: boolean;
         };
+        UpdateUserRequest: {
+            email: string;
+            displayName: string;
+            role: components["schemas"]["UserRole"];
+            /** Format: uuid */
+            clientId: null | string;
+            isActive: boolean;
+            mfaRequired: boolean;
+            grants: null | components["schemas"]["GrantDto"][];
+        };
+        UserDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            email: string;
+            role: components["schemas"]["UserRole"];
+            /** Format: uuid */
+            clientId: null | string;
+            clientName: null | string;
+            mfaRequired: boolean;
+            isActive: boolean;
+            /** Format: date-time */
+            lastLoginAt: Date | null;
+            /** Format: date-time */
+            invitedAt: Date | null;
+            /** Format: date-time */
+            acceptedAt: Date | null;
+            grants: components["schemas"]["GrantDto"][];
+        };
         /** @enum {unknown} */
         UserRole: "administrator" | "recruiter" | "client";
         ZoneDto: {
@@ -1029,6 +1136,8 @@ export type GrantDto = components['schemas']['GrantDto'];
 export type HolidayDto = components['schemas']['HolidayDto'];
 export type HolidayRequest = components['schemas']['HolidayRequest'];
 export type HttpValidationProblemDetails = components['schemas']['HttpValidationProblemDetails'];
+export type InviteResultDto = components['schemas']['InviteResultDto'];
+export type InviteUserRequest = components['schemas']['InviteUserRequest'];
 export type MeDto = components['schemas']['MeDto'];
 export type NewContactFields = components['schemas']['NewContactFields'];
 export type PermissionModule = components['schemas']['PermissionModule'];
@@ -1046,12 +1155,34 @@ export type SiteRequest = components['schemas']['SiteRequest'];
 export type StatutoryHolidaysRequest = components['schemas']['StatutoryHolidaysRequest'];
 export type StatutoryHolidaysResult = components['schemas']['StatutoryHolidaysResult'];
 export type UpdateClientRequest = components['schemas']['UpdateClientRequest'];
+export type UpdateUserRequest = components['schemas']['UpdateUserRequest'];
+export type UserDto = components['schemas']['UserDto'];
 export type UserRole = components['schemas']['UserRole'];
 export type ZoneDto = components['schemas']['ZoneDto'];
 export type ZoneRequest = components['schemas']['ZoneRequest'];
 export type $defs = Record<string, never>;
 export interface operations {
     GetMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeDto"];
+                };
+            };
+        };
+    };
+    StartSession: {
         parameters: {
             query?: never;
             header?: never;
@@ -2894,6 +3025,179 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDto"][];
+                };
+            };
+        };
+    };
+    InviteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteUserRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResultDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResendInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResultDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

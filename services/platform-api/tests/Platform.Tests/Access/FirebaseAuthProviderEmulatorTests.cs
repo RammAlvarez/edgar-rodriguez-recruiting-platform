@@ -50,6 +50,19 @@ public sealed class FirebaseAuthProviderEmulatorTests
         Assert.Contains("oobCode=", await _provider.CreatePasswordSetupLinkAsync(email, CancellationToken.None), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task The_email_of_a_pending_invitation_can_be_changed()
+    {
+        if (EmulatorHost is null)
+            return;
+        var uid = await _provider.CreateUserAsync($"{Guid.NewGuid():N}@example.test", "Belem González", CancellationToken.None);
+        var corrected = $"{Guid.NewGuid():N}@example.test";
+
+        await _provider.UpdateEmailAsync(uid, corrected, CancellationToken.None);
+
+        Assert.Equal(uid, await _provider.CreateUserAsync(corrected, "Belem González", CancellationToken.None));
+    }
+
     private static async Task<(string Uid, string IdToken)> SignUp(string email)
     {
         using var http = new HttpClient();

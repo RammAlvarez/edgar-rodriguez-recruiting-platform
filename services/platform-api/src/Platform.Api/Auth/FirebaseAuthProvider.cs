@@ -71,6 +71,9 @@ public sealed class FirebaseAuthProvider : IAuthProvider
         }
     }
 
+    public Task UpdateEmailAsync(string uid, string email, CancellationToken cancellationToken) =>
+        _auth.Value.UpdateUserAsync(new UserRecordArgs { Uid = uid, Email = email }, cancellationToken);
+
     public Task<string> CreatePasswordSetupLinkAsync(string email, CancellationToken cancellationToken) =>
         _auth.Value.GeneratePasswordResetLinkAsync(email, null, cancellationToken);
 }
