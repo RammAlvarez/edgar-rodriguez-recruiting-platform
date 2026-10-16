@@ -13,11 +13,13 @@ public sealed class AttendanceSummariesTests
         new() { WorkDate = new DateOnly(2026, 9, day), Status = status, HoursWorked = hours, OvertimeHours = overtime };
 
     [Fact]
-    public void Six_days_with_the_holiday_off_is_F6_entitled_and_sunday()
+    public void The_holiday_off_is_a_paid_dia_and_entitles_festivo_primera_mitad()
     {
-        var week = new[] { 11, 12, 13, 14, 15, 17 }.Select(d => Day(d, AttendanceStatus.Present)).Append(Day(16, AttendanceStatus.Holiday));
+        var week = new[] { 11, 12, 14, 15, 17 }.Select(d => Day(d, AttendanceStatus.Present)).Append(Day(16, AttendanceStatus.Holiday))
+            .Append(Day(13, AttendanceStatus.RestDay));
         var s = AttendanceSummaries.Summarize(week, Holidays);
-        Assert.Equal((6m, true, 1, 0m), (s.DaysWorked, s.WorkedSunday, s.HolidaysEntitled, s.HolidaysWorked));
+        // SEM 38: F = 6 with O and no prima dominical.
+        Assert.Equal((6m, false, 1, 0m), (s.DaysWorked, s.WorkedSunday, s.HolidaysEntitled, s.HolidaysWorked));
     }
 
     [Fact]

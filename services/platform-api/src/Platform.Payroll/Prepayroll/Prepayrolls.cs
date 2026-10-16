@@ -40,6 +40,19 @@ public static class Prepayrolls
             await transaction.CommitAsync(ct);
     }
 
+    /// <summary>Saves the pending changes and recomputes the given lines (period, employee) in one transaction.</summary>
+    public static async Task SaveAndRecomputeLinesAsync(DbContext db, IEnumerable<(Guid PeriodId, Guid EmployeeId)> lines,
+        DateTimeOffset now, CancellationToken ct)
+    {
+        await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
+        await db.SaveChangesAsync(ct);
+        foreach (var (periodId, employeeId) in lines.Distinct())
+            await RecomputeAsync(db, periodId, employeeId, now, ct);
+        await db.SaveChangesAsync(ct);
+        if (transaction is not null)
+            await transaction.CommitAsync(ct);
+    }
+
     /// <summary>
     /// After an alta, a reingreso, a change of rates / turno / group: saves, then recomputes the employee's lines in every open
     /// period — creating them in the current group's periods and removing those left in another group's.

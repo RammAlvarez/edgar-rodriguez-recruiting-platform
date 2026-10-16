@@ -10,7 +10,8 @@ namespace Platform.Payroll.Prepayroll;
 /// paid time off, <c>vacation</c> and <c>leave_paid</c> (open with the owner). A <c>present</c> on a holiday date is an
 /// ordinary día; only <c>holiday_worked</c> pays FESTIVO LABORADO.</item>
 /// <item><c>partial</c> is not a día: its hours worked are HORAS INCOMPLETAS.</item>
-/// <item><c>holiday</c> on a holiday date entitles FESTIVO PRIMERA MITAD (D51) and is not a día.</item>
+/// <item><c>holiday</c> on a holiday date is a paid día (the descanso obligatorio, LFT art. 74) and entitles FESTIVO PRIMERA
+/// MITAD (D51). SEM 38 row 118 shows it: hired on the 15th, F = 3 with O — the 15th, the 16th and the 17th.</item>
 /// <item>Horas extra = Σ extra hours of every day; prima dominical when a worked day is a Sunday.</item>
 /// <item>Each <c>rest_day_worked</c> also pays DESCANSO LABORADO (the group's amount, 500 by default).</item>
 /// </list>
@@ -30,13 +31,16 @@ public static class AttendanceSummaries
     {
         var list = days.ToList();
         return new AttendanceSummary(
-            DaysWorked: list.Count(d => CountsAsDay.Contains(d.Status)),
+            DaysWorked: list.Count(d => CountsAsDay.Contains(d.Status) || IsEntitled(d, holidays)),
             WorkedSunday: list.Any(d => Worked.Contains(d.Status) && d.WorkDate.DayOfWeek == DayOfWeek.Sunday),
             PartialHours: list.Where(d => d.Status == AttendanceStatus.Partial).Sum(d => d.HoursWorked ?? 0),
             OvertimeHours: list.Sum(d => d.OvertimeHours),
-            HolidaysEntitled: list.Count(d => d.Status == AttendanceStatus.Holiday && holidays.Contains(d.WorkDate)),
+            HolidaysEntitled: list.Count(d => IsEntitled(d, holidays)),
             HolidaysWorked: list.Count(d => d.Status == AttendanceStatus.HolidayWorked));
     }
+
+    private static bool IsEntitled(AttendanceRecord d, IReadOnlySet<DateOnly> holidays) =>
+        d.Status == AttendanceStatus.Holiday && holidays.Contains(d.WorkDate);
 
     /// <summary>The DESCANSO LABORADO items the attendance pays (one per rest day worked).</summary>
     public static IEnumerable<IncidentInput> RestDaysWorked(IEnumerable<AttendanceRecord> days, decimal amount) =>

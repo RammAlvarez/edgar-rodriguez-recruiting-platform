@@ -110,7 +110,7 @@ public sealed partial class Sem38GoldenTests
 
     private const string HolidayColumn = "FESTIVO PRIMERA MITAD";
 
-    private static IXLWorksheet Sheet() => new XLWorkbook(WorkbookPath()).Worksheet("SEM 38");
+    internal static IXLWorksheet Sheet() => new XLWorkbook(WorkbookPath()).Worksheet("SEM 38");
 
     private static List<Row> Rows()
     {
@@ -147,7 +147,7 @@ public sealed partial class Sem38GoldenTests
     }
 
     /// <summary>A cell's number as Excel cached it (never recalculated by ClosedXML); empty is 0.</summary>
-    private static double Number(IXLCell cell)
+    internal static double Number(IXLCell cell)
     {
         if (cell.IsEmpty())
         {
@@ -158,7 +158,7 @@ public sealed partial class Sem38GoldenTests
     }
 
     /// <summary>The hours in an <c>=G{row}*n</c> formula (columns N and P).</summary>
-    private static decimal HourlyMultiple(IXLCell cell, int row)
+    internal static decimal HourlyMultiple(IXLCell cell, int row)
     {
         if (cell.IsEmpty())
         {
@@ -173,7 +173,7 @@ public sealed partial class Sem38GoldenTests
     [GeneratedRegex(@"^=?G(\d+)\*(\d+(?:\.\d+)?)$")]
     private static partial Regex HourlyFormula();
 
-    private static string WorkbookPath()
+    internal static string WorkbookPath()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {

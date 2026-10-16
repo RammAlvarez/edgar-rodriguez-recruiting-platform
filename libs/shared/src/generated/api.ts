@@ -1730,6 +1730,150 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPayrollPeriods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/groups/{id}/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreatePayrollPeriod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/periods/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPrepayroll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/periods/{id}/close-capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClosePrepayrollCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/lines/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPrepayrollLine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/lines/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SetPrepayrollLineComments"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/lines/{id}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdjustPrepayrollLine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListIncidents"];
+        put?: never;
+        post: operations["CreateIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/incidents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateIncident"];
+        post?: never;
+        delete: operations["DeleteIncident"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -1738,6 +1882,12 @@ export type components = {
             /** Format: uuid */
             id: string;
             displayName: string;
+        };
+        AdjustLineRequest: {
+            column: string;
+            /** Format: decimal */
+            amount: Decimal;
+            reason: string;
         };
         /** @enum {unknown} */
         ApplicationOutcome: "in_process" | "selected" | "hired" | "closed";
@@ -2222,6 +2372,8 @@ export type components = {
         };
         /** @enum {unknown} */
         ConceptCalc: "fixed_amount" | "qty_times_hourly_rate" | "qty_times_hourly_rate_x2" | "qty_times_hourly_rate_x3" | "qty_times_daily_salary_x2" | "percent_of_daily_salary" | "per_day_worked" | "manual";
+        /** @enum {unknown} */
+        ConceptKind: "earning" | "deduction";
         ConfirmDocumentRequest: {
             /** Format: uuid */
             documentTypeId: string;
@@ -2284,6 +2436,10 @@ export type components = {
             legalName: null | string;
             rfc: null | string;
             primaryContact: null | components["schemas"]["NewContactFields"];
+        };
+        CreatePeriodRequest: {
+            /** Format: date */
+            date: DateKey;
         };
         DocumentChecklistDto: {
             /** Format: uuid */
@@ -2579,6 +2735,48 @@ export type components = {
                 [key: string]: string[];
             };
         };
+        IncidentDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            /** Format: uuid */
+            periodId: string;
+            /** Format: int32 */
+            periodNumber: number | string;
+            /** Format: uuid */
+            originPeriodId: null | string;
+            /** Format: int32 */
+            originPeriodNumber: null | number | string;
+            conceptCode: string;
+            conceptName: string;
+            adjustedColumn: null | string;
+            /** Format: date */
+            date: DateKey;
+            /** Format: decimal */
+            quantity: Decimal;
+            /** Format: decimal */
+            amount: Decimal;
+            reason: null | string;
+            duringReview: boolean;
+            reportedBy: string;
+            /** Format: date-time */
+            createdAt: Date;
+            editable: boolean;
+        };
+        IncidentRequest: {
+            /** Format: uuid */
+            employeeId: string;
+            conceptCode: string;
+            /** Format: date */
+            date: DateKey;
+            /** Format: decimal */
+            quantity: Decimal | null;
+            /** Format: decimal */
+            amount: Decimal | null;
+            reason: null | string;
+        };
         InterviewDto: {
             /** Format: uuid */
             id: string;
@@ -2615,6 +2813,45 @@ export type components = {
             grants: null | components["schemas"]["GrantDto"][];
             /** Format: uuid */
             clientContactId: null | string;
+        };
+        /** @enum {unknown} */
+        ItemSource: "attendance" | "incident" | "position" | "manual";
+        LineCommentsRequest: {
+            comments: null | string;
+        };
+        LineDayDto: {
+            /** Format: date */
+            date: DateKey;
+            status: components["schemas"]["AttendanceStatus"];
+            /** Format: decimal */
+            hoursWorked: Decimal | null;
+            /** Format: decimal */
+            overtimeHours: Decimal;
+            isAutoAbsent: boolean;
+            isHoliday: boolean;
+        };
+        LineItemDto: {
+            code: string;
+            name: string;
+            column: string;
+            kind: components["schemas"]["ConceptKind"];
+            /** Format: decimal */
+            quantity: Decimal;
+            /** Format: decimal */
+            unitValue: Decimal;
+            /** Format: decimal */
+            amount: Decimal;
+            source: components["schemas"]["ItemSource"];
+            /** Format: uuid */
+            incidentId: null | string;
+            reason: null | string;
+        };
+        LinePaymentDto: {
+            state: components["schemas"]["PaymentState"];
+            bank: null | string;
+            last4: null | string;
+            accountType: null | components["schemas"]["BankAccountType"];
+            thirdPartyHolder: null | string;
         };
         MeDto: {
             /** Format: uuid */
@@ -2868,6 +3105,8 @@ export type components = {
             staleAfterDays: number | string;
             openings: components["schemas"]["OpenOpeningDto"][];
         };
+        /** @enum {unknown} */
+        PaymentState: "ready" | "card_requested" | "missing_account";
         PayrollGroupDetailDto: {
             /** Format: uuid */
             id: string;
@@ -2935,6 +3174,33 @@ export type components = {
             timeZone: null | string;
             isActive: boolean;
         };
+        PayrollPeriodDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            groupId: string;
+            groupName: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            /** Format: int32 */
+            number: number | string;
+            /** Format: int32 */
+            year: number | string;
+            /** Format: date */
+            startDate: DateKey;
+            /** Format: date */
+            endDate: DateKey;
+            status: components["schemas"]["PeriodStatus"];
+            /** Format: date-time */
+            reviewStartedAt: Date | null;
+            /** Format: int32 */
+            lines: number | string;
+            /** Format: decimal */
+            totalNet: Decimal;
+        };
+        /** @enum {unknown} */
+        PeriodStatus: "capturing" | "in_review" | "paid";
         /** @enum {unknown} */
         PeriodType: "weekly" | "biweekly";
         /** @enum {unknown} */
@@ -3075,6 +3341,90 @@ export type components = {
             daysWorkedBonus: Decimal;
             /** Format: date */
             validFrom: DateKey | null;
+        };
+        PrepayrollGridDto: {
+            period: components["schemas"]["PayrollPeriodDto"];
+            scheduleDescription: null | string;
+            editable: boolean;
+            columns: string[];
+            rows: components["schemas"]["PrepayrollRowDto"][];
+            footers: unknown[];
+            /** Format: decimal */
+            totalNet: Decimal;
+            /** Format: decimal */
+            totalNetExact: Decimal;
+        };
+        PrepayrollLineDetailDto: {
+            /** Format: uuid */
+            lineId: string;
+            /** Format: uuid */
+            periodId: string;
+            periodStatus: components["schemas"]["PeriodStatus"];
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            positionName: string;
+            shift: string;
+            /** Format: decimal */
+            daysWorked: Decimal;
+            /** Format: int32 */
+            holidaysEntitled: number | string;
+            /** Format: decimal */
+            holidaysWorked: Decimal;
+            /** Format: decimal */
+            partialHours: Decimal;
+            /** Format: decimal */
+            overtimeHours: Decimal;
+            workedSunday: boolean;
+            /** Format: decimal */
+            dailySalaryPocket: Decimal;
+            /** Format: decimal */
+            dailySalaryImss: Decimal;
+            /** Format: decimal */
+            hourlyRate: Decimal;
+            items: components["schemas"]["LineItemDto"][];
+            days: components["schemas"]["LineDayDto"][];
+            incidents: components["schemas"]["IncidentDto"][];
+            /** Format: decimal */
+            grossEarnings: Decimal;
+            /** Format: decimal */
+            totalDeductions: Decimal;
+            /** Format: decimal */
+            totalNetExact: Decimal;
+            /** Format: decimal */
+            totalNet: Decimal;
+            comments: null | string;
+            /** Format: date-time */
+            computedAt: Date;
+        };
+        PrepayrollRowDto: {
+            /** Format: uuid */
+            lineId: string;
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            /** Format: date */
+            hiredAt: DateKey;
+            positionName: string;
+            shift: string;
+            /** Format: decimal */
+            daysWorked: Decimal;
+            /** Format: decimal */
+            hourlyRate: Decimal;
+            /** Format: decimal */
+            holidaysWorked: Decimal;
+            /** Format: decimal */
+            dailySalaryImss: Decimal;
+            /** Format: decimal */
+            dailySalaryPocket: Decimal;
+            amounts: unknown[];
+            /** Format: decimal */
+            totalNet: Decimal;
+            /** Format: decimal */
+            totalNetExact: Decimal;
+            comments: null | string;
+            adjusted: boolean;
+            payment: components["schemas"]["LinePaymentDto"];
         };
         PresignUploadRequest: {
             /** Format: uuid */
@@ -3526,6 +3876,7 @@ export type components = {
     pathItems: never;
 };
 export type ActingForDto = components['schemas']['ActingForDto'];
+export type AdjustLineRequest = components['schemas']['AdjustLineRequest'];
 export type ApplicationOutcome = components['schemas']['ApplicationOutcome'];
 export type ApplicationStep = components['schemas']['ApplicationStep'];
 export type AssignmentRequest = components['schemas']['AssignmentRequest'];
@@ -3576,12 +3927,14 @@ export type ClientOpeningsRowDto = components['schemas']['ClientOpeningsRowDto']
 export type ClientOptionDto = components['schemas']['ClientOptionDto'];
 export type ClientSummaryDto = components['schemas']['ClientSummaryDto'];
 export type ConceptCalc = components['schemas']['ConceptCalc'];
+export type ConceptKind = components['schemas']['ConceptKind'];
 export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
 export type ContactRequest = components['schemas']['ContactRequest'];
 export type ConversionDto = components['schemas']['ConversionDto'];
 export type CreateCandidateRequest = components['schemas']['CreateCandidateRequest'];
 export type CreateClientRequest = components['schemas']['CreateClientRequest'];
+export type CreatePeriodRequest = components['schemas']['CreatePeriodRequest'];
 export type DocumentChecklistDto = components['schemas']['DocumentChecklistDto'];
 export type DocumentStatus = components['schemas']['DocumentStatus'];
 export type DocumentTemplateDto = components['schemas']['DocumentTemplateDto'];
@@ -3613,11 +3966,18 @@ export type GroupOptionDto = components['schemas']['GroupOptionDto'];
 export type HolidayDto = components['schemas']['HolidayDto'];
 export type HolidayRequest = components['schemas']['HolidayRequest'];
 export type HttpValidationProblemDetails = components['schemas']['HttpValidationProblemDetails'];
+export type IncidentDto = components['schemas']['IncidentDto'];
+export type IncidentRequest = components['schemas']['IncidentRequest'];
 export type InterviewDto = components['schemas']['InterviewDto'];
 export type InterviewOutcome = components['schemas']['InterviewOutcome'];
 export type InterviewRequest = components['schemas']['InterviewRequest'];
 export type InviteResultDto = components['schemas']['InviteResultDto'];
 export type InviteUserRequest = components['schemas']['InviteUserRequest'];
+export type ItemSource = components['schemas']['ItemSource'];
+export type LineCommentsRequest = components['schemas']['LineCommentsRequest'];
+export type LineDayDto = components['schemas']['LineDayDto'];
+export type LineItemDto = components['schemas']['LineItemDto'];
+export type LinePaymentDto = components['schemas']['LinePaymentDto'];
 export type MeDto = components['schemas']['MeDto'];
 export type MeRole = components['schemas']['MeRole'];
 export type MoveStageRequest = components['schemas']['MoveStageRequest'];
@@ -3639,9 +3999,12 @@ export type OpeningStatus = components['schemas']['OpeningStatus'];
 export type OpeningStatusRequest = components['schemas']['OpeningStatusRequest'];
 export type OpenOpeningDto = components['schemas']['OpenOpeningDto'];
 export type OpenOpeningsReportDto = components['schemas']['OpenOpeningsReportDto'];
+export type PaymentState = components['schemas']['PaymentState'];
 export type PayrollGroupDetailDto = components['schemas']['PayrollGroupDetailDto'];
 export type PayrollGroupListItemDto = components['schemas']['PayrollGroupListItemDto'];
 export type PayrollGroupRequest = components['schemas']['PayrollGroupRequest'];
+export type PayrollPeriodDto = components['schemas']['PayrollPeriodDto'];
+export type PeriodStatus = components['schemas']['PeriodStatus'];
 export type PeriodType = components['schemas']['PeriodType'];
 export type PermissionModule = components['schemas']['PermissionModule'];
 export type PersonDocumentDto = components['schemas']['PersonDocumentDto'];
@@ -3653,6 +4016,9 @@ export type PositionOptionDto = components['schemas']['PositionOptionDto'];
 export type PositionRateDto = components['schemas']['PositionRateDto'];
 export type PositionRatesRequest = components['schemas']['PositionRatesRequest'];
 export type PositionRequest = components['schemas']['PositionRequest'];
+export type PrepayrollGridDto = components['schemas']['PrepayrollGridDto'];
+export type PrepayrollLineDetailDto = components['schemas']['PrepayrollLineDetailDto'];
+export type PrepayrollRowDto = components['schemas']['PrepayrollRowDto'];
 export type PresignUploadRequest = components['schemas']['PresignUploadRequest'];
 export type PresignUploadResponse = components['schemas']['PresignUploadResponse'];
 export type ProblemDetails = components['schemas']['ProblemDetails'];
@@ -9025,6 +9391,434 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPayrollPeriods: {
+        parameters: {
+            query?: {
+                groupId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodDto"][];
+                };
+            };
+        };
+    };
+    CreatePayrollPeriod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePeriodRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPrepayroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrepayrollGridDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ClosePrepayrollCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrepayrollGridDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPrepayrollLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrepayrollLineDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetPrepayrollLineComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LineCommentsRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdjustPrepayrollLine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustLineRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrepayrollLineDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListIncidents: {
+        parameters: {
+            query?: {
+                periodId?: string;
+                employeeId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentDto"][];
+                };
+            };
+        };
+    };
+    CreateIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {

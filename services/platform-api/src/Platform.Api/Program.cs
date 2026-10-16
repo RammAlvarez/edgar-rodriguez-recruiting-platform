@@ -21,6 +21,7 @@ using Platform.Infrastructure.Persistence;
 using Platform.Infrastructure.Reports;
 using Platform.Infrastructure.Storage;
 using Platform.Payroll.Groups;
+using Platform.Payroll.Prepayroll;
 using Platform.Payroll.Staff;
 using Platform.Recruiting;
 using Platform.Recruiting.Candidates;
@@ -130,6 +131,8 @@ v1.MapPayrollGroupEndpoints();
 v1.MapEmployeeEndpoints();
 v1.MapScheduleEndpoints();
 v1.MapAttendanceEndpoints();
+v1.MapPrepayrollEndpoints();
+v1.MapIncidentEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 
