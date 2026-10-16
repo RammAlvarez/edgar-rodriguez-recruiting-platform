@@ -122,6 +122,33 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task An_account_typed_at_alta_is_the_principal_and_no_card_is_requested()
+    {
+        await Arrange();
+        var ana = await WithDb(db => db.AddPerson());
+        var azteca = await WithDb(db => db.Set<Platform.Core.Catalogs.Bank>().Where(b => b.SpeiCode == "127").Select(b => b.Uid).SingleAsync());
+        var body = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(Alta(ana.Uid, cardBank: null)))!.AsObject();
+        body["bankAccount"] = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(new
+        {
+            bankId = azteca,
+            accountType = "debit_card",
+            accountNumber = "4152 3138 0000 1238",
+            holderName = (string?)null,
+            alias = (string?)null,
+            validFrom = (string?)null,
+            makePrimary = false,
+        }));
+        Assert.Contains("bankAccount.accountNumber", (await ErrorsOf(await _owner.PostAsJsonAsync("/v1/employees", body))).Keys);
+        Assert.False(await WithDb(db => db.Set<Employee>().AnyAsync()));
+
+        body["bankAccount"]!["accountNumber"] = "4152 3138 0000 1237";
+        var created = await BodyOf(await _owner.PostAsJsonAsync("/v1/employees", body));
+        Assert.True(created.GetProperty("hasAccount").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, created.GetProperty("cardRequest").ValueKind);
+        Assert.False(await WithDb(db => db.Set<CardRequest>().AnyAsync()));
+    }
+
+    [Fact]
     public async Task Vacaciones_fill_attendance_locked_and_reactivar_ends_them_yesterday()
     {
         await Arrange();

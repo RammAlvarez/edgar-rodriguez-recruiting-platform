@@ -9828,6 +9828,16 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "bankAccount": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BankAccountRequest"
+              }
+            ]
           }
         }
       },

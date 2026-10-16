@@ -2345,6 +2345,7 @@ export type components = {
             cardBank: null | components["schemas"]["RegistrationBank"];
             /** Format: uuid */
             candidateId: null | string;
+            bankAccount?: null | components["schemas"]["BankAccountRequest"];
         };
         /** @enum {unknown} */
         EmployeeStatus: "active" | "vacation" | "sick_leave" | "suspended" | "terminated";

@@ -7,9 +7,13 @@
 //   S4  the 13 vacantes and 30 candidatos of data.js at their etapas (HEB has two open CAJERO vacantes, so the date suffix
 //       shows), two hires that fill GTS, the paused / cancelled vacantes, and the two sample notes. Skipped once any
 //       vacante exists. Candidate emails are rewritten to @local.test (capture emails an invitation since S5);
-//   S5  a Cliente user for HEB (heb@local.test) for the Clients app.
+//   S5  a Cliente user for HEB (heb@local.test) for the Clients app;
+//   S7  the payroll groups and puestos of data.js (ECOVIA validadores, HFC cuadrilla, HEB limpieza; every bonus inactive as SEM 38
+//       pays) and their 32 employees: people, payment accounts (valid card / CLABE numbers generated, three paid to a third
+//       party), card requests for the two without an account, status periods relative to today (two vacations, an
+//       incapacidad, a baja) and work schedules. Skipped once any payroll group exists.
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
-import { addDays, candidatos as sampleCandidates, clients as sampleClients, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
+import { addDays, candidatos as sampleCandidates, clients as sampleClients, empleados as sampleEmployees, payrollGroups as samplePayrollGroups, puestos as samplePositions, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
 
 export const LOCAL_OWNER = { email: 'edgar@local.test', password: 'plataforma-local', name: 'Edgar Rodríguez' };
 
@@ -208,4 +212,123 @@ if (emails.has(HEB_USER.email)) {
   const heb = (await api(token, 'GET', '/v1/clients')).body.find((c) => c.shortName === 'HEB');
   await api(token, 'POST', '/v1/users', { email: HEB_USER.email, displayName: HEB_USER.name, role: 'client', clientId: heb.id, grants: null, clientContactId: null });
   console.log(`client user: ${HEB_USER.email} (Clients app, sign-in link from the Auth emulator)`);
+}
+
+// ---- S7: payroll groups, puestos, employees ----
+if ((await api(token, 'GET', '/v1/payroll/groups')).body.length > 0) {
+  console.log('payroll groups: already there, skipped');
+} else {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Monterrey' }).format(new Date());
+  const clients = Object.fromEntries((await api(token, 'GET', '/v1/clients')).body.map((c) => [c.shortName, c.id]));
+  const banks = Object.fromEntries((await api(token, 'GET', '/v1/catalogs')).body.banks.map((b) => [b.speiCode, b.id]));
+  const BANK_CODE = { Banorte: '072', Banregio: '058', 'Banco Azteca': '127', BBVA: '012', Santander: '014' };
+
+  // Sites the schedules use (ECOVIA's two stations already come from the S3 seed).
+  const siteIds = {};
+  for (const [client, name] of [['ECOVIA', 'ECOVIA — Estación Centro'], ['ECOVIA', 'ECOVIA — Estación Norte'], ['HEB', 'HEB — Oficinas Cumbres'], ['CONSTRUCTORA HFC', 'CONSTRUCTORA HFC — Obra Apodaca']]) {
+    let site = (await api(token, 'GET', `/v1/clients/${clients[client]}`)).body.sites.find((x) => x.name === name);
+    if (!site) site = (await api(token, 'POST', `/v1/clients/${clients[client]}/sites`, { name, zoneId: null })).body.sites.find((x) => x.name === name);
+    siteIds[name] = site.id;
+  }
+
+  const CUTOFF = { Domingo: 0, Lunes: 1, Martes: 2, Miércoles: 3, Jueves: 4, Viernes: 5, Sábado: 6 };
+  const DESCRIPTION = { PG1: 'LUNES A DOMINGO 12 HRS CORTE VIERNES A JUEVES', PG2: 'LUNES A SÁBADO 8 HRS CORTE DOMINGO A SÁBADO', PG3: 'LUNES A VIERNES 8 HRS QUINCENAL' };
+  const groupIds = {};
+  const positionIds = {};
+  for (const g of samplePayrollGroups()) {
+    // SEM 38 runs viernes–jueves: the ECOVIA period ends on jueves.
+    const cutoff = g.id === 'PG1' ? 4 : CUTOFF[g.corte];
+    const { body } = await api(token, 'POST', '/v1/payroll/groups', {
+      clientId: clients[g.cliente], name: g.nombre, periodType: g.tipo === 'Quincenal' ? 'biweekly' : 'weekly', cutoffWeekday: cutoff,
+      shiftHours: String(g.horas), attendanceLockTime: `${g.bloqueo}:00`, seventhDayDivisor: 6, sundayPremiumPct: '0.25',
+      holidayWorkedMultiplier: '2', scheduleDescription: DESCRIPTION[g.id], timeZone: null, isActive: true,
+    });
+    groupIds[g.id] = body.id;
+    for (const p of samplePositions().filter((x) => x.grupoId === g.id)) {
+      const after = await api(token, 'POST', `/v1/payroll/groups/${body.id}/positions`, {
+        name: p.nombre, dailySalaryPocket: p.sdb.toFixed(2), dailySalaryImss: p.imss.toFixed(2), hourlyRate: p.hora.toFixed(2),
+        daysWorkedBonus: p.bono.toFixed(2), validFrom: '2025-01-01',
+      });
+      positionIds[p.id] = after.body.positions.find((x) => x.name === p.nombre).id;
+    }
+  }
+
+  // Valid numbers (the prototype's are random digits): Luhn for cards, control digit and bank prefix for CLABEs.
+  const digitsOf = (seed, len) => { let out = ''; let x = seed * 7919 + 17; for (let k = 0; k < len; k++) { x = (x * 1103515245 + 12345) % 2147483648; out += x % 10; } return out; };
+  const luhn = (body) => { for (let d = 0; d < 10; d++) { const n = body + d; let sum = 0; [...n].reverse().forEach((ch, i) => { let v = +ch; if (i % 2) { v *= 2; if (v > 9) v -= 9; } sum += v; }); if (sum % 10 === 0) return n; } };
+  const clabe = (bankCode, seed) => { const body = bankCode + '580' + digitsOf(seed, 11); const w = [3, 7, 1]; const sum = [...body].reduce((a, ch, i) => a + (+ch * w[i % 3]) % 10, 0); return body + ((10 - (sum % 10)) % 10); };
+  const card = (seed) => luhn('415231' + digitsOf(seed, 9));
+  const holder = (name) => name.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const THIRD_PARTY = { 1: 'JOSE ALFREDO CERVANTES LARA', 4: 'LETICIA MORA SANCHEZ', 6: 'MARIA ELENA TORRES GARCIA' };
+  const NO_ACCOUNT = { 12: 'banorte', 16: 'banregio', 18: 'banorte' };
+
+  const employees = sampleEmployees();
+  let created = 0;
+  for (const [i, e] of employees.entries()) {
+    // The prototype spaces hire dates 23 days apart from Feb 2025, which runs into 2027: later ones are kept in the past.
+    const hiredAt = e.ingreso < today ? e.ingreso : addDays(today, -7 * (i - 20));
+    const person = (await api(token, 'POST', '/v1/people', {
+      firstNames: e.nombres, lastNamePaternal: e.apellidoP, lastNameMaternal: e.apellidoM, birthDate: e.fechaNac, birthState: null,
+      gender: e.genero === 'F' ? 'female' : 'male', isForeign: e.estadoNac === 'Extranjero', curp: null, rfc: null, nss: e.nss,
+      mobilePhone: e.celular, email: e.correo.replace(/@.*$/, '@local.test'), street: e.calle, extNumber: e.numero, neighborhood: e.colonia,
+      postalCode: e.cp, municipality: e.municipio, state: e.estado, source: null, notes: null,
+    })).body;
+    const bankName = ['BBVA', 'Banregio', 'Banco Azteca'][i % 3];
+    const isClabe = bankName === 'BBVA';
+    // The worker's own account is typed at alta (no card request); the ones without an account are queued for a card.
+    const bankAccount = i in NO_ACCOUNT && i !== 18 ? null : {
+      bankId: banks[BANK_CODE[bankName]], accountType: isClabe ? 'clabe' : 'debit_card',
+      accountNumber: isClabe ? clabe(BANK_CODE[bankName], i) : card(i), holderName: holder(e.nombre),
+      alias: (isClabe ? 'CLABE ' : 'Tarjeta ') + bankName, validFrom: hiredAt, makePrimary: true,
+    };
+    const employee = (await api(token, 'POST', '/v1/employees', {
+      personId: person.id, payrollGroupId: groupIds[e.grupoId], positionId: positionIds[e.puestoId], shift: e.turno, hiredAt,
+      dailySalaryPocketOverride: null, dailySalaryImssOverride: null, hourlyRateOverride: null, daysWorkedBonusOverride: null,
+      notes: null, cardBank: bankAccount ? null : NO_ACCOUNT[i], candidateId: null, bankAccount,
+    })).body;
+    if (THIRD_PARTY[i]) {
+      await api(token, 'POST', `/v1/employees/${employee.id}/bank-accounts`, {
+        bankId: banks['127'], accountType: 'own_account', accountNumber: digitsOf(i + 50, 14), holderName: THIRD_PARTY[i],
+        alias: 'Cuenta familiar', validFrom: addDays(hiredAt, 120) < today ? addDays(hiredAt, 120) : today, makePrimary: i === 6,
+      });
+    }
+    if (i === 18) {
+      // An account that is no longer valid: no principal and no request, so Personal offers «Solicitar tarjeta».
+      const accounts = (await api(token, 'GET', `/v1/employees/${employee.id}/bank-accounts`)).body;
+      await api(token, 'PUT', `/v1/employees/${employee.id}/bank-accounts/${accounts[0].id}`, { holderName: accounts[0].holderName, alias: accounts[0].alias, validTo: today });
+    }
+
+    const status = (s, start, end, reason = null, reference = null) =>
+      api(token, 'POST', `/v1/employees/${employee.id}/status`, { status: s, startDate: start, endDate: end, reason, reference });
+    if (i === 1) await status('vacation', addDays(today, -10), today);
+    if (i === 10) await status('vacation', addDays(today, -2), addDays(today, 5));
+    if (i === 7) await status('sick_leave', addDays(today, -36), addDays(today, 4), null, 'ST-7 448120');
+    if (i === 14) await status('terminated', addDays(today, -20), null, 'Renuncia voluntaria');
+
+    const site = e.cliente === 'HEB' ? 'HEB — Oficinas Cumbres' : e.cliente === 'CONSTRUCTORA HFC' ? 'CONSTRUCTORA HFC — Obra Apodaca' : i < 12 ? 'ECOVIA — Estación Centro' : 'ECOVIA — Estación Norte';
+    const night = e.turno === 'C/NOCHE';
+    const schedule = e.cliente === 'ECOVIA'
+      // Lunes a domingo with one rest day (the prototype's), 12 h by turno.
+      ? { weekdays: [1, 2, 3, 4, 5, 6, 7].filter((d) => d !== (i % 6) + 1), start: night ? '19:00:00' : '07:00:00', end: night ? '07:00:00' : '19:00:00', job: null }
+      : e.cliente === 'HEB'
+        ? { weekdays: [1, 2, 3, 4, 5], start: '07:00:00', end: '15:00:00', job: 'Limpieza oficinas' }
+        : { weekdays: [1, 2, 3, 4, 5, 6], start: '08:00:00', end: '16:00:00', job: 'Obra Apodaca' };
+    if (i !== 14) {
+      await api(token, 'POST', `/v1/employees/${employee.id}/schedules`, {
+        clientSiteId: siteIds[site], weekdays: schedule.weekdays, oneOffDate: null, startTime: schedule.start, endTime: schedule.end,
+        validFrom: hiredAt, validTo: null, jobDescription: schedule.job,
+      });
+    }
+    created++;
+  }
+  // A one-off job: three técnicos of HFC on next Saturday's maintenance.
+  const saturday = addDays(today, (6 - new Date(`${today}T12:00:00`).getDay() + 7) % 7 || 7);
+  const hfc = (await api(token, 'GET', `/v1/employees?clientId=${clients['CONSTRUCTORA HFC']}`)).body.slice(0, 3);
+  for (const e of hfc) {
+    await api(token, 'POST', `/v1/employees/${e.id}/schedules`, {
+      clientSiteId: siteIds['CONSTRUCTORA HFC — Obra Apodaca'], weekdays: [], oneOffDate: saturday,
+      startTime: '09:00:00', endTime: '13:00:00', validFrom: null, validTo: null, jobDescription: 'Mantenimiento A/C',
+    });
+  }
+  console.log(`payroll: ${Object.keys(groupIds).length} groups, ${Object.keys(positionIds).length} puestos, ${created} employees`);
 }

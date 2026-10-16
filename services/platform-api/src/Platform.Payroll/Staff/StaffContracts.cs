@@ -1,6 +1,7 @@
 using FluentValidation;
 using Platform.Core.Catalogs;
 using Platform.Core.Http;
+using Platform.Core.People;
 using Platform.Payroll.Groups;
 
 namespace Platform.Payroll.Staff;
@@ -31,12 +32,13 @@ public sealed record EmployeeDetailDto(Guid Id, Guid PersonId, string FullName, 
     Guid? DocumentTemplateId, bool HasAccount, CardRequestDto? CardRequest);
 
 /// <summary>
-/// «Alta de empleado», direct or «Convertir en empleado» (<see cref="CandidateId"/>). Without a current primary account the
+/// «Alta de empleado», direct or «Convertir en empleado» (<see cref="CandidateId"/>). The worker's account can be typed at
+/// alta (<see cref="BankAccount"/>, it becomes the principal); without it and without a current principal account the
 /// employee is queued for a card at <see cref="CardBank"/> (SPEC §5.5, §5.7).
 /// </summary>
 public sealed record EmployeeRequest(Guid PersonId, Guid PayrollGroupId, Guid PositionId, string Shift, DateOnly? HiredAt,
     decimal? DailySalaryPocketOverride, decimal? DailySalaryImssOverride, decimal? HourlyRateOverride, decimal? DaysWorkedBonusOverride,
-    string? Notes, RegistrationBank? CardBank, Guid? CandidateId);
+    string? Notes, RegistrationBank? CardBank, Guid? CandidateId, BankAccountRequest? BankAccount = null);
 
 public sealed record UpdateEmployeeRequest(string Shift, decimal? DailySalaryPocketOverride, decimal? DailySalaryImssOverride,
     decimal? HourlyRateOverride, decimal? DaysWorkedBonusOverride, string? Notes);
@@ -91,6 +93,10 @@ internal sealed class EmployeeRequestValidator : AbstractValidator<EmployeeReque
         RuleFor(r => r.Notes).OptionalText(500);
         OverrideRules.Overrides(this, r => r.DailySalaryPocketOverride, r => r.DailySalaryImssOverride, r => r.HourlyRateOverride,
             r => r.DaysWorkedBonusOverride);
+        RuleFor(r => r.BankAccount!.AccountNumber).Must(n => AccountNumbers.Digits(n ?? "").Length > 0).WithMessage("Escribe el número.")
+            .OverridePropertyName("bankAccount.accountNumber").When(r => r.BankAccount is not null);
+        RuleFor(r => r.BankAccount!.HolderName).OptionalText(BankAccounts.HolderMax).OverridePropertyName("bankAccount.holderName")
+            .When(r => r.BankAccount is not null);
     }
 }
 

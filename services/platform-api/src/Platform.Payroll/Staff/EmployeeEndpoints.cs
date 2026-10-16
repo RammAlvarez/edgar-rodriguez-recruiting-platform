@@ -80,7 +80,7 @@ public static class EmployeeEndpoints
                     : ApiResults.NotFound(NotFound))
             .WithName("GetEmployee").Produces<EmployeeDetailDto>().ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Access);
 
-        g.MapPost("", async (EmployeeRequest r, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
+        g.MapPost("", async (EmployeeRequest r, DbContext db, RequestContext ctx, IFieldCipher cipher, IClock clock, CancellationToken ct) =>
             {
                 var today = clock.Today();
                 if (await Assignment(db, ctx, r.PayrollGroupId, r.PositionId, ct) is { } bad)
@@ -101,6 +101,14 @@ public static class EmployeeEndpoints
                 if (await db.Set<Employee>().AnyAsync(e => e.PersonId == r.PersonId && e.PayrollGroupId == r.PayrollGroupId && e.TerminatedAt == null, ct))
                     return ApiResults.Conflict(AlreadyEmployed);
                 var hasAccount = await StaffRules.HasAccountAsync(db, r.PersonId, today, ct);
+                if (r.BankAccount is { } account)
+                {
+                    var person = await db.Set<Person>().SingleAsync(p => p.Uid == r.PersonId, ct);
+                    var (_, errors) = await BankAccounts.AddAsync(db, cipher, person, account with { MakePrimary = true }, today, ct);
+                    if (errors is not null)
+                        return ApiResults.Validation(errors.ToDictionary(e => $"bankAccount.{e.Key}", e => e.Value));
+                    hasAccount = true;
+                }
                 if (!hasAccount && r.CardBank is null)
                     return ApiResults.Validation(new Dictionary<string, string[]> { ["cardBank"] = [CardBankRequired] });
 
