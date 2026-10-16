@@ -30,7 +30,8 @@ public sealed class UserManagementTests(ApiFactory factory) : ApiTest(factory)
         var result = await BodyOf(response);
         Assert.True(result.GetProperty("invitationSent").GetBoolean());
         var grants = result.GetProperty("user").GetProperty("grants").EnumerateArray().Select(g => g.GetProperty("module").GetString()).ToList();
-        Assert.Equal(7, grants.Count);
+        Assert.Equal(8, grants.Count);
+        Assert.Contains("recruiting", grants);
         Assert.DoesNotContain("recruiting_reports", grants);
         var mail = Assert.Single(Factory.Email.To(email));
         Assert.Contains("https://auth.test/setup?email=", mail.Text, StringComparison.Ordinal);
@@ -103,8 +104,11 @@ public sealed class UserManagementTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(HttpStatusCode.OK, scoped.StatusCode);
     }
 
-    [Fact]
-    public async Task Users_and_reportes_grants_cannot_be_limited_to_a_client()
+    [Theory]
+    [InlineData("users")]
+    [InlineData("recruiting")]
+    [InlineData("recruiting_reports")]
+    public async Task Recruiting_users_and_reportes_grants_cannot_be_limited_to_a_client(string module)
     {
         var (_, owner) = await SignedIn(UserRole.Administrator, AllGrants);
         var client = await WithDb(db => db.AddClient());
@@ -113,7 +117,7 @@ public sealed class UserManagementTests(ApiFactory factory) : ApiTest(factory)
             email = NewEmail(),
             displayName = "D",
             role = "administrator",
-            grants = new[] { new { module = "users", clientId = (Guid?)client.Uid } },
+            grants = new[] { new { module, clientId = (Guid?)client.Uid } },
         });
         Assert.Contains("grants", (await ErrorsOf(response)).Keys);
     }

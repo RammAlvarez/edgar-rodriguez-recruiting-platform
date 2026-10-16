@@ -84,7 +84,7 @@ import { UserPanel, type UserPanelData } from './user-panel';
 export class UsersPage {
   private readonly dialog = inject(MatDialog);
   readonly users = inject(UsersRepository).list();
-  private readonly clients = inject(ClientsRepository).list('recruiting');
+  private readonly clients = inject(ClientsRepository).options();
   readonly me = inject(Session).me;
 
   readonly columns = ['name', 'email', 'role', 'client', 'mfa', 'lastLogin', 'active'];

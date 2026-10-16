@@ -40,7 +40,7 @@ export const routes: Routes = [
       {
         path: 'clientes/:id',
         loadComponent: () => import('./clients/client-detail').then((m) => m.ClientDetail),
-        canActivate: [accessGuard(navItem('clientes').roles)],
+        canActivate: [accessGuard(navItem('clientes').roles, navItem('clientes').grant)],
         title: 'Cliente',
       },
       {

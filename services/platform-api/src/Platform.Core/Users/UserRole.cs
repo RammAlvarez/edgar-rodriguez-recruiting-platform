@@ -11,6 +11,8 @@ public enum UserRole
 /// <summary>Postgres enum <c>permission_module</c> — delegated grants of an Administrador (SPEC §2.2).</summary>
 public enum PermissionModule
 {
+    /// <summary>Reclutamiento: Inicio, Vacantes, Candidatos, Reclutadores, Clientes and catalog edits (PLAN P5, D69).</summary>
+    Recruiting,
     RecruitingReports,
     PayrollPrepayroll,
     PayrollAttendance,

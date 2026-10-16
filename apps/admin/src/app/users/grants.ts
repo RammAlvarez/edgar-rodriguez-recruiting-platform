@@ -3,8 +3,8 @@ import type { GrantDto } from '../data/api-types';
 import { GRANTS } from '../data/labels';
 
 /**
- * The panel edits grants as checkboxes plus one optional «Solo para el cliente» (ARCHITECTURE §9.12). Usuarios and
- * Reportes always apply to all clients (PLAN D67), so the scope is never put on them.
+ * The panel edits grants as checkboxes plus one optional «Solo para el cliente» (ARCHITECTURE §9.12). Reclutamiento,
+ * Usuarios and Reportes always apply to all clients (PLAN D67), so the scope is never put on them.
  */
 export function toGrants(modules: readonly PermissionModule[], onlyClientId: string | null): GrantDto[] {
   return modules.map((module) => ({

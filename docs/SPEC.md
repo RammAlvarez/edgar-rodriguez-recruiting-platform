@@ -76,13 +76,14 @@ Three Angular apps, one API, one database.
 The owner wants to hand specific tabs to specific people ("alta masiva Banorte — un botón, le doy permiso a uno de mis muchachos") and keep *Reportes* for himself only. Rather than inventing more roles, an **Administrador** user can have an optional set of **permission grants**, each scoped to a module and optionally to a client:
 
 ```
-module ∈ { recruiting_reports, payroll_prepayroll, payroll_attendance, payroll_incidents,
+module ∈ { recruiting, recruiting_reports, payroll_prepayroll, payroll_attendance, payroll_incidents,
            payroll_staff, payroll_payment_files, payroll_card_requests, users }      (DATA_MODEL enum permission_module)
 client_id ∈ { null = all clients, <client> }
 ```
 
 - A freshly created Administrador has **all** grants (owner behaviour).
 - The owner can uncheck grants to produce e.g. "prenómina ECOVIA only" (review the grid, no payment files) or "payment files only".
+- `recruiting` covers Reclutamiento (Inicio, Vacantes, Candidatos, Reclutadores, Clientes) and catalog edits; it is checked by default, and unchecked for a field supervisor (D19, PLAN D69).
 - `recruiting_reports` is unchecked by default for anyone except the owner (decision from the meeting: reports are password-protected and personal).
 
 ### 2.3 Authentication and security

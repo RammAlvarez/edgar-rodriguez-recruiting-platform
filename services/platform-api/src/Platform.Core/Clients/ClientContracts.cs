@@ -17,6 +17,9 @@ public sealed record SiteDto(Guid Id, string Name, Guid? ZoneId, string? ZoneNam
 public sealed record ClientListItemDto(Guid Id, string ShortName, string? LegalName, string? Rfc, bool UsesRecruiting,
     bool UsesPayroll, bool IsActive, string? Zone, ContactDto? PrimaryContact);
 
+/// <summary>An entry of the client picker (Usuarios, scoped grants).</summary>
+public sealed record ClientOptionDto(Guid Id, string ShortName, bool IsActive);
+
 public sealed record ClientDetailDto(Guid Id, string ShortName, string? LegalName, string? Rfc, string? Notes,
     bool UsesRecruiting, bool UsesPayroll, bool IsActive, IReadOnlyList<ContactDto> Contacts, IReadOnlyList<SiteDto> Sites);
 

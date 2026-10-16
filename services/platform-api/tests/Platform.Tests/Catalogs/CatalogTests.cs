@@ -35,14 +35,19 @@ public sealed class CatalogTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
-    public async Task Any_administrator_edits_catalogs_and_a_recruiter_cannot()
+    public async Task Administrators_with_recruiting_edit_catalogs_and_a_recruiter_or_supervisor_cannot()
     {
         var recruiter = await As(UserRole.Recruiter);
         Assert.Equal(HttpStatusCode.Forbidden,
             (await recruiter.PostAsJsonAsync("/v1/catalogs/positions", new { nameEs = "VALIDADOR" })).StatusCode);
 
-        // No delegated grant covers catalogs: an Administrador without grants may edit them.
-        var admin = await As(UserRole.Administrator);
+        // PLAN D69: a supervisor (only Asistencia) still reads catalogs but does not edit them.
+        var supervisor = await As(UserRole.Administrator, PermissionModule.PayrollAttendance);
+        Assert.Equal(HttpStatusCode.OK, (await supervisor.GetAsync("/v1/catalogs")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await supervisor.PostAsJsonAsync("/v1/catalogs/positions", new { nameEs = "VALIDADOR" })).StatusCode);
+
+        var admin = await As(UserRole.Administrator, PermissionModule.Recruiting);
         var created = await admin.PostAsJsonAsync("/v1/catalogs/positions", new { nameEs = "  VALIDADOR " });
         Assert.Equal(HttpStatusCode.OK, created.StatusCode);
         Assert.Equal("catalogs", created.Headers.GetValues("X-Invalidates").Single());

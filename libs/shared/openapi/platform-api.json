@@ -1313,6 +1313,29 @@
         }
       }
     },
+    "/v1/clients/options": {
+      "get": {
+        "tags": [
+          "Clients"
+        ],
+        "operationId": "ListClientOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientOptionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/clients/{id}": {
       "get": {
         "tags": [
@@ -3043,6 +3066,26 @@
           }
         }
       },
+      "ClientOptionDto": {
+        "required": [
+          "id",
+          "shortName",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "ConfirmDocumentRequest": {
         "required": [
           "documentTypeId",
@@ -3780,6 +3823,7 @@
       },
       "PermissionModule": {
         "enum": [
+          "recruiting",
           "recruiting_reports",
           "payroll_prepayroll",
           "payroll_attendance",

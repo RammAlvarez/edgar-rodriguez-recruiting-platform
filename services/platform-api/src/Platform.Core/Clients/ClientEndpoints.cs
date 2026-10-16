@@ -14,7 +14,8 @@ namespace Platform.Core.Clients;
 /// Clients, contacts and sites (SPEC §3.3, §4.5, §5.6). Two entries create clients without asking a module:
 /// <c>POST /v1/clients</c> (Reclutamiento → Clientes) marks <c>uses_recruiting</c>, <c>POST /v1/payroll/clients</c>
 /// (Nómina → Clientes (nómina), grant <c>payroll_prepayroll</c>) marks <c>uses_payroll</c>. The payroll entry honours the
-/// grant's client scope; the recruiting side has no grant (DATA_MODEL §8).
+/// grant's client scope; the recruiting side needs <c>recruiting</c> (PLAN D69). <c>GET /v1/clients/options</c> is the
+/// client picker of any Administrador (Usuarios, scoped grants): id and short name only.
 /// </summary>
 public static class ClientEndpoints
 {
@@ -25,7 +26,7 @@ public static class ClientEndpoints
     public const string ScopedCannotCreate =
         "Tu permiso de Prenómina está limitado a ciertos clientes; pide al administrador que dé de alta el cliente.";
 
-    private static readonly AccessRule Admin = AccessRule.Administrator();
+    private static readonly AccessRule Admin = AccessRule.Administrator(PermissionModule.Recruiting);
     private static readonly AccessRule Payroll = AccessRule.Administrator(PermissionModule.PayrollPrepayroll);
 
     public static IEndpointRouteBuilder MapClientEndpoints(this IEndpointRouteBuilder v1)
@@ -38,6 +39,10 @@ public static class ClientEndpoints
         payroll.MapGet("", (DbContext db, RequestContext ctx, CancellationToken ct) =>
                 List(db, ctx.RequiredPrincipal.ClientScope(PermissionModule.PayrollPrepayroll), ct))
             .WithName("ListPayrollClients").Produces<List<ClientListItemDto>>().RequireAccess(Payroll);
+
+        clients.MapGet("/options", async (DbContext db, CancellationToken ct) => TypedResults.Ok(await db.Set<Client>().AsNoTracking()
+                .OrderBy(c => c.ShortName).Select(c => new ClientOptionDto(c.Uid, c.ShortName, c.IsActive)).ToListAsync(ct)))
+            .WithName("ListClientOptions").RequireAccess(AccessRule.Administrator());
 
         clients.MapGet("/{id:guid}", (Guid id, DbContext db, CancellationToken ct) => Detail(db, id, ct))
             .WithName("GetClient").Produces<ClientDetailDto>().ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Admin);

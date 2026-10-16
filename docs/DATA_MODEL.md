@@ -83,7 +83,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | Enum | Values |
 |---|---|
 | `user_role` | `administrator`, `recruiter`, `client` |
-| `permission_module` | `recruiting_reports`, `payroll_prepayroll`, `payroll_attendance`, `payroll_incidents`, `payroll_staff`, `payroll_payment_files`, `payroll_card_requests`, `users` |
+| `permission_module` | `recruiting`, `recruiting_reports`, `payroll_prepayroll`, `payroll_attendance`, `payroll_incidents`, `payroll_staff`, `payroll_payment_files`, `payroll_card_requests`, `users` |
 | `gender` | `male`, `female`, `unspecified` |
 | `document_status` | `pending`, `delivered`, `validated`, `rejected`, `expired` |
 | `bank_account_type` | `own_account` (1), `debit_card` (3), `clabe` (40) — numeric codes used by the Azteca layout |
@@ -815,7 +815,7 @@ Input to every decision: `uid` from `IAuthProvider.VerifyAsync`, `role` and `is_
 | `client` | `job_openings.client_id = :client_id AND visible_to_client` with `gender_requirement` and `age_range` excluded from the DTO; `candidates` through those openings; person fields masked until `stage ∈ (suitable, hired)`, `offered_salary` visible from `suitable`; never `person_documents`, `person_bank_accounts`, payroll or bank tables |
 | `recruiter` | `job_openings` where `lead_recruiter_id = :uid OR id IN job_opening_recruiters(:uid)`; candidates of those; `person_documents` of those people; nothing in payroll or bank tables, reports |
 | `administrator` (cover mode) | the API receives header `X-Acting-For: <recruiter user uid>`; data scope = that recruiter's rule below, writes stamped with `acting_for_user_id`, `candidates.recruiter_id` defaults to the recruiter. Only `administrator` may send the header. |
-| `administrator` | everything, minus modules without a grant; `client_id`-scoped grants add `payroll_groups.client_id = :client` filters on payroll/bank tables; `payroll_payment_files` is required to generate any `payment_batches` row, `payroll_card_requests` for `registration_batches` |
+| `administrator` | everything, minus modules without a grant (`recruiting` covers Inicio, Vacantes, Candidatos, Reclutadores, Clientes and catalog edits — PLAN D69); `client_id`-scoped grants add `payroll_groups.client_id = :client` filters on payroll/bank tables; `payroll_payment_files` is required to generate any `payment_batches` row, `payroll_card_requests` for `registration_batches` |
 | candidate (Candidates app) | own `people` row (via `candidates.person_id` matched by verified email) and own `person_documents` |
 
 ---

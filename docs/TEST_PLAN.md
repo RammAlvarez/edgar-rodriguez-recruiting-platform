@@ -55,6 +55,7 @@ Data: `npm run seed` (owner, 11 clients, 6 recruiters, LFT holidays, puestos). E
 7. *Catálogos*: tabs for every catalog; the 51 municipios; «Agregar festivos de ley» adds the year once.
 8. Document upload/download: S3 has no people screen (PLAN S3 lists none), so the check is API-level — `DocumentTests` (presign → confirm → versions → review → logged view/download) and `S3ObjectStorageTests` (presigned PUT/GET against MinIO). The browser check moves to the S4 candidate detail.
 9. 390 px (carried from S0 step 6).
+10. P5 / D69: invite an Administrador with only *Asistencia* → after setting the password the sidebar shows only Calendario and Asistencia; `/clientes` and `/catalogos` typed in the address bar go back to the home screen.
 
 ### S4–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

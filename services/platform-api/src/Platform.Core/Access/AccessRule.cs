@@ -30,6 +30,7 @@ public static class AccessMessages
 
     public static string Label(PermissionModule module) => module switch
     {
+        PermissionModule.Recruiting => "Reclutamiento",
         PermissionModule.RecruitingReports => "Reportes de reclutamiento",
         PermissionModule.PayrollPrepayroll => "Prenómina",
         PermissionModule.PayrollAttendance => "Asistencia",

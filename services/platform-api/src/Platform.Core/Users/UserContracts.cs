@@ -49,7 +49,7 @@ internal static class UserRules
 {
     /// <summary>Delegated grants that never take a client scope (PLAN D67).</summary>
     public static readonly IReadOnlySet<PermissionModule> AllClientsOnly =
-        new HashSet<PermissionModule> { PermissionModule.Users, PermissionModule.RecruitingReports };
+        new HashSet<PermissionModule> { PermissionModule.Recruiting, PermissionModule.Users, PermissionModule.RecruitingReports };
 
     public static void UserFields<T>(this AbstractValidator<T> v, Func<T, string> email, Func<T, string> name,
         Func<T, UserRole> role, Func<T, Guid?> clientId, Func<T, IReadOnlyList<GrantDto>?> grants)
@@ -66,7 +66,7 @@ internal static class UserRules
             .WithMessage("Solo un Administrador tiene permisos delegados.").OverridePropertyName("grants");
         v.RuleFor(r => grants(r)!).Must(g => g.All(x => x.ClientId is null || !AllClientsOnly.Contains(x.Module)))
             .When(r => grants(r) is not null)
-            .WithMessage("Los permisos de Usuarios y de Reportes de reclutamiento aplican a todos los clientes.")
+            .WithMessage("Los permisos de Reclutamiento, Usuarios y Reportes de reclutamiento aplican a todos los clientes.")
             .OverridePropertyName("grants");
         v.RuleForEach(r => grants(r)).Must(g => Enum.IsDefined(g.Module)).WithMessage("Permiso desconocido.")
             .OverridePropertyName("grants");

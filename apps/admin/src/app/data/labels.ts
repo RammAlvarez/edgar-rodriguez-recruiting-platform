@@ -6,8 +6,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   client: 'Cliente',
 };
 
-/** Delegated grants in the order of the prototype's «Permisos delegados» (SPEC §2.2). */
+/** Delegated grants in the order of the prototype's «Permisos delegados» (SPEC §2.2), plus Reclutamiento first (PLAN D69). */
 export const GRANTS: readonly { readonly module: PermissionModule; readonly label: string; readonly allClientsOnly?: boolean }[] = [
+  { module: 'recruiting', label: 'Reclutamiento', allClientsOnly: true },
   { module: 'recruiting_reports', label: 'Reportes de reclutamiento', allClientsOnly: true },
   { module: 'payroll_prepayroll', label: 'Prenómina' },
   { module: 'payroll_attendance', label: 'Asistencia' },

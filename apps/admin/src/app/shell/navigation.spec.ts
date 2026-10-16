@@ -18,7 +18,7 @@ const paths = (m: MeDto) => visibleNavigation(m).flatMap((s) => s.items.map((i) 
 describe('admin navigation', () => {
   it('shows the owner every section, including both report screens', () => {
     const owner = me('administrator', [
-      'recruiting_reports', 'payroll_prepayroll', 'payroll_attendance', 'payroll_incidents',
+      'recruiting', 'recruiting_reports', 'payroll_prepayroll', 'payroll_attendance', 'payroll_incidents',
       'payroll_staff', 'payroll_payment_files', 'payroll_card_requests', 'users',
     ]);
     expect(paths(owner)).toEqual([
@@ -31,12 +31,15 @@ describe('admin navigation', () => {
     expect(paths(me('administrator', ['users']))).not.toContain('reportes');
   });
 
-  // PLAN P5: SPEC D19 says a supervisor "sees nothing else", but permission_module has no recruiting grant, so the
-  // matrix as written still shows Reclutamiento. This test pins the current matrix until P5 is decided.
-  it('shows a supervisor with only Asistencia the attendance screens, plus recruiting (no grant exists yet, P5)', () => {
+  // PLAN P5 (a) / D69: SPEC D19's field supervisor is an Administrador with only Asistencia and sees nothing else.
+  it('shows a supervisor with only Asistencia the attendance screens and nothing of recruiting', () => {
     const supervisor = me('administrator', ['payroll_attendance']);
-    expect(paths(supervisor)).toEqual(['inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'calendario', 'asistencia', 'catalogos']);
-    expect(homePath(supervisor)).toBe('inicio');
+    expect(paths(supervisor)).toEqual(['calendario', 'asistencia']);
+    expect(homePath(supervisor)).toBe('calendario');
+  });
+
+  it('shows Reclutamiento, Inicio and Catálogos only with the recruiting grant', () => {
+    expect(paths(me('administrator', ['recruiting']))).toEqual(['inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'catalogos']);
   });
 
   it('shows a recruiter only their workspace', () => {

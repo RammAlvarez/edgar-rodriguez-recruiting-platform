@@ -4,6 +4,7 @@ import type {
   CatalogsDto,
   ClientDetailDto,
   ClientListItemDto,
+  ClientOptionDto,
   ContactRequest,
   CreateClientRequest,
   InviteResultDto,
@@ -48,6 +49,11 @@ export class ClientsRepository {
 
   list(module: 'recruiting' | 'payroll') {
     return liveQuery(() => this.api.get<ClientListItemDto[]>(this.base(module)), ['clients']);
+  }
+
+  /** The client picker of Usuarios: any Administrador reads it, with or without Reclutamiento (PLAN D69). */
+  options() {
+    return liveQuery(() => this.api.get<ClientOptionDto[]>('/v1/clients/options'), ['clients']);
   }
 
   detail(module: 'recruiting' | 'payroll', id: () => string) {

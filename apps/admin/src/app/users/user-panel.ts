@@ -13,7 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiError } from '@platform/api-client';
 import { email as emailSchema, type PermissionModule, type UserRole } from '@platform/shared';
 import { applyServerErrors, confirm, errorMessage, zodValidator } from '@platform/ui';
-import type { ClientListItemDto, UserDto } from '../data/api-types';
+import type { ClientOptionDto, UserDto } from '../data/api-types';
 import { DEFAULT_ADMIN_GRANTS, GRANTS, ROLE_LABELS } from '../data/labels';
 import { UsersRepository } from '../data/repositories';
 import { fromGrants, toGrants } from './grants';
@@ -21,7 +21,7 @@ import { fromGrants, toGrants } from './grants';
 export interface UserPanelData {
   /** null = «Invitar usuario». */
   readonly user: UserDto | null;
-  readonly clients: readonly ClientListItemDto[];
+  readonly clients: readonly ClientOptionDto[];
   readonly myId: string;
 }
 
@@ -154,7 +154,7 @@ export class UserPanel {
   private readonly initial = fromGrants(this.data.user?.grants ?? []);
   readonly scopeHint = this.initial.mixed
     ? 'Los permisos tenían distintos clientes; al guardar se aplica el cliente elegido.'
-    : 'Usuarios y Reportes de reclutamiento aplican siempre a todos los clientes.';
+    : 'Reclutamiento, Usuarios y Reportes de reclutamiento aplican siempre a todos los clientes.';
 
   readonly form = inject(FormBuilder).group({
     displayName: [this.data.user?.displayName ?? '', [Validators.required, Validators.maxLength(120)]],

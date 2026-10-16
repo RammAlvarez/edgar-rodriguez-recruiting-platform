@@ -10,6 +10,7 @@ export type DocumentTypeDto = S['DocumentTypeDto'];
 export type DocumentTemplateDto = S['DocumentTemplateDto'];
 export type HolidayDto = S['HolidayDto'];
 export type ClientListItemDto = S['ClientListItemDto'];
+export type ClientOptionDto = S['ClientOptionDto'];
 export type ClientDetailDto = S['ClientDetailDto'];
 export type ContactDto = S['ContactDto'];
 export type SiteDto = S['SiteDto'];

@@ -21,7 +21,7 @@ public sealed class ClientTests(ApiFactory factory) : ApiTest(factory)
     [Fact]
     public async Task The_recruiting_entry_marks_uses_recruiting_and_creates_the_primary_contact()
     {
-        var admin = await As(UserRole.Administrator);
+        var admin = await As(UserRole.Administrator, PermissionModule.Recruiting);
 
         var response = await admin.PostAsJsonAsync("/v1/clients", NewClient());
 
@@ -34,6 +34,23 @@ public sealed class ClientTests(ApiFactory factory) : ApiTest(factory)
         Assert.False(client.GetProperty("usesPayroll").GetBoolean());
         var contact = Assert.Single(client.GetProperty("contacts").EnumerateArray());
         Assert.True(contact.GetProperty("isPrimary").GetBoolean());
+    }
+
+    [Fact]
+    public async Task A_supervisor_without_recruiting_is_refused_reclutamiento_clients_but_reads_the_client_picker()
+    {
+        // PLAN P5 / D69: a field supervisor is an Administrador with only Asistencia.
+        await WithDb(db => db.AddClient("ECOVIA"));
+        var supervisor = await As(UserRole.Administrator, PermissionModule.PayrollAttendance);
+
+        var list = await supervisor.GetAsync("/v1/clients");
+        Assert.Equal(HttpStatusCode.Forbidden, list.StatusCode);
+        Assert.Equal("No tienes permiso de «Reclutamiento». Pídelo al administrador.", await DetailOf(list));
+        Assert.Equal(HttpStatusCode.Forbidden, (await supervisor.PostAsJsonAsync("/v1/clients", NewClient())).StatusCode);
+
+        var options = await BodyOf(await supervisor.GetAsync("/v1/clients/options"));
+        Assert.Equal(["ECOVIA"], options.EnumerateArray().Select(c => c.GetProperty("shortName").GetString()));
+        Assert.Equal(HttpStatusCode.Forbidden, (await (await As(UserRole.Recruiter)).GetAsync("/v1/clients/options")).StatusCode);
     }
 
     [Fact]

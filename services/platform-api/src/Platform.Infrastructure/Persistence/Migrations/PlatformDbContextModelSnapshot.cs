@@ -32,7 +32,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "document_status", new[] { "pending", "delivered", "validated", "rejected", "expired" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "document_template_scope", new[] { "candidate", "employee" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "gender", new[] { "male", "female", "unspecified" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "permission_module", new[] { "recruiting_reports", "payroll_prepayroll", "payroll_attendance", "payroll_incidents", "payroll_staff", "payroll_payment_files", "payroll_card_requests", "users" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "permission_module", new[] { "recruiting", "recruiting_reports", "payroll_prepayroll", "payroll_attendance", "payroll_incidents", "payroll_staff", "payroll_payment_files", "payroll_card_requests", "users" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "registration_bank", new[] { "banorte", "banregio" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "user_role", new[] { "administrator", "recruiter", "client" });
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");

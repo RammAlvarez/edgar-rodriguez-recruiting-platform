@@ -354,6 +354,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/clients/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListClientOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/clients/{id}": {
         parameters: {
             query?: never;
@@ -723,6 +739,12 @@ export type components = {
             zone: null | string;
             primaryContact: null | components["schemas"]["ContactDto"];
         };
+        ClientOptionDto: {
+            /** Format: uuid */
+            id: string;
+            shortName: string;
+            isActive: boolean;
+        };
         ConfirmDocumentRequest: {
             /** Format: uuid */
             documentTypeId: string;
@@ -906,7 +928,7 @@ export type components = {
             phone: null | string;
         };
         /** @enum {unknown} */
-        PermissionModule: "recruiting_reports" | "payroll_prepayroll" | "payroll_attendance" | "payroll_incidents" | "payroll_staff" | "payroll_payment_files" | "payroll_card_requests" | "users";
+        PermissionModule: "recruiting" | "recruiting_reports" | "payroll_prepayroll" | "payroll_attendance" | "payroll_incidents" | "payroll_staff" | "payroll_payment_files" | "payroll_card_requests" | "users";
         PersonDocumentDto: {
             /** Format: uuid */
             id: string;
@@ -1128,6 +1150,7 @@ export type CatalogsDto = components['schemas']['CatalogsDto'];
 export type ChecklistItemDto = components['schemas']['ChecklistItemDto'];
 export type ClientDetailDto = components['schemas']['ClientDetailDto'];
 export type ClientListItemDto = components['schemas']['ClientListItemDto'];
+export type ClientOptionDto = components['schemas']['ClientOptionDto'];
 export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
 export type ContactRequest = components['schemas']['ContactRequest'];
@@ -2231,6 +2254,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListClientOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOptionDto"][];
                 };
             };
         };

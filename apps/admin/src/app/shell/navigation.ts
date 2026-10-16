@@ -19,7 +19,7 @@ const ADMIN: readonly UserRole[] = ['administrator'];
 const RECRUITER: readonly UserRole[] = ['recruiter'];
 
 export const NAVIGATION: readonly NavSection[] = [
-  { label: null, items: [{ path: 'inicio', label: 'Inicio', icon: 'dashboard', roles: ADMIN }] },
+  { label: null, items: [{ path: 'inicio', label: 'Inicio', icon: 'dashboard', roles: ADMIN, grant: 'recruiting' }] },
   {
     label: null,
     items: [
@@ -30,10 +30,10 @@ export const NAVIGATION: readonly NavSection[] = [
   {
     label: 'Reclutamiento',
     items: [
-      { path: 'vacantes', label: 'Vacantes', icon: 'work', roles: ADMIN },
-      { path: 'candidatos', label: 'Candidatos', icon: 'group', roles: ADMIN },
-      { path: 'reclutadores', label: 'Reclutadores', icon: 'support_agent', roles: ADMIN },
-      { path: 'clientes', label: 'Clientes', icon: 'domain', roles: ADMIN },
+      { path: 'vacantes', label: 'Vacantes', icon: 'work', roles: ADMIN, grant: 'recruiting' },
+      { path: 'candidatos', label: 'Candidatos', icon: 'group', roles: ADMIN, grant: 'recruiting' },
+      { path: 'reclutadores', label: 'Reclutadores', icon: 'support_agent', roles: ADMIN, grant: 'recruiting' },
+      { path: 'clientes', label: 'Clientes', icon: 'domain', roles: ADMIN, grant: 'recruiting' },
       { path: 'reportes', label: 'Reportes', icon: 'bar_chart', roles: ADMIN, grant: 'recruiting_reports' },
     ],
   },
@@ -53,8 +53,8 @@ export const NAVIGATION: readonly NavSection[] = [
     label: 'Administración',
     items: [
       { path: 'usuarios', label: 'Usuarios', icon: 'manage_accounts', roles: ADMIN, grant: 'users' },
-      // SPEC §3.4: catalogs are edited by Administradores; no delegated grant covers them.
-      { path: 'catalogos', label: 'Catálogos', icon: 'list_alt', roles: ADMIN },
+      // SPEC §3.4 / PLAN D69: catalogs are edited by Administradores with Reclutamiento.
+      { path: 'catalogos', label: 'Catálogos', icon: 'list_alt', roles: ADMIN, grant: 'recruiting' },
     ],
   },
 ];

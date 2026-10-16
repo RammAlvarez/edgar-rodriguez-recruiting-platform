@@ -10,14 +10,14 @@ using Platform.Core.Users;
 namespace Platform.Core.Catalogs;
 
 /// <summary>
-/// SPEC §3.4 catalogs. Everyone on staff reads them (the forms of every screen); only Administradores edit them, and no
-/// delegated grant covers them. Nothing is deleted except holidays: rows are deactivated so past records keep their labels.
+/// SPEC §3.4 catalogs. Everyone on staff reads them (the forms of every screen); only Administradores with
+/// <c>recruiting</c> edit them (PLAN D69). Nothing is deleted except holidays: rows are deactivated so past records keep their labels.
 /// </summary>
 public static class CatalogEndpoints
 {
     public const string Tag = "catalogs";
 
-    private static readonly AccessRule Edit = AccessRule.Administrator();
+    private static readonly AccessRule Edit = AccessRule.Administrator(PermissionModule.Recruiting);
 
     public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder v1)
     {
