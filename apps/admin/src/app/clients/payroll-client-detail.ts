@@ -1,15 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButton } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
-import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { openSidePanel } from '@platform/ui';
+import { PayrollGroupsRepository } from '../data/payroll-repositories';
 import { ClientsRepository } from '../data/repositories';
+import { PayrollGroupCard } from './payroll-group-card';
+import { PayrollGroupPanel, type PayrollGroupPanelData } from './payroll-group-panel';
 
-/** «Detalle del cliente (nómina)»: Grupos de nómina and Puestos, where the rates live (S7). */
+/**
+ * «Detalle del cliente (nómina)» (SPEC §5.6): its grupos de nómina, each with its puestos and rates — the only place rates
+ * are edited — and its bonuses.
+ */
 @Component({
   selector: 'app-payroll-client-detail',
-  imports: [MatTabGroup, MatTab, MatButton, MatIcon, MatProgressBar, RouterLink],
+  imports: [MatButton, MatIcon, MatProgressBar, RouterLink, PayrollGroupCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -30,21 +37,23 @@ import { ClientsRepository } from '../data/repositories';
             <span class="subtitle">{{ c.legalName ?? '' }}@if (c.rfc) { · <span class="mono">{{ c.rfc }}</span> }</span>
           </h1>
         </header>
-        <mat-tab-group animationDuration="0ms">
-          <mat-tab label="Grupos de nómina">
+        <div class="section-head">
+          <h2>Grupos de nómina</h2>
+          <button matButton="filled" type="button" (click)="newGroup()">
+            <mat-icon fontSet="material-symbols-outlined">add</mat-icon>Nuevo grupo
+          </button>
+        </div>
+        @for (g of groups.value() ?? []; track g.id) {
+          <app-payroll-group-card [summary]="g" />
+        } @empty {
+          @if (groups.value()) {
             <div class="empty-state">
               <mat-icon fontSet="material-symbols-outlined">groups</mat-icon>
               <p><strong>Este cliente aún no tiene grupos de nómina</strong></p>
-              <p>Los grupos definen el período, el día de corte y las horas por turno. Se dan de alta aquí en la siguiente entrega de Nómina.</p>
+              <p>Un grupo define el período, el día de corte, las horas por turno y los puestos con sus tarifas.</p>
             </div>
-          </mat-tab>
-          <mat-tab label="Puestos">
-            <div class="empty-state">
-              <mat-icon fontSet="material-symbols-outlined">badge</mat-icon>
-              <p>Sin puestos. Los puestos definen las tarifas que usa la prenómina.</p>
-            </div>
-          </mat-tab>
-        </mat-tab-group>
+          }
+        }
       }
     </div>
   `,
@@ -62,6 +71,17 @@ import { ClientsRepository } from '../data/repositories';
       font: var(--mat-sys-body-medium);
       color: var(--mat-sys-on-surface-variant);
     }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      h2 {
+        margin: 0;
+        font: var(--mat-sys-title-large);
+      }
+    }
   `,
 })
 export class PayrollClientDetail {
@@ -69,4 +89,10 @@ export class PayrollClientDetail {
   private readonly clientId = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
   readonly id = () => this.clientId;
   readonly client = inject(ClientsRepository).detail('payroll', () => this.id());
+  readonly groups = inject(PayrollGroupsRepository).list(() => this.id());
+  private readonly dialog = inject(MatDialog);
+
+  newGroup(): void {
+    openSidePanel<PayrollGroupPanel, PayrollGroupPanelData>(this.dialog, PayrollGroupPanel, { clientId: this.clientId, group: null });
+  }
 }

@@ -15,6 +15,10 @@ export type ChecklistItemDto = S['ChecklistItemDto'];
 export type PersonDocumentDto = S['PersonDocumentDto'];
 type PresignUploadResponse = S['PresignUploadResponse'];
 type DocumentUrlDto = S['DocumentUrlDto'];
+export type BankAccountDto = S['BankAccountDto'];
+export type BankAccountRequest = S['BankAccountRequest'];
+export type BankOptionDto = S['BankOptionDto'];
+export type BankAccountType = NonNullable<S['BankAccountType']>;
 
 /**
  * The candidate's own data (`/v1/candidate-portal`, PLAN D77). Uploads and views go through the shared document routes,
@@ -38,6 +42,19 @@ export class CandidatePortal {
 
   acceptPrivacyNotice(): Promise<CandidateProfileDto> {
     return this.api.post('/v1/candidate-portal/privacy-notice');
+  }
+
+  /** «Cuenta para tu pago» (PLAN D77 → S7): only the last four digits ever come back. */
+  bankAccounts() {
+    return liveQuery(() => this.api.get<BankAccountDto[]>('/v1/candidate-portal/bank-accounts'), ['candidate-portal']);
+  }
+
+  banks(): Promise<BankOptionDto[]> {
+    return this.api.get('/v1/candidate-portal/banks');
+  }
+
+  addBankAccount(body: BankAccountRequest): Promise<BankAccountDto[]> {
+    return this.api.post('/v1/candidate-portal/bank-accounts', body);
   }
 
   applications() {

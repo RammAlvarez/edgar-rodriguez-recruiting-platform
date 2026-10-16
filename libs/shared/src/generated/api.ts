@@ -1841,6 +1841,8 @@ export type components = {
             comments: null | string;
             discardReason: null | string;
             canConvertToEmployee: boolean;
+            /** Format: uuid */
+            employeeId: null | string;
         };
         CandidateInvitationResultDto: {
             sent: boolean;
@@ -2410,6 +2412,7 @@ export type components = {
             clientName: string;
             name: string;
             positions: components["schemas"]["PositionOptionDto"][];
+            sites: components["schemas"]["SiteOptionDto"][];
         };
         HolidayDto: {
             /** Format: uuid */
@@ -3109,6 +3112,11 @@ export type components = {
             state: null | string;
             isActive: boolean;
         };
+        SiteOptionDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
         SiteRequest: {
             name: string;
             /** Format: uuid */
@@ -3498,6 +3506,7 @@ export type ReportFormat = components['schemas']['ReportFormat'];
 export type ReportOptionDto = components['schemas']['ReportOptionDto'];
 export type ReportOptionsDto = components['schemas']['ReportOptionsDto'];
 export type SiteDto = components['schemas']['SiteDto'];
+export type SiteOptionDto = components['schemas']['SiteOptionDto'];
 export type SiteRequest = components['schemas']['SiteRequest'];
 export type SourceRowDto = components['schemas']['SourceRowDto'];
 export type SourcesReportDto = components['schemas']['SourcesReportDto'];

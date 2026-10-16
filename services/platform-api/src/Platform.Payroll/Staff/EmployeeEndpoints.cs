@@ -453,9 +453,12 @@ public static class EmployeeEndpoints
         var rates = await db.Set<PositionRate>()
             .Where(r => positionIds.Contains(r.PositionId) && r.ValidFrom <= today && (r.ValidTo == null || r.ValidTo >= today))
             .AsNoTracking().ToDictionaryAsync(r => r.PositionId, ct);
+        var clientIds = groups.Select(x => x.g.ClientId).Distinct().ToList();
+        var sites = await db.Set<ClientSite>().Where(s => clientIds.Contains(s.ClientId) && s.IsActive).AsNoTracking().ToListAsync(ct);
         return groups.Select(x => new GroupOptionDto(x.g.Uid, x.g.ClientId, x.Client, x.g.Name,
             positions.Where(p => p.PayrollGroupId == x.g.Uid).OrderBy(p => p.Name, StringComparer.Ordinal)
-                .Select(p => new PositionOptionDto(p.Uid, p.Name, rates.TryGetValue(p.Uid, out var r) ? StaffRules.Rates(r) : null)).ToList()))
+                .Select(p => new PositionOptionDto(p.Uid, p.Name, rates.TryGetValue(p.Uid, out var r) ? StaffRules.Rates(r) : null)).ToList(),
+            sites.Where(s => s.ClientId == x.g.ClientId).OrderBy(s => s.Name, StringComparer.Ordinal).Select(s => new SiteOptionDto(s.Uid, s.Name)).ToList()))
             .ToList();
     }
 

@@ -116,7 +116,10 @@ public static class CandidateEndpoints
         var name = (await OpeningQueries.DisplayNames(db, [o.Uid], ct))[o.Uid];
         return new CandidateDetailDto(c.Uid, PersonDto.From(person), o.Uid, name, o.ClientId, client, o.Status, o.DocumentTemplateId,
             c.RecruiterId, recruiter, c.Source, c.Stage, c.IsSuitable, c.IsHired, c.CapturedAt, c.HiredAt, c.DaysInProcess(clock.Today()),
-            c.OfferedSalary, c.Comments, c.DiscardReason, CanConvertToEmployee: false);
+            c.OfferedSalary, c.Comments, c.DiscardReason,
+            CanConvertToEmployee: c.Stage == CandidateStage.Hired && c.EmployeeId is null
+                && ctx.RequiredPrincipal.HasGrant(Platform.Core.Users.PermissionModule.PayrollStaff),
+            c.EmployeeId);
     }
 
     private static async Task<IResult> Create(CreateCandidateRequest r, DbContext db, RequestContext ctx, IClock clock,

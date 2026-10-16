@@ -7529,7 +7529,8 @@
           "offeredSalary",
           "comments",
           "discardReason",
-          "canConvertToEmployee"
+          "canConvertToEmployee",
+          "employeeId"
         ],
         "type": "object",
         "properties": {
@@ -7640,6 +7641,13 @@
           },
           "canConvertToEmployee": {
             "type": "boolean"
+          },
+          "employeeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -10078,7 +10086,8 @@
           "clientId",
           "clientName",
           "name",
-          "positions"
+          "positions",
+          "sites"
         ],
         "type": "object",
         "properties": {
@@ -10100,6 +10109,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PositionOptionDto"
+            }
+          },
+          "sites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteOptionDto"
             }
           }
         }
@@ -13023,6 +13038,22 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "SiteOptionDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },

@@ -9,6 +9,7 @@ import { curp, mobilePhone, rfcPerson } from '@platform/shared';
 import { PanelState, zodValidator } from '@platform/ui/forms';
 import { z } from 'zod';
 import { CandidatePortal, type CandidateProfileDto } from '../data/portal';
+import { PayAccount } from './pay-account';
 
 const digits = (n: number, message: string) => z.string().trim().regex(new RegExp(`^\\d{${n}}$`), message);
 
@@ -28,7 +29,7 @@ interface Field {
  */
 @Component({
   selector: 'app-profile-page',
-  imports: [ReactiveFormsModule, MatFormField, MatLabel, MatError, MatHint, MatInput, MatButton, MatProgressBar],
+  imports: [ReactiveFormsModule, MatFormField, MatLabel, MatError, MatHint, MatInput, MatButton, MatProgressBar, PayAccount],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page narrow">
@@ -75,6 +76,7 @@ interface Field {
           }
           <button matButton="filled" type="submit" class="save" [disabled]="s.busy()">Guardar</button>
         </form>
+        <app-pay-account />
       }
     </div>
   `,

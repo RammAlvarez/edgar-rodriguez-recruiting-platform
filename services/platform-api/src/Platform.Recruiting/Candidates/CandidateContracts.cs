@@ -46,8 +46,12 @@ public sealed record CandidateDetailDto(
     decimal? OfferedSalary,
     string? Comments,
     string? DiscardReason,
-    /// <summary>«Convertir en empleado» is enabled with Personal (S7); until then always false (PLAN D72).</summary>
-    bool CanConvertToEmployee);
+    /// <summary>
+    /// «Convertir en empleado» (S7): a Contratado not converted yet, for an Administrador with the Personal grant
+    /// (<c>payroll_staff</c>); afterwards <see cref="EmployeeId"/> links to the employee.
+    /// </summary>
+    bool CanConvertToEmployee,
+    Guid? EmployeeId);
 
 /// <summary>
 /// «Nuevo candidato»: an existing person (<see cref="PersonId"/>) or a new one (<see cref="Person"/>, created in the same

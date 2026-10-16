@@ -59,7 +59,11 @@ public sealed record CardRequestRequest(RegistrationBank Bank);
 
 public sealed record PositionOptionDto(Guid Id, string Name, EmployeeRatesDto? Rates);
 
-public sealed record GroupOptionDto(Guid Id, Guid ClientId, string ClientName, string Name, IReadOnlyList<PositionOptionDto> Positions);
+public sealed record SiteOptionDto(Guid Id, string Name);
+
+/// <summary>A group for the alta and assignment pickers, with its puestos and the active sitios of its client (horarios).</summary>
+public sealed record GroupOptionDto(Guid Id, Guid ClientId, string ClientName, string Name, IReadOnlyList<PositionOptionDto> Positions,
+    IReadOnlyList<SiteOptionDto> Sites);
 
 /// <summary>What «Convertir en empleado» pre-fills: the hire date and the bank the vacante pays with.</summary>
 public sealed record ConversionDto(Guid CandidateId, Guid PersonId, string FullName, Guid ClientId, string OpeningName, DateOnly? HiredAt,

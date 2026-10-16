@@ -6,15 +6,16 @@ import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
-import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
 import { DateKeyPipe, MoneyPipe, openSidePanel, TimestampPipe } from '@platform/ui';
 import { DocumentChecklist, type ChecklistDocument, type ChecklistItem } from '@platform/ui/document-checklist';
 import type { CandidateDetailDto, InterviewDto, NoteDto, TimelineEntryDto } from '../data/api-types';
 import { OUTCOME, SOURCE, STAGE, STAGES, type CandidateStage } from '../data/recruiting-labels';
+import { EmployeesRepository } from '../data/payroll-repositories';
 import { CandidatesRepository, PeopleRepository } from '../data/recruiting-repositories';
 import { prompt } from '../openings/prompt-dialog';
+import { EmployeePanel, type EmployeePanelData } from '../staff/employee-panel';
 import { InterviewPanel, type InterviewPanelData } from './interview-panel';
 import { NoteEditor, type NoteDraft } from './note-editor';
 import { PersonPanel, type PersonPanelData } from './person-panel';
@@ -37,7 +38,6 @@ import { StageMove } from './stage-move';
     MatProgressBar,
     MatTabGroup,
     MatTab,
-    MatTooltip,
     DocumentChecklist,
     NoteEditor,
     MoneyPipe,
@@ -75,12 +75,14 @@ import { StageMove } from './stage-move';
               }
             }
           </mat-menu>
-          @if (c.stage === 'hired') {
-            <span matTooltip="Disponible con el módulo Personal">
-              <button matButton="filled" type="button" disabled>
-                <mat-icon fontSet="material-symbols-outlined">badge</mat-icon>Convertir en empleado
-              </button>
-            </span>
+          @if (c.employeeId) {
+            <a matButton="outlined" [routerLink]="['/personal', c.employeeId]">
+              <mat-icon fontSet="material-symbols-outlined">badge</mat-icon>Ver empleado
+            </a>
+          } @else if (c.canConvertToEmployee) {
+            <button matButton="filled" type="button" (click)="convert(c)">
+              <mat-icon fontSet="material-symbols-outlined">badge</mat-icon>Convertir en empleado
+            </button>
           }
         </header>
         @if (c.discardReason) {
@@ -272,6 +274,7 @@ import { StageMove } from './stage-move';
 export class CandidateDetail {
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
+  private readonly employees = inject(EmployeesRepository);
   private readonly snack = inject(MatSnackBar);
   private readonly repo = inject(CandidatesRepository);
   private readonly people = inject(PeopleRepository);
@@ -391,6 +394,16 @@ export class CandidateDetail {
   async reject(d: ChecklistDocument): Promise<void> {
     const reason = await prompt(this.dialog, { title: 'Rechazar documento', label: 'Motivo', confirm: 'Rechazar', kind: 'text', destructive: true });
     if (reason) await this.attempt(() => this.people.reject(d.id, reason), 'Documento rechazado');
+  }
+
+  /** «Convertir en empleado» (SPEC §4.2, S7): the alta pre-filled with the hire date and the vacante's card bank. */
+  async convert(c: CandidateDetailDto): Promise<void> {
+    try {
+      const conversion = await this.employees.conversion(c.id);
+      openSidePanel<EmployeePanel, EmployeePanelData>(this.dialog, EmployeePanel, { mode: 'convert', conversion });
+    } catch (e) {
+      this.snack.open(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+    }
   }
 
   readonly inviting = signal(false);

@@ -6,7 +6,7 @@ import { Session } from '@platform/ui/session';
 import { CoverMode } from './shell/cover-mode';
 import { ALL_NAV_ITEMS, homePath } from './shell/navigation';
 
-/** Screens delivered so far (S6); the other sections keep the «próxima entrega» placeholder. */
+/** Screens delivered so far (S7); the other sections keep the «próxima entrega» placeholder. */
 const SCREENS: Record<string, () => Promise<Type<unknown>>> = {
   vacantes: () => import('./openings/openings-page').then((m) => m.OpeningsPage),
   'mis-vacantes': () => import('./openings/openings-page').then((m) => m.OpeningsPage),
@@ -18,6 +18,8 @@ const SCREENS: Record<string, () => Promise<Type<unknown>>> = {
   'clientes-nomina': () => import('./clients/payroll-clients-page').then((m) => m.PayrollClientsPage),
   catalogos: () => import('./catalogs/catalogs-page').then((m) => m.CatalogsPage),
   reportes: () => import('./reports/reports-page').then((m) => m.ReportsPage),
+  personal: () => import('./staff/personal-page').then((m) => m.PersonalPage),
+  calendario: () => import('./staff/calendar-page').then((m) => m.CalendarPage),
 };
 
 const navItem = (path: string) => ALL_NAV_ITEMS.find((i) => i.path === path)!;
@@ -108,6 +110,12 @@ export const routes: Routes = [
         loadComponent: () => import('./clients/payroll-client-detail').then((m) => m.PayrollClientDetail),
         canActivate: [staffGuard(navItem('clientes-nomina').roles, navItem('clientes-nomina').grant)],
         title: 'Cliente (nómina)',
+      },
+      {
+        path: 'personal/:id',
+        loadComponent: () => import('./staff/employee-detail').then((m) => m.EmployeeDetail),
+        canActivate: [staffGuard(navItem('personal').roles, navItem('personal').grant)],
+        title: 'Empleado',
       },
     ],
   },
