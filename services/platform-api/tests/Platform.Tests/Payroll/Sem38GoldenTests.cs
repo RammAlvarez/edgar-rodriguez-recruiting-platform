@@ -95,15 +95,16 @@ public sealed partial class Sem38GoldenTests
         var rows = Rows();
         var sheetSum = Number(Sheet().Cell($"V{TotalsRow}"));
 
-        // Engine (D14 for every entitled row).
-        var exact = rows.Sum(r => r.Result.TotalNetExact);
-        Assert.InRange((double)exact, 334_655.149166 - 1e-6, 334_655.149167);
+        // Engine (D14 for every entitled row); items carry 6 decimals, so the period sum is exact at 6 decimals.
+        Assert.Equal(334_655.149146m, rows.Sum(r => r.Result.TotalNetExact));
         Assert.Equal(334_654.83m, rows.Sum(r => r.Result.TotalNet));
 
-        // The same rows with the sheet's own FESTIVO PRIMERA MITAD reproduce Excel's total.
+        // The same rows with the sheet's own FESTIVO PRIMERA MITAD reproduce Excel's total, less what cutting each item
+        // to 6 decimals drops (under 1e-6 per item).
         var withSheetO = rows.Select(r =>
             r.Result.TotalNetExact - r.Result.Column(HolidayColumn) + (decimal)r.SheetHolidayFirstHalf).ToList();
-        Assert.InRange((double)withSheetO.Sum(), sheetSum - Tolerance, sheetSum + Tolerance);
+        var items = rows.Sum(r => r.Result.Items.Count);
+        Assert.InRange((double)withSheetO.Sum(), sheetSum - items * Tolerance, sheetSum + Tolerance);
         Assert.Equal(333_188.81m, withSheetO.Sum(PrepayrollCalculator.TruncateToCents));
     }
 

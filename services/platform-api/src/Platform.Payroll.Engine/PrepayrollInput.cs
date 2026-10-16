@@ -71,8 +71,9 @@ public sealed record LineItem(
     Guid? IncidentId = null);
 
 /// <summary>
-/// The computed Excel row. <see cref="TotalNetExact"/> is Σ earnings − Σ deductions; <see cref="TotalNet"/> (TOTAL NETO A
-/// PAGAR) is that amount truncated, not rounded, to cents and is the only figure reduced to cents.
+/// The computed Excel row. Every item amount has at most 6 decimals; <see cref="TotalNetExact"/> is Σ earnings −
+/// Σ deductions of those amounts; <see cref="TotalNet"/> (TOTAL NETO A PAGAR) is that amount truncated, not rounded, to
+/// cents and is the only figure reduced to cents (PLAN D42).
 /// </summary>
 public sealed record PrepayrollResult(
     IReadOnlyList<LineItem> Items,

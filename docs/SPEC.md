@@ -336,7 +336,7 @@ Reproduces `PRENOMINA SEM 38` exactly, generalized by **payroll group** (client 
 | VALIDADOR | 428.57 | 278.80 | 35.71 | 450 |
 | SUPERVISOR | 585.71 | 278.80 | 48.80 | 600 |
 
-**Line calculation** (C# `decimal`, **never rounded**: every item and the line total are kept exact; the only reduction to cents is the **payable amount**, `total_neto_a_pagar = truncate(total_neto, 2)` — truncated, not rounded, e.g. 1,234.5678 → 1,234.56 — which is what the grid's *Total neto a pagar*, the bank file and every payment total use; other columns are displayed truncated to 2 decimals — D42):
+**Line calculation** (C# `decimal`, **never rounded**: every item is calculated exactly and stored with 6 decimals, truncated (71.4283333… → 71.428333), and the line total is the sum of those items; the only reduction to cents is the worker's **payable amount**, the last calculation, `total_neto_a_pagar = truncate(total_neto, 2)` — truncated, not rounded, e.g. 1,234.5678 → 1,234.56 — which is what the grid's *Total neto a pagar*, the receipt, the bank file and every payment total use; a period's payable total is the sum of its rows' payable amounts, one total that equals the bank file; other columns are displayed truncated to 2 decimals — D42):
 
 ```
 sueldo              = sd_bolsillo × días_laborados
@@ -382,7 +382,7 @@ There is no separate "Cerrado": generating the bank file *is* the close, because
 
 **Altas bancarias (card requests) inside Prenómina.** An employee created without a card is queued automatically in a side panel **"Tarjetas por solicitar"** (count badge). From it the user generates the **Alta masiva Banorte** or **Alta masiva Banregio** file for the queued employees of that bank (5.7), uploads it, and later ticks *Tarjetas recibidas* typing the card numbers; the employee's payment account switches to the new card and the next period pays into it. Until then the employee is paid by SPEI to whatever account they provided, or sits in Pendientes.
 
-Outputs: period Excel in the current layout (so "la muchacha de nóminas" validates the way she does today), PDF summary, per-employee receipt (informative, not CFDI), Azteca payment file(s), cuentas frecuentes file, Banorte/Banregio alta files.
+Outputs: period Excel in the current layout (so "la muchacha de nóminas" validates the way she does today; one total, the sum of the payable amounts — PLAN D76), PDF summary, per-employee receipt (informative, not CFDI), Azteca payment file(s), cuentas frecuentes file, Banorte/Banregio alta files.
 
 ### 5.6 Clientes (payroll view)
 
@@ -436,7 +436,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | Requirement | Decision |
 |---|---|
 | Responsive | Desktop-first for Admin (tables, Kanban); mobile-first for Asistencia capture, Candidates app and Clients app |
-| Robust accounting | Typed and payable money as `numeric(12,2)`, computed pre-payroll amounts as exact `numeric` (never rounded; payable = truncated to cents, D42), decimal strings on the wire and C# `decimal` in the engine; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
+| Robust accounting | Typed and payable money as `numeric(12,2)`, computed pre-payroll amounts as `numeric(18,6)` (6 decimals, never rounded; payable = truncated to cents once per worker, D42), decimal strings on the wire and C# `decimal` in the engine; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
 | Language | es-MX UI, dates `dd/MM/yyyy`, currency `$ 1,234.56 MXN`, time zone America/Monterrey |
 | Security | Firebase Auth behind `AuthProvider`, optional MFA for Admin, roles/grants in the database checked per route, client scoping in every query, encrypted card/CLABE numbers (AES-GCM in the API), presigned URLs for documents (15 min), append-only audit log written in the same transaction, personal-data read log, audited attendance unlocks |
 | Audit | `audit_log` for create/update/delete on people, documents, attendance, incidents, periods, bank batches, users |

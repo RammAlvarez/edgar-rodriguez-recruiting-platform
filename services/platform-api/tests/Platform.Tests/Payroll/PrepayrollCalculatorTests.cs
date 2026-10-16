@@ -13,14 +13,23 @@ public sealed class PrepayrollCalculatorTests
             incidents ?? [], bonuses ?? []));
 
     [Fact]
-    public void Seventh_day_is_kept_exact_and_only_the_payable_is_cut_to_cents()
+    public void Seventh_day_is_stored_with_six_decimals_and_only_the_payable_is_cut_to_cents()
     {
         var r = Calc(new AttendanceSummary(DaysWorked: 1));
 
-        Assert.Equal(428.57m * 1 / 6, r.Items.Single(i => i.Concept == PayConcept.SeventhDay).Amount);
-        Assert.Equal(428.57m + 428.57m / 6, r.TotalNetExact);
+        Assert.Equal(71.428333m, r.Items.Single(i => i.Concept == PayConcept.SeventhDay).Amount);
+        Assert.Equal(499.998333m, r.TotalNetExact);
         Assert.Equal(499.99m, r.TotalNet);
     }
+
+    [Theory]
+    [InlineData("71.4283333333", "71.428333")]
+    [InlineData("71.4283339999", "71.428333")]
+    [InlineData("-10.1234569", "-10.123456")]
+    public void Stored_amounts_are_cut_to_six_decimals_never_rounded(string exact, string stored) =>
+        Assert.Equal(decimal.Parse(stored, System.Globalization.CultureInfo.InvariantCulture),
+            PrepayrollCalculator.TruncateToStored(decimal.Parse(exact, System.Globalization.CultureInfo.InvariantCulture)));
+
 
     [Theory]
     [InlineData("1234.5678", "1234.56")]
@@ -109,7 +118,7 @@ public sealed class PrepayrollCalculatorTests
 
         var r = Calc(new AttendanceSummary(6), bonuses: bonuses);
         Assert.Equal(450m, r.Column("BONO DIAS TRABAJADOS"));
-        Assert.Equal(400m * 6 / 7, r.Column("BONO PUNTUALIDAD Y ASISTENCIA"));
+        Assert.Equal(342.857142m, r.Column("BONO PUNTUALIDAD Y ASISTENCIA")); // 400 × 6 / 7, stored with 6 decimals
 
         Assert.Equal(0m, Calc(new AttendanceSummary(0), bonuses: bonuses).TotalNetExact);
     }

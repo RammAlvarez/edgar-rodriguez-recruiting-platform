@@ -1,8 +1,9 @@
 namespace Platform.Payroll.Engine;
 
 /// <summary>
-/// The pre-payroll line calculation of SPEC §5.5. Pure and exact: C# <see cref="decimal"/>, nothing is rounded; only
-/// the payable total is truncated to cents (PLAN D42). Order: earnings → deductions → exact net → truncate.
+/// The pre-payroll line calculation of SPEC §5.5. Pure, C# <see cref="decimal"/>, nothing is rounded: each item is
+/// calculated exactly and stored cut to 6 decimals; only the worker's net — the last calculation — is truncated to
+/// cents (PLAN D42). Order: earnings → deductions → net at 6 decimals → truncate.
 /// </summary>
 public static class PrepayrollCalculator
 {
@@ -19,6 +20,7 @@ public static class PrepayrollCalculator
         void Add(PayConcept concept, decimal quantity, decimal unitValue, decimal amount, ItemSource source,
             Guid? incidentId = null, PayConcept? exportAs = null)
         {
+            amount = TruncateToStored(amount);
             if (amount == 0m)
             {
                 return;
@@ -98,6 +100,13 @@ public static class PrepayrollCalculator
 
     /// <summary>Cuts to two decimals toward zero, never rounding: 1,234.5678 → 1,234.56 (PLAN D42).</summary>
     public static decimal TruncateToCents(decimal amount) => Math.Round(amount, 2, MidpointRounding.ToZero);
+
+    /// <summary>Decimals every computed amount is stored with (PLAN D42).</summary>
+    public const int StoredDecimals = 6;
+
+    /// <summary>Cuts a computed amount to <see cref="StoredDecimals"/> toward zero: 71.4283333… → 71.428333 (PLAN D42).</summary>
+    public static decimal TruncateToStored(decimal amount) =>
+        Math.Round(amount, StoredDecimals, MidpointRounding.ToZero);
 
     private static decimal? HourMultiplier(PayConcept concept) => concept switch
     {
