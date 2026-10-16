@@ -10,9 +10,9 @@ public enum ReportCellKind
 }
 
 /// <summary>
-/// One cell. <see cref="Value"/> is the number Excel stores (a percentage as a fraction: 0.25) and is already rounded the way it
-/// is shown — averages to 1 decimal, percentages to whole points, half away from zero — so the screen, the Excel and the PDF
-/// show the same figure (these are recruiting indicators, never amounts paid). <see cref="Display"/> is that figure as text
+/// One cell. <see cref="Value"/> is the number Excel stores (a percentage as a fraction: 0.25) and is already cut the way it is
+/// shown — averages to 1 decimal, percentages to whole points, truncated and never rounded (PLAN D42) — so the screen, the Excel
+/// and the PDF show the same figure. <see cref="Display"/> is that figure as text
 /// («25 %», «12.5»); a <c>null</c> value is written as «—».
 /// </summary>
 public sealed record ReportCell(ReportCellKind Kind, string Display, decimal? Value)
@@ -25,13 +25,13 @@ public sealed record ReportCell(ReportCellKind Kind, string Display, decimal? Va
 
     public static ReportCell Average(decimal? value)
     {
-        var shown = value is { } v ? Math.Round(v, 1, MidpointRounding.AwayFromZero) : (decimal?)null;
+        var shown = value is { } v ? Math.Truncate(v * 10) / 10 : (decimal?)null;
         return new(ReportCellKind.Average, shown?.ToString("0.0", Format) ?? Empty, shown);
     }
 
     public static ReportCell Percent(decimal? fraction)
     {
-        var shown = fraction is { } f ? Math.Round(f, 2, MidpointRounding.AwayFromZero) : (decimal?)null;
+        var shown = fraction is { } f ? Math.Truncate(f * 100) / 100 : (decimal?)null;
         return new(ReportCellKind.Percent, shown is { } p ? $"{(p * 100).ToString("0", Format)} %" : Empty, shown);
     }
 

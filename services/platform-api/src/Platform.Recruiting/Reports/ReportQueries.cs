@@ -273,20 +273,27 @@ public static class ReportQueries
     }
 }
 
-/// <summary>Rates and averages as shown, exported and stored in the files (see <c>ReportCell</c>).</summary>
+/// <summary>
+/// Rates and averages as shown, exported and stored in the files (see <c>ReportCell</c>): truncated, never rounded (PLAN D42, the
+/// same «% conversión» as the Reclutadores cards — 2 of 3 is 66 %).
+/// </summary>
 public static class ReportMath
 {
-    /// <summary><paramref name="part"/> ÷ <paramref name="whole"/> to whole percentage points (0.33), or <c>null</c> over zero.</summary>
-    public static decimal? Rate(int part, int whole) =>
-        whole == 0 ? null : Math.Round((decimal)part / whole, 2, MidpointRounding.AwayFromZero);
+    /// <summary><paramref name="part"/> ÷ <paramref name="whole"/> truncated to whole percentage points (0.66), or <c>null</c> over zero.</summary>
+    public static decimal? Rate(int part, int whole) => whole == 0 ? null : Cut((decimal)part / whole, 2);
 
-    /// <summary>The mean to 1 decimal, ignoring <c>null</c>s; <c>null</c> when there is nothing to average.</summary>
+    /// <summary>The mean truncated to 1 decimal, ignoring <c>null</c>s; <c>null</c> when there is nothing to average.</summary>
     public static decimal? Average(IEnumerable<decimal?> values)
     {
         var list = values.OfType<decimal>().ToList();
-        return list.Count == 0 ? null : Math.Round(list.Average(), 1, MidpointRounding.AwayFromZero);
+        return list.Count == 0 ? null : Cut(list.Average(), 1);
     }
 
-    public static decimal? Mean(int total, int count) =>
-        count == 0 ? null : Math.Round((decimal)total / count, 1, MidpointRounding.AwayFromZero);
+    public static decimal? Mean(int total, int count) => count == 0 ? null : Cut((decimal)total / count, 1);
+
+    public static decimal Cut(decimal value, int decimals)
+    {
+        var factor = decimals == 1 ? 10m : 100m;
+        return Math.Truncate(value * factor) / factor;
+    }
 }

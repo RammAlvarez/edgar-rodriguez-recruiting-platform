@@ -23,7 +23,7 @@ public enum RecruitingReport
 public sealed record ReportFiltersDto(Guid? ClientId, string? ClientName, Guid? RecruiterId, string? RecruiterName, DateOnly From,
     DateOnly To);
 
-// Percentages are fractions rounded to whole points (0.33) and averages are rounded to 1 decimal, exactly as shown and exported.
+// Percentages are fractions truncated to whole points (0.66) and averages truncated to 1 decimal (D42), exactly as shown and exported.
 
 /// <summary>1 · one vacante of a recruiter.</summary>
 public sealed record RecruiterPerformanceRowDto(Guid OpeningId, string OpeningName, string ClientName, string PositionName, bool IsLead,

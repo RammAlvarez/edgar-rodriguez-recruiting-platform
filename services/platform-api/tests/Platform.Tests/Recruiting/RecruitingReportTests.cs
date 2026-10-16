@@ -104,7 +104,7 @@ public sealed class RecruitingReportTests(ApiFactory factory) : ApiTest(factory)
         var o1 = monica.GetProperty("openings").EnumerateArray().Single();
         Assert.Equal("HEB – CAJERO", o1.GetProperty("openingName").GetString());
         Assert.Equal((3, 2, 2), (o1.GetProperty("presented").GetInt32(), o1.GetProperty("suitable").GetInt32(), o1.GetProperty("hired").GetInt32()));
-        Assert.Equal(0.67m, Dec(o1, "conversion"));
+        Assert.Equal(0.66m, Dec(o1, "conversion")); // 2 of 3, truncated like the Reclutadores cards
         Assert.Equal(30, o1.GetProperty("daysToFill").GetInt32());
         Assert.True(o1.GetProperty("isLead").GetBoolean());
 
@@ -232,7 +232,7 @@ public sealed class RecruitingReportTests(ApiFactory factory) : ApiTest(factory)
         var heb = Assert.Single(r.GetProperty("clients").EnumerateArray());
         Assert.Equal((2, 3, 2, 0, 5), (heb.GetProperty("openings").GetInt32(), heb.GetProperty("headcountRequested").GetInt32(),
             heb.GetProperty("hired").GetInt32(), heb.GetProperty("cancelled").GetInt32(), heb.GetProperty("candidatesPresented").GetInt32()));
-        Assert.Equal(0.67m, Dec(heb, "fillRate"));
+        Assert.Equal(0.66m, Dec(heb, "fillRate"));
         Assert.Equal(30.0m, Dec(heb, "avgDaysToFill"));
         var total = r.GetProperty("total");
         Assert.Equal("Total", total.GetProperty("clientName").GetString());
@@ -294,7 +294,7 @@ public sealed class RecruitingReportTests(ApiFactory factory) : ApiTest(factory)
             var used = sheet.CellsUsed().ToList();
             Assert.Contains(used, c => c.GetString() == "Mónica Soto");
             var conversion = used.Single(c => c.GetString() == "HEB – CAJERO").WorksheetRow().Cell(8);
-            Assert.Equal(0.67, conversion.GetDouble(), 6); // a number, formatted as a percentage
+            Assert.Equal(0.66, conversion.GetDouble(), 6); // a number, formatted as a percentage
             Assert.Equal("0%", conversion.Style.NumberFormat.Format);
         }
 
