@@ -1,0 +1,7 @@
+# Scheduled work = POST /internal/jobs/{name} (ARCHITECTURE §4). Times are UTC; jobs compute each payroll group's
+# local time themselves, so these only set the cadence. America/Monterrey is UTC-6 all year.
+*/15 * * * *  /usr/local/bin/run-job attendance-lock
+0    8 * * *  /usr/local/bin/run-job period-roll
+5    8 * * *  /usr/local/bin/run-job status-roll
+0    9 * * *  /usr/local/bin/run-job document-expiry
+0   14 * * *  /usr/local/bin/run-job notifications-digest

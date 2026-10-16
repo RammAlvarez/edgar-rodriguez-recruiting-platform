@@ -1,0 +1,29 @@
+root = false
+
+[*.cs]
+# Entity names follow the tables in docs/DATA_MODEL.md (user_permissions → UserPermission).
+dotnet_diagnostic.CA1711.severity = none
+# Public types are shared across the module projects and the test project.
+dotnet_diagnostic.CA1515.severity = none
+# ASP.NET Core has no synchronization context.
+dotnet_diagnostic.CA2007.severity = none
+# Collection-typed DTO/entity properties are settable for EF Core and System.Text.Json.
+dotnet_diagnostic.CA2227.severity = none
+dotnet_diagnostic.CA1002.severity = none
+# EF Core migrations are generated code.
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.CA1861.severity = none
+
+# Tests: sentence-style names and small helpers.
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1515.severity = none
+dotnet_diagnostic.CA2000.severity = none
+dotnet_diagnostic.CA1001.severity = none
+dotnet_diagnostic.CA1034.severity = none
+dotnet_diagnostic.CA1812.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA2234.severity = none
+dotnet_diagnostic.CA1849.severity = none

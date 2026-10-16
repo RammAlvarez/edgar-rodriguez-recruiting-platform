@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Platform.Api/Platform.Api.csproj" />
+    <Project Path="src/Platform.Bank/Platform.Bank.csproj" />
+    <Project Path="src/Platform.Core/Platform.Core.csproj" />
+    <Project Path="src/Platform.Infrastructure/Platform.Infrastructure.csproj" />
+    <Project Path="src/Platform.Payroll.Engine/Platform.Payroll.Engine.csproj" />
+    <Project Path="src/Platform.Payroll/Platform.Payroll.csproj" />
+    <Project Path="src/Platform.Recruiting/Platform.Recruiting.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Platform.Tests/Platform.Tests.csproj" />
+  </Folder>
+</Solution>
