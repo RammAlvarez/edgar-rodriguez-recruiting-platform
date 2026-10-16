@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Platform.Core.Audit;
 using Platform.Core.Catalogs;
 using Platform.Core.Clients;
+using Platform.Core.People;
 using Platform.Core.Users;
 
 namespace Platform.Core.Persistence;
@@ -18,11 +19,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.HasIndex(u => u.AuthUid).IsUnique();
         b.Property(u => u.Email).HasColumnType("citext");
         b.HasIndex(u => u.Email).IsUnique();
-        b.Property(u => u.MfaRequired).HasDefaultValue(false);
-        b.Property(u => u.IsActive).HasDefaultValue(true);
+        b.Property(u => u.MfaRequired).HasDefaultValue(false).HasSentinel(false);
+        b.Property(u => u.IsActive).HasDefaultValue(true).HasSentinel(true);
         b.HasOne<Client>().WithMany().HasForeignKey(u => u.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasMany(u => u.Permissions).WithOne().HasForeignKey(p => p.UserId).HasPrincipalKey(u => u.Uid).OnDelete(DeleteBehavior.Cascade);
         b.HasMany<ClientContact>().WithOne().HasForeignKey(c => c.UserId).HasPrincipalKey(u => u.Uid).OnDelete(DeleteBehavior.SetNull);
+        b.HasMany<PersonDocument>().WithOne().HasForeignKey(d => d.ValidatedBy).HasPrincipalKey(u => u.Uid).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -46,9 +48,9 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(c => c.ShortName).IsUnique();
-        b.Property(c => c.UsesRecruiting).HasDefaultValue(false);
-        b.Property(c => c.UsesPayroll).HasDefaultValue(false);
-        b.Property(c => c.IsActive).HasDefaultValue(true);
+        b.Property(c => c.UsesRecruiting).HasDefaultValue(false).HasSentinel(false);
+        b.Property(c => c.UsesPayroll).HasDefaultValue(false).HasSentinel(false);
+        b.Property(c => c.IsActive).HasDefaultValue(true).HasSentinel(true);
         b.HasMany(c => c.Contacts).WithOne().HasForeignKey(x => x.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Cascade);
         b.HasMany(c => c.Sites).WithOne().HasForeignKey(x => x.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Cascade);
     }
@@ -76,7 +78,7 @@ internal sealed class ClientSiteConfiguration : IEntityTypeConfiguration<ClientS
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(x => new { x.ClientId, x.Name }).IsUnique();
-        b.Property(x => x.IsActive).HasDefaultValue(true);
+        b.Property(x => x.IsActive).HasDefaultValue(true).HasSentinel(true);
         b.HasOne<Zone>().WithMany().HasForeignKey(x => x.ZoneId).HasPrincipalKey(z => z.Uid).OnDelete(DeleteBehavior.Restrict);
     }
 }

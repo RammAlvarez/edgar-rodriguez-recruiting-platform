@@ -50,6 +50,16 @@ jobs:
         ports: ["5433:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 3s --health-retries 30
+      # S3ObjectStorageTests: presigned PUT/GET against the same MinIO build as db/docker-compose.yml (PLAN D54).
+      minio:
+        image: bitnamilegacy/minio:2025.7.23
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_DEFAULT_BUCKETS: documents,exports
+        ports: ["9000:9000"]
+        options: >-
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live" --health-interval 2s --health-timeout 3s --health-retries 30
     env:
       PGHOST: localhost
       PGPORT: "5433"

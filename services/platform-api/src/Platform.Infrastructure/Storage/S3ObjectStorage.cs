@@ -17,7 +17,8 @@ public sealed record S3Settings(
 
 /// <summary>
 /// The only place that references <c>AWSSDK.S3</c> (CI neutrality check). Checksum calculation/validation are
-/// <c>WHEN_REQUIRED</c> so MinIO, GCS interoperability and Spaces accept the requests.
+/// <c>WHEN_REQUIRED</c> so MinIO, GCS interoperability and Spaces accept the requests — and so presigned PUTs carry no
+/// checksum header the browser would have to send.
 /// </summary>
 public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisposable
 {
@@ -32,11 +33,70 @@ public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisp
             ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
         });
 
+    private readonly Protocol _protocol =
+        settings.Endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ? Protocol.HTTP : Protocol.HTTPS;
+
     public async Task PingAsync(CancellationToken cancellationToken)
     {
         foreach (var bucket in new[] { settings.DocumentsBucket, settings.ExportsBucket })
             await _client.ListObjectsV2Async(new ListObjectsV2Request { BucketName = bucket, MaxKeys = 1 }, cancellationToken);
     }
+
+    public async Task<PresignedRequest> PresignUploadAsync(StorageBucket bucket, string key, string contentType, TimeSpan lifetime,
+        CancellationToken cancellationToken)
+    {
+        var expires = DateTime.UtcNow.Add(lifetime);
+        var url = await _client.GetPreSignedURLAsync(new GetPreSignedUrlRequest
+        {
+            BucketName = Name(bucket),
+            Key = key,
+            Verb = HttpVerb.PUT,
+            ContentType = contentType,
+            Expires = expires,
+            Protocol = _protocol,
+        });
+        return new PresignedRequest(url, new Dictionary<string, string> { ["Content-Type"] = contentType }, expires);
+    }
+
+    public async Task<PresignedRequest> PresignDownloadAsync(StorageBucket bucket, string key, string? downloadAs, TimeSpan lifetime,
+        CancellationToken cancellationToken)
+    {
+        var expires = DateTime.UtcNow.Add(lifetime);
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = Name(bucket),
+            Key = key,
+            Verb = HttpVerb.GET,
+            Expires = expires,
+            Protocol = _protocol,
+        };
+        request.ResponseHeaderOverrides.ContentDisposition = downloadAs is null
+            ? "inline"
+            : $"attachment; filename=\"{AsciiFileName(downloadAs)}\"; filename*=UTF-8''{Uri.EscapeDataString(downloadAs)}";
+        return new PresignedRequest(await _client.GetPreSignedURLAsync(request), new Dictionary<string, string>(), expires);
+    }
+
+    public async Task<StoredObject?> HeadAsync(StorageBucket bucket, string key, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var meta = await _client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = Name(bucket), Key = key },
+                cancellationToken);
+            return new StoredObject(meta.ContentLength, meta.Headers.ContentType);
+        }
+        catch (AmazonS3Exception e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    public Task DeleteAsync(StorageBucket bucket, string key, CancellationToken cancellationToken) =>
+        _client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = Name(bucket), Key = key }, cancellationToken);
+
+    private string Name(StorageBucket bucket) => bucket == StorageBucket.Documents ? settings.DocumentsBucket : settings.ExportsBucket;
+
+    private static string AsciiFileName(string name) =>
+        new(name.Select(c => c is >= ' ' and <= '~' && c is not '"' and not '\\' ? c : '_').ToArray());
 
     public void Dispose() => _client.Dispose();
 }

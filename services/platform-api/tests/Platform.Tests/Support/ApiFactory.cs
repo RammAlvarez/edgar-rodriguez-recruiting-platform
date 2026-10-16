@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
@@ -17,6 +18,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public FakeAuthProvider Auth { get; } = new();
 
+    public FakeObjectStorage Storage { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -25,6 +28,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<IAuthProvider>(Auth);
+            services.AddSingleton<IObjectStorage>(Storage);
         });
     }
 

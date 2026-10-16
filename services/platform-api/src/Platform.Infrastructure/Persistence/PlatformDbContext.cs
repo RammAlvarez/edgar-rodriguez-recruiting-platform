@@ -21,6 +21,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.HasPostgresExtension("citext");
+        modelBuilder.HasPostgresExtension("pg_trgm");
         foreach (var e in PostgresEnums.All)
             e.Declare(modelBuilder);
         foreach (var assembly in ModuleAssemblies)

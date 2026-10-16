@@ -7,9 +7,11 @@ using Platform.Api.Hosting;
 using Platform.Api.Internal;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
+using Platform.Core.Audit;
 using Platform.Core.Catalogs;
 using Platform.Core.Clients;
 using Platform.Core.Http;
+using Platform.Core.People;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
 using Platform.Infrastructure.Storage;
@@ -45,6 +47,7 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
 builder.Services.AddSingleton(settings);
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<RequestContext>();
+builder.Services.AddScoped<DataAccess>();
 builder.Services.AddPlatformPersistence(settings.DatabaseUrl);
 builder.Services.AddSingleton(settings.S3);
 builder.Services.AddSingleton<IObjectStorage, S3ObjectStorage>();
@@ -86,6 +89,8 @@ var v1 = app.MapGroup("/v1");
 v1.MapMeEndpoints();
 v1.MapCatalogEndpoints();
 v1.MapClientEndpoints();
+v1.MapPeopleEndpoints();
+v1.MapDocumentEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

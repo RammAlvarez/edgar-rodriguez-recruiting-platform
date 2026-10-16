@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Platform.Core.Audit;
 using Platform.Core.Catalogs;
+using Platform.Core.People;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
 
@@ -26,12 +27,16 @@ namespace Platform.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "audit_action", new[] { "insert", "update", "delete", "unlock", "export", "login" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "candidate_source", new[] { "facebook", "linkedin", "whatsapp", "referral", "job_board", "other" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "data_access_kind", new[] { "view_profile", "view_document", "download_document", "decrypt_account" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "document_status", new[] { "pending", "delivered", "validated", "rejected", "expired" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "document_template_scope", new[] { "candidate", "employee" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "gender", new[] { "male", "female", "unspecified" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "permission_module", new[] { "recruiting_reports", "payroll_prepayroll", "payroll_attendance", "payroll_incidents", "payroll_staff", "payroll_payment_files", "payroll_card_requests", "users" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "registration_bank", new[] { "banorte", "banregio" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "user_role", new[] { "administrator", "recruiter", "client" });
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Platform.Core.Audit.AuditEntry", b =>
@@ -996,6 +1001,311 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Platform.Core.People.Person", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("date")
+                        .HasColumnName("birth_date");
+
+                    b.Property<string>("BirthState")
+                        .HasColumnType("text")
+                        .HasColumnName("birth_state");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Curp")
+                        .HasColumnType("text")
+                        .HasColumnName("curp");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("citext")
+                        .HasColumnName("email");
+
+                    b.Property<string>("ExtNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("ext_number");
+
+                    b.Property<string>("FirstNames")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("first_names");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("text")
+                        .HasColumnName("full_name")
+                        .HasComputedColumnSql("last_name_paternal || ' ' || COALESCE(last_name_maternal || ' ', '') || first_names", true);
+
+                    b.Property<Gender>("Gender")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.gender")
+                        .HasDefaultValue(Gender.Unspecified)
+                        .HasColumnName("gender");
+
+                    b.Property<bool>("IsForeign")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_foreign");
+
+                    b.Property<string>("LastNameMaternal")
+                        .HasColumnType("text")
+                        .HasColumnName("last_name_maternal");
+
+                    b.Property<string>("LastNamePaternal")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("last_name_paternal");
+
+                    b.Property<string>("MobilePhone")
+                        .HasColumnType("text")
+                        .HasColumnName("mobile_phone");
+
+                    b.Property<string>("Municipality")
+                        .HasColumnType("text")
+                        .HasColumnName("municipality");
+
+                    b.Property<string>("Neighborhood")
+                        .HasColumnType("text")
+                        .HasColumnName("neighborhood");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("Nss")
+                        .HasColumnType("text")
+                        .HasColumnName("nss");
+
+                    b.Property<string>("PostalCode")
+                        .HasColumnType("text")
+                        .HasColumnName("postal_code");
+
+                    b.Property<string>("Rfc")
+                        .HasColumnType("text")
+                        .HasColumnName("rfc");
+
+                    b.Property<CandidateSource?>("Source")
+                        .HasColumnType("platform.candidate_source")
+                        .HasColumnName("source");
+
+                    b.Property<string>("State")
+                        .HasColumnType("text")
+                        .HasColumnName("state");
+
+                    b.Property<string>("Street")
+                        .HasColumnType("text")
+                        .HasColumnName("street");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_people");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_people_uid");
+
+                    b.HasIndex("Curp")
+                        .IsUnique()
+                        .HasDatabaseName("ix_people_curp")
+                        .HasFilter("curp IS NOT NULL");
+
+                    b.HasIndex("FullName")
+                        .HasDatabaseName("ix_people_full_name_trgm");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("FullName"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("FullName"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("MobilePhone")
+                        .HasDatabaseName("ix_people_mobile_phone");
+
+                    b.HasIndex("Rfc")
+                        .IsUnique()
+                        .HasDatabaseName("ix_people_rfc")
+                        .HasFilter("rfc IS NOT NULL");
+
+                    b.ToTable("people", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_people_curp", "curp ~ '^[A-Z]{4}\\d{6}[HM][A-Z]{5}[A-Z0-9]\\d$'");
+
+                            t.HasCheckConstraint("ck_people_mobile_phone", "mobile_phone ~ '^\\d{10}$'");
+
+                            t.HasCheckConstraint("ck_people_nss", "nss ~ '^\\d{11}$'");
+
+                            t.HasCheckConstraint("ck_people_postal_code", "postal_code ~ '^\\d{5}$'");
+
+                            t.HasCheckConstraint("ck_people_rfc", "rfc ~ '^[A-ZÑ&]{4}\\d{6}[A-Z0-9]{3}$'");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Core.People.PersonDocument", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DocumentTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_type_id");
+
+                    b.Property<DateOnly?>("ExpiresAt")
+                        .HasColumnType("date")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateOnly?>("IssuedAt")
+                        .HasColumnType("date")
+                        .HasColumnName("issued_at");
+
+                    b.Property<string>("OriginalFilename")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("original_filename");
+
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("person_id");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DocumentStatus>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.document_status")
+                        .HasDefaultValue(DocumentStatus.Delivered)
+                        .HasColumnName("status");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("storage_key");
+
+                    b.Property<Guid?>("SupersededBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("superseded_by");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("ValidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validated_at");
+
+                    b.Property<Guid?>("ValidatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("validated_by");
+
+                    b.Property<int>("Version")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_person_documents");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_person_documents_uid");
+
+                    b.HasIndex("DocumentTypeId")
+                        .HasDatabaseName("ix_person_documents_document_type_id");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_person_documents_expires_at")
+                        .HasFilter("superseded_by IS NULL AND expires_at IS NOT NULL");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_person_documents_storage_key");
+
+                    b.HasIndex("SupersededBy")
+                        .HasDatabaseName("ix_person_documents_superseded_by");
+
+                    b.HasIndex("ValidatedBy")
+                        .HasDatabaseName("ix_person_documents_validated_by");
+
+                    b.HasIndex("PersonId", "DocumentTypeId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_person_documents_current")
+                        .HasFilter("superseded_by IS NULL");
+
+                    b.ToTable("person_documents", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_person_documents_dates", "expires_at IS NULL OR issued_at IS NULL OR expires_at >= issued_at");
+
+                            t.HasCheckConstraint("ck_person_documents_rejection", "status <> 'rejected' OR rejection_reason IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_person_documents_size", "size_bytes > 0 AND size_bytes <= 10485760");
+                        });
+                });
+
             modelBuilder.Entity("Platform.Core.Users.User", b =>
                 {
                     b.Property<long>("Id")
@@ -1221,6 +1531,39 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasPrincipalKey("Uid")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_client_sites_zones_zone_id");
+                });
+
+            modelBuilder.Entity("Platform.Core.People.PersonDocument", b =>
+                {
+                    b.HasOne("Platform.Core.Catalogs.DocumentType", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_person_documents_document_types_document_type_id");
+
+                    b.HasOne("Platform.Core.People.Person", null)
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_person_documents_people_person_id");
+
+                    b.HasOne("Platform.Core.People.PersonDocument", null)
+                        .WithMany()
+                        .HasForeignKey("SupersededBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_person_documents_person_documents_superseded_by");
+
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ValidatedBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_person_documents_users_validated_by");
                 });
 
             modelBuilder.Entity("Platform.Core.Users.User", b =>

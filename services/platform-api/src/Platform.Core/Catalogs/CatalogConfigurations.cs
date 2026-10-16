@@ -12,7 +12,7 @@ internal sealed class ZoneConfiguration : IEntityTypeConfiguration<Zone>
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(z => new { z.State, z.NameEs }).IsUnique();
-        b.Property(z => z.IsActive).HasDefaultValue(true);
+        b.Property(z => z.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
 
@@ -24,7 +24,7 @@ internal sealed class CatalogPositionConfiguration : IEntityTypeConfiguration<Ca
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(p => p.NameEs).IsUnique();
-        b.Property(p => p.IsActive).HasDefaultValue(true);
+        b.Property(p => p.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
 
@@ -36,7 +36,7 @@ internal sealed class EducationLevelConfiguration : IEntityTypeConfiguration<Edu
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(e => e.NameEs).IsUnique();
-        b.Property(e => e.IsActive).HasDefaultValue(true);
+        b.Property(e => e.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
 
@@ -48,7 +48,7 @@ internal sealed class BenefitConfiguration : IEntityTypeConfiguration<Benefit>
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(e => e.NameEs).IsUnique();
-        b.Property(e => e.IsActive).HasDefaultValue(true);
+        b.Property(e => e.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
 
@@ -71,7 +71,7 @@ internal sealed class BankConfiguration : IEntityTypeConfiguration<Bank>
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(x => x.SpeiCode).IsUnique();
-        b.Property(x => x.IsActive).HasDefaultValue(true);
+        b.Property(x => x.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
 
@@ -87,7 +87,7 @@ internal sealed class DocumentTypeConfiguration : IEntityTypeConfiguration<Docum
         b.HasIdentityAndUid();
         b.HasStamps();
         b.HasIndex(x => x.Code).IsUnique();
-        b.Property(x => x.IsActive).HasDefaultValue(true);
+        b.Property(x => x.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
 

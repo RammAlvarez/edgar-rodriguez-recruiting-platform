@@ -18,6 +18,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/files/presign-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PresignDocumentUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/catalogs": {
         parameters: {
             query?: never;
@@ -434,6 +450,118 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPeople"];
+        put?: never;
+        post: operations["CreatePerson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FindDuplicatePeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPerson"];
+        put: operations["UpdatePerson"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{personId}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetDocumentChecklist"];
+        put?: never;
+        post: operations["ConfirmDocumentUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ValidateDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RejectDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetDocumentUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -473,6 +601,8 @@ export type components = {
             /** @default true */
             isActive: boolean;
         };
+        /** @enum {unknown} */
+        CandidateSource: "facebook" | "linkedin" | "whatsapp" | "referral" | "job_board" | "other" | null;
         CatalogPositionDto: {
             /** Format: uuid */
             id: string;
@@ -494,6 +624,16 @@ export type components = {
             documentTypes: components["schemas"]["DocumentTypeDto"][];
             documentTemplates: components["schemas"]["DocumentTemplateDto"][];
         };
+        ChecklistItemDto: {
+            /** Format: uuid */
+            documentTypeId: string;
+            code: string;
+            nameEs: string;
+            hasExpiry: boolean;
+            inTemplate: boolean;
+            isRequired: boolean;
+            current: null | components["schemas"]["PersonDocumentDto"];
+        };
         ClientDetailDto: {
             /** Format: uuid */
             id: string;
@@ -506,6 +646,16 @@ export type components = {
             isActive: boolean;
             contacts: components["schemas"]["ContactDto"][];
             sites: components["schemas"]["SiteDto"][];
+        };
+        ConfirmDocumentRequest: {
+            /** Format: uuid */
+            documentTypeId: string;
+            storageKey: string;
+            originalFilename: string;
+            /** Format: date */
+            issuedAt: DateKey | null;
+            /** Format: date */
+            expiresAt: DateKey | null;
         };
         ContactDto: {
             /** Format: uuid */
@@ -531,6 +681,18 @@ export type components = {
             rfc: null | string;
             primaryContact: null | components["schemas"]["NewContactFields"];
         };
+        DocumentChecklistDto: {
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            templateId: string;
+            templateName: string;
+            /** Format: decimal */
+            completeness: Decimal;
+            items: components["schemas"]["ChecklistItemDto"][];
+        };
+        /** @enum {unknown} */
+        DocumentStatus: "pending" | "delivered" | "validated" | "rejected" | "expired";
         DocumentTemplateDto: {
             /** Format: uuid */
             id: string;
@@ -575,6 +737,20 @@ export type components = {
             /** @default true */
             isActive: boolean;
         };
+        DocumentUrlDto: {
+            url: string;
+            /** Format: date-time */
+            expiresAt: Date;
+        };
+        DuplicatePersonDto: {
+            /** Format: uuid */
+            id: string;
+            fullName: string;
+            curp: null | string;
+            rfc: null | string;
+            isDeleted: boolean;
+            matchedOn: string[];
+        };
         EducationLevelDto: {
             /** Format: uuid */
             id: string;
@@ -590,6 +766,8 @@ export type components = {
             /** @default true */
             isActive: boolean;
         };
+        /** @enum {unknown} */
+        Gender: "male" | "female" | "unspecified";
         GrantDto: {
             module: components["schemas"]["PermissionModule"];
             /** Format: uuid */
@@ -639,6 +817,107 @@ export type components = {
         };
         /** @enum {unknown} */
         PermissionModule: "recruiting_reports" | "payroll_prepayroll" | "payroll_attendance" | "payroll_incidents" | "payroll_staff" | "payroll_payment_files" | "payroll_card_requests" | "users";
+        PersonDocumentDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            documentTypeId: string;
+            status: components["schemas"]["DocumentStatus"];
+            originalFilename: string;
+            contentType: string;
+            /** Format: int64 */
+            sizeBytes: number | string;
+            /** Format: date */
+            issuedAt: DateKey | null;
+            /** Format: date */
+            expiresAt: DateKey | null;
+            /** Format: uuid */
+            validatedBy: null | string;
+            /** Format: date-time */
+            validatedAt: Date | null;
+            rejectionReason: null | string;
+            /** Format: int32 */
+            version: number | string;
+            /** Format: date-time */
+            uploadedAt: Date;
+        };
+        PersonDto: {
+            /** Format: uuid */
+            id: string;
+            firstNames: string;
+            lastNamePaternal: string;
+            lastNameMaternal: null | string;
+            fullName: string;
+            /** Format: date */
+            birthDate: DateKey | null;
+            birthState: null | string;
+            gender: components["schemas"]["Gender"];
+            isForeign: boolean;
+            curp: null | string;
+            rfc: null | string;
+            nss: null | string;
+            mobilePhone: null | string;
+            email: null | string;
+            street: null | string;
+            extNumber: null | string;
+            neighborhood: null | string;
+            postalCode: null | string;
+            municipality: null | string;
+            state: null | string;
+            source: null | components["schemas"]["CandidateSource"];
+            notes: null | string;
+        };
+        PersonRequest: {
+            firstNames: string;
+            lastNamePaternal: string;
+            lastNameMaternal: null | string;
+            /** Format: date */
+            birthDate: DateKey | null;
+            birthState: null | string;
+            gender: null | components["schemas"]["Gender"];
+            isForeign: boolean;
+            curp: null | string;
+            rfc: null | string;
+            nss: null | string;
+            mobilePhone: null | string;
+            email: null | string;
+            street: null | string;
+            extNumber: null | string;
+            neighborhood: null | string;
+            postalCode: null | string;
+            municipality: null | string;
+            state: null | string;
+            source: null | components["schemas"]["CandidateSource"];
+            notes: null | string;
+        };
+        PersonSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            fullName: string;
+            curp: null | string;
+            rfc: null | string;
+            mobilePhone: null | string;
+            email: null | string;
+        };
+        PresignUploadRequest: {
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            documentTypeId: string;
+            fileName: string;
+            contentType: string;
+            /** Format: int64 */
+            sizeBytes: number | string;
+        };
+        PresignUploadResponse: {
+            storageKey: string;
+            url: string;
+            headers: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            expiresAt: Date;
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -649,6 +928,9 @@ export type components = {
         };
         /** @enum {unknown} */
         RegistrationBank: "banorte" | "banregio" | null;
+        RejectDocumentRequest: {
+            reason: string;
+        };
         SiteDto: {
             /** Format: uuid */
             id: string;
@@ -720,21 +1002,29 @@ export type BankDto = components['schemas']['BankDto'];
 export type BankRequest = components['schemas']['BankRequest'];
 export type BenefitDto = components['schemas']['BenefitDto'];
 export type BenefitRequest = components['schemas']['BenefitRequest'];
+export type CandidateSource = components['schemas']['CandidateSource'];
 export type CatalogPositionDto = components['schemas']['CatalogPositionDto'];
 export type CatalogPositionRequest = components['schemas']['CatalogPositionRequest'];
 export type CatalogsDto = components['schemas']['CatalogsDto'];
+export type ChecklistItemDto = components['schemas']['ChecklistItemDto'];
 export type ClientDetailDto = components['schemas']['ClientDetailDto'];
+export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
 export type ContactRequest = components['schemas']['ContactRequest'];
 export type CreateClientRequest = components['schemas']['CreateClientRequest'];
+export type DocumentChecklistDto = components['schemas']['DocumentChecklistDto'];
+export type DocumentStatus = components['schemas']['DocumentStatus'];
 export type DocumentTemplateDto = components['schemas']['DocumentTemplateDto'];
 export type DocumentTemplateItemDto = components['schemas']['DocumentTemplateItemDto'];
 export type DocumentTemplateRequest = components['schemas']['DocumentTemplateRequest'];
 export type DocumentTemplateScope = components['schemas']['DocumentTemplateScope'];
 export type DocumentTypeDto = components['schemas']['DocumentTypeDto'];
 export type DocumentTypeRequest = components['schemas']['DocumentTypeRequest'];
+export type DocumentUrlDto = components['schemas']['DocumentUrlDto'];
+export type DuplicatePersonDto = components['schemas']['DuplicatePersonDto'];
 export type EducationLevelDto = components['schemas']['EducationLevelDto'];
 export type EducationLevelRequest = components['schemas']['EducationLevelRequest'];
+export type Gender = components['schemas']['Gender'];
 export type GrantDto = components['schemas']['GrantDto'];
 export type HolidayDto = components['schemas']['HolidayDto'];
 export type HolidayRequest = components['schemas']['HolidayRequest'];
@@ -742,8 +1032,15 @@ export type HttpValidationProblemDetails = components['schemas']['HttpValidation
 export type MeDto = components['schemas']['MeDto'];
 export type NewContactFields = components['schemas']['NewContactFields'];
 export type PermissionModule = components['schemas']['PermissionModule'];
+export type PersonDocumentDto = components['schemas']['PersonDocumentDto'];
+export type PersonDto = components['schemas']['PersonDto'];
+export type PersonRequest = components['schemas']['PersonRequest'];
+export type PersonSummaryDto = components['schemas']['PersonSummaryDto'];
+export type PresignUploadRequest = components['schemas']['PresignUploadRequest'];
+export type PresignUploadResponse = components['schemas']['PresignUploadResponse'];
 export type ProblemDetails = components['schemas']['ProblemDetails'];
 export type RegistrationBank = components['schemas']['RegistrationBank'];
+export type RejectDocumentRequest = components['schemas']['RejectDocumentRequest'];
 export type SiteDto = components['schemas']['SiteDto'];
 export type SiteRequest = components['schemas']['SiteRequest'];
 export type StatutoryHolidaysRequest = components['schemas']['StatutoryHolidaysRequest'];
@@ -770,6 +1067,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeDto"];
+                };
+            };
+        };
+    };
+    PresignDocumentUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignUploadResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -2176,6 +2515,381 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPeople: {
+        parameters: {
+            query?: {
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonSummaryDto"][];
+                };
+            };
+        };
+    };
+    CreatePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    FindDuplicatePeople: {
+        parameters: {
+            query?: {
+                curp?: string;
+                rfc?: string;
+                excludeId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DuplicatePersonDto"][];
+                };
+            };
+        };
+    };
+    GetPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdatePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetDocumentChecklist: {
+        parameters: {
+            query?: {
+                templateId?: string;
+            };
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentChecklistDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ConfirmDocumentUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonDocumentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ValidateDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonDocumentDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RejectDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonDocumentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetDocumentUrl: {
+        parameters: {
+            query?: {
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentUrlDto"];
                 };
             };
             /** @description Not Found */

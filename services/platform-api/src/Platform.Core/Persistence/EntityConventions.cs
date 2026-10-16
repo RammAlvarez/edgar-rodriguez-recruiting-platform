@@ -4,7 +4,11 @@ using Platform.Core.Abstractions;
 
 namespace Platform.Core.Persistence;
 
-/// <summary>Plain helpers every EF configuration calls — composition instead of a base entity.</summary>
+/// <summary>
+/// Plain helpers every EF configuration calls — composition instead of a base entity.
+/// Column defaults are always declared as <c>.HasDefaultValue(v).HasSentinel(v)</c>: EF omits a column only when the value
+/// equals its sentinel, so an explicit <c>false</c> or an enum's first member (value 0) is never replaced by the default.
+/// </summary>
 public static class EntityConventions
 {
     /// <summary><c>id bigint generated always as identity</c> (internal) + <c>uid uuid unique default gen_random_uuid()</c> (public, FK target).</summary>

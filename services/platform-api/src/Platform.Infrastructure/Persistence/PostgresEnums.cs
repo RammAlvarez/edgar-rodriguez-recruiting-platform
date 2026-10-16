@@ -3,6 +3,7 @@ using Npgsql;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
 using Platform.Core.Audit;
 using Platform.Core.Catalogs;
+using Platform.Core.People;
 using Platform.Core.Users;
 
 namespace Platform.Infrastructure.Persistence;
@@ -26,6 +27,9 @@ public static class PostgresEnums
         Of<DataAccessKind>("data_access_kind"),
         Of<RegistrationBank>("registration_bank"),
         Of<DocumentTemplateScope>("document_template_scope"),
+        Of<Gender>("gender"),
+        Of<CandidateSource>("candidate_source"),
+        Of<DocumentStatus>("document_status"),
     ];
 
     private static Entry Of<T>(string name) where T : struct, Enum => new(
