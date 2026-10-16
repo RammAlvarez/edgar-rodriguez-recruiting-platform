@@ -25,7 +25,9 @@ public sealed record AccessRule(IReadOnlySet<UserRole> Roles, PermissionModule? 
 public static class AccessMessages
 {
     public const string NotSignedIn = "Inicia sesión para continuar.";
-    public const string NoAccount = "Tu cuenta no tiene acceso a la plataforma. Pide una invitación al administrador.";
+    // Shared by staff, clients and candidates (the API cannot tell which app asked): check the email, then ask who invited you.
+    public const string NoAccount =
+        "Este correo no tiene acceso. Revisa que sea el mismo correo con el que te registraron o pide ayuda a quien te invitó.";
     public const string CandidateEmailShared =
         "Tu correo está registrado en más de una persona. Pide a tu reclutador que lo corrija para poder entrar.";
     public const string Inactive = "Tu cuenta está desactivada. Contacta al administrador.";
