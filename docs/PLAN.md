@@ -1,6 +1,6 @@
 # PLAN — Plataforma de Reclutamiento y Prenómina
 
-> **Status:** v1 — P1–P3 resolved by the owner 2026-10-16; E1–E5 awaiting approval · **Written:** 2026-10-16 (kickoff)
+> **Status:** v1 — P1–P3 resolved by the owner 2026-10-16; E1–E3, E5 applied with S0 unless the owner objects; D51 to confirm before S1 · **Written:** 2026-10-16 (kickoff)
 > **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
 > **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
 
@@ -82,14 +82,14 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 
 ---
 
-## 4. Proposed doc changes (applied once approved)
+## 4. Proposed doc changes (consistency fixes with no business effect: applied in S0 unless the owner objects)
 
 | # | Doc | Change | Why |
 |---|---|---|---|
 | E1 | ARCHITECTURE §2 | Drop `Platform.Audit` and `Platform.Jobs` from the project list: jobs live in `Platform.Api/Jobs/`, the audit helper in `Platform.Infrastructure` (as §3 and the kickoff layout say) | §2 contradicts §3 |
 | E2 | SPEC §2.2, §5.9 | Permission modules written as the enum values (`recruiting_reports`, `payroll_prepayroll`, …) | SPEC uses dots, DATA_MODEL the enum |
 | E3 | DATA_MODEL §4.7, §5.13 | Views join on `uid` (`cl.uid = o.client_id`, D37); `open_openings_aging` drops `o.code` (removed by D30) and adds the display name | the views as written do not compile against D37 |
-| E4 | DATA_MODEL §5.12 | "lines of a `closed`/`paid` period" → "lines of a `paid` period" | `closed` is not a `period_status` |
+| ~~E4~~ applied | DATA_MODEL §5.12 | "lines of a `closed`/`paid` period" → "lines of a `paid` period" | `closed` is not a `period_status` |
 | E5 | DATA_MODEL §1 | `card_requests`, `employee_bank_numbers` stay in the `payroll` table list; ARCHITECTURE §3 `Platform.Bank` reads "card-request batches, payment batches, Layouts/" | module table and repository tree disagree on card requests |
 | ~~E6~~ applied | DATA_MODEL §10 | "`SEM 38` header rates (row 2) are stale; rates come from the rows" | avoid importing 328.57 / 27.38 |
 | ~~E7~~ applied | SPEC §5.4–5.5, §5.9, §8, D16, §10; DATA_MODEL conventions, §5.3, §5.4, §5.11–5.12, §10; ARCHITECTURE §2 engine row | Never-round + truncate (D42), pensión removed (D50), Q12 | P1–P3 |
@@ -109,8 +109,9 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | D46 | **Money on the wire:** a `System.Text.Json` converter writes `decimal` as a string with exactly the column's scale; OpenAPI declares `type: string, format: decimal`; the generated TS type is a branded `Money` string; Zod validates `^-?\d+(\.\d{1,2})?$`; the pipe formats without `Number()` (string arithmetic only for display). |
 | D47 | **Period numbering:** weekly `period_number` = ISO-8601 week of the period's end date (Semana 38 = 11–17 sep 2026, end Thursday 17 sep → ISO week 38); biweekly = 1–24 by end date. Checked against SEM 38; confirm on the next client file. |
 | D48 | **Tests against Postgres:** the docker Postgres on :5433 with a dedicated `platform_test` database migrated once per run and truncated between tests; a fixed `IClock` injected everywhere "today" or lock times matter. |
-| D50 | **No pensión alimenticia** (owner, 2026-10-16; revises SPEC D16): not deducted, not recorded — `employees.alimony_pct`, the `ALIMONY` concept and `concept_calc.percent_of_net` are removed; the import keeps a "PENSION …" comment as plain text in `employees.notes`. The prototype's 39 % pensión and Desglose row are not built. |
 | D49 | **Toolchain:** .NET 10 SDK pinned in `global.json` (`rollForward: latestFeature`), Node 24 LTS (`.nvmrc`), npm workspaces, Angular 22 CLI; rich text with Tiptap in `apps/admin`, server sanitizer `HtmlSanitizer` with the DATA_MODEL §4.4b allowlist. |
+| D50 | **No pensión alimenticia** (owner, 2026-10-16; revises SPEC D16): not deducted, not recorded — `employees.alimony_pct`, the `ALIMONY` concept and `concept_calc.percent_of_net` are removed; the import keeps a "PENSION …" comment as plain text in `employees.notes`. The prototype's 39 % pensión and Desglose row are not built. |
+| D51 | **Festivo 1ª mitad entitlement** *(proposed, confirm before S1)*: an employee is entitled for each date in the period that is in `holidays` and whose attendance record has status `holiday` (the day is a festivo, not worked); `holiday_worked` pays FESTIVO LABORADO instead. In SEM 38, 46 of 115 rows were entitled, so it is not automatic for everyone. The golden fixture reads entitlement from column `O` being filled. |
 
 ---
 
