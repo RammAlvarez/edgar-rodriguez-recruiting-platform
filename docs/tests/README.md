@@ -11,7 +11,7 @@
 | [2026-10-16-05](2026-10-16-05-s6-reports.md) | S6 Reportes de reclutamiento | pass; 390 px checked |
 | [2026-10-16-06](2026-10-16-06-s7-personal.md) | S7 Personal | pass after fixing D-010; 390 px checked |
 | [2026-10-16-07](2026-10-16-07-s8-asistencia.md) | S8 Asistencia + jobs | pass; capture driven in a 390 px frame |
-| [2026-10-16-08](2026-10-16-08-s9-prenomina.md) | S9 Incidencias + Prenómina | pass on the S8 data after fixing D-011, D-012; the seeded Semana 38 gate waits for a fresh database |
+| [2026-10-16-08](2026-10-16-08-s9-prenomina.md) | S9 Incidencias + Prenómina | pass after fixing D-011, D-012; screens on the S8 data; the seeded Semana 38 gate met on a fresh database |
 
 ## Defects
 
