@@ -1,19 +1,20 @@
 using ClosedXML.Excel;
+using MigraDoc.DocumentObjectModel;
+using MigraDoc.DocumentObjectModel.Tables;
+using MigraDoc.Rendering;
+using PdfSharp.Fonts;
 using Platform.Core.Reports;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
 
 namespace Platform.Infrastructure.Reports;
 
 /// <summary>
-/// Excel with ClosedXML, PDF with QuestPDF (ARCHITECTURE §2 exports). Numbers go to Excel as numbers with the format the screen
-/// uses, so a clerk can sum them; the PDF prints <see cref="ReportCell.Display"/>. QuestPDF runs under its Community license
-/// (PLAN P9).
+/// Excel with ClosedXML, PDF with PDFsharp/MigraDoc 6.2.4 — MIT, pinned: later versions are AGPL (ARCHITECTURE §2 exports,
+/// PLAN D81). Numbers go to Excel as numbers with the format the screen uses, so a clerk can sum them; the PDF prints
+/// <see cref="ReportCell.Display"/> in the embedded Lato font, so it looks the same on every server.
 /// </summary>
 public sealed class ReportRenderer : IReportRenderer
 {
-    static ReportRenderer() => QuestPDF.Settings.License = LicenseType.Community;
+    static ReportRenderer() => GlobalFontSettings.FontResolver = new EmbeddedFontResolver();
 
     public byte[] Render(ReportDocument document, ReportFormat format) =>
         format == ReportFormat.Xlsx ? Excel(document) : Pdf(document);
@@ -80,67 +81,107 @@ public sealed class ReportRenderer : IReportRenderer
         return clean.Length <= 31 ? clean : clean[..31];
     }
 
-    private static byte[] Pdf(ReportDocument document) =>
-        Document.Create(container => container.Page(page =>
-        {
-            page.Size(PageSizes.Letter.Landscape());
-            page.Margin(28);
-            page.DefaultTextStyle(t => t.FontSize(8));
-            page.Header().PaddingBottom(8).Column(c =>
-            {
-                c.Item().Text(document.Title).FontSize(14).Bold();
-                c.Item().Text(document.Filters).FontColor(Colors.Grey.Darken1);
-            });
-            page.Content().Column(column =>
-            {
-                foreach (var table in document.Tables)
-                    column.Item().PaddingBottom(12).Column(section =>
-                    {
-                        if (table.Heading is { } heading)
-                            section.Item().PaddingBottom(4).Text(heading).FontSize(10).Bold();
-                        section.Item().Table(t => Table(t, table));
-                    });
-            });
-            page.Footer().AlignRight().Text(t =>
-            {
-                t.CurrentPageNumber();
-                t.Span(" / ");
-                t.TotalPages();
-            });
-        })).GeneratePdf();
+    // ---- PDF (MigraDoc) ----
 
-    private static void Table(TableDescriptor t, ReportTable table)
+    private const string Font = "Lato";
+    private static readonly Color HeaderShade = Color.FromRgb(0xE8, 0xEA, 0xF0);
+    private static readonly Color RowShade = Color.FromRgb(0xF3, 0xF4, 0xF8);
+    private static readonly Color Rule = Color.FromRgb(0xD5, 0xD5, 0xD5);
+    private static readonly Color Muted = Color.FromRgb(0x61, 0x61, 0x61);
+
+    private static byte[] Pdf(ReportDocument report)
     {
-        t.ColumnsDefinition(c =>
+        var document = new Document();
+        var normal = document.Styles[StyleNames.Normal]!;
+        normal.Font.Name = Font;
+        normal.Font.Size = 8;
+
+        var section = document.AddSection();
+        section.PageSetup = document.DefaultPageSetup.Clone();
+        // Letter landscape, given as an explicit size: MigraDoc 6 does not apply PageFormat / Orientation to a cloned setup.
+        section.PageSetup.PageWidth = Unit.FromInch(11);
+        section.PageSetup.PageHeight = Unit.FromInch(8.5);
+        var margin = Unit.FromPoint(28);
+        section.PageSetup.TopMargin = section.PageSetup.BottomMargin = margin;
+        section.PageSetup.LeftMargin = section.PageSetup.RightMargin = margin;
+        var width = Unit.FromInch(11).Point - 2 * margin.Point;
+
+        var title = section.AddParagraph(report.Title);
+        title.Format.Font.Size = 14;
+        title.Format.Font.Bold = true;
+        var filters = section.AddParagraph(report.Filters);
+        filters.Format.Font.Color = Muted;
+        filters.Format.SpaceAfter = Unit.FromPoint(8);
+
+        foreach (var table in report.Tables)
         {
-            for (var i = 0; i < table.Columns.Count; i++)
-                c.RelativeColumn(i == 0 ? 2 : 1);
-        });
+            if (table.Heading is { } heading)
+            {
+                var h = section.AddParagraph(heading);
+                h.Format.Font.Size = 10;
+                h.Format.Font.Bold = true;
+                h.Format.SpaceBefore = Unit.FromPoint(6);
+                h.Format.SpaceAfter = Unit.FromPoint(4);
+            }
+            Table(section, table, width);
+            section.AddParagraph().Format.SpaceAfter = Unit.FromPoint(8);
+        }
+
+        var footer = section.Footers.Primary.AddParagraph();
+        footer.Format.Alignment = ParagraphAlignment.Right;
+        footer.AddPageField();
+        footer.AddText(" / ");
+        footer.AddNumPagesField();
+
+        var renderer = new PdfDocumentRenderer { Document = document };
+        renderer.RenderDocument();
+        using var stream = new MemoryStream();
+        renderer.PdfDocument.Save(stream, false);
+        return stream.ToArray();
+    }
+
+    private static void Table(Section section, ReportTable data, double width)
+    {
+        var table = section.AddTable();
+        table.Borders.Width = 0;
         // A header sits over its numbers: right-aligned when the column's first data cell is a number.
-        var numeric = Enumerable.Range(0, table.Columns.Count)
-            .Select(i => table.Rows.FirstOrDefault(r => !r.Emphasis)?.Cells.ElementAtOrDefault(i)?.Kind is { } k && k != ReportCellKind.Text)
+        var numeric = Enumerable.Range(0, data.Columns.Count)
+            .Select(i => data.Rows.FirstOrDefault(r => !r.Emphasis)?.Cells.ElementAtOrDefault(i)?.Kind is { } k && k != ReportCellKind.Text)
             .ToList();
-        t.Header(h =>
+        var shares = data.Columns.Count + 1; // the first column is twice as wide
+        for (var i = 0; i < data.Columns.Count; i++)
         {
-            for (var i = 0; i < table.Columns.Count; i++)
+            var column = table.AddColumn(Unit.FromPoint(width * (i == 0 ? 2 : 1) / shares));
+            column.LeftPadding = column.RightPadding = Unit.FromPoint(3);
+        }
+
+        var header = table.AddRow();
+        header.HeadingFormat = true;
+        header.TopPadding = header.BottomPadding = Unit.FromPoint(3);
+        header.Shading.Color = HeaderShade;
+        header.Format.Font.Bold = true;
+        for (var i = 0; i < data.Columns.Count; i++)
+            Cell(header.Cells[i], data.Columns[i], numeric[i]);
+
+        foreach (var r in data.Rows)
+        {
+            var row = table.AddRow();
+            row.TopPadding = row.BottomPadding = Unit.FromPoint(3);
+            row.Borders.Bottom.Width = 0.5;
+            row.Borders.Bottom.Color = Rule;
+            if (r.Emphasis)
             {
-                var cell = h.Cell().Background("#E8EAF0").Padding(3);
-                (numeric[i] ? cell.AlignRight() : cell).Text(table.Columns[i]).Bold();
+                row.Shading.Color = RowShade;
+                row.Format.Font.Bold = true;
             }
-        });
-        foreach (var row in table.Rows)
-            for (var i = 0; i < row.Cells.Count; i++)
-            {
-                var cell = row.Cells[i];
-                var box = t.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2);
-                if (row.Emphasis)
-                    box = box.Background("#F3F4F8");
-                box = box.Padding(3);
-                if (cell.Kind != ReportCellKind.Text)
-                    box = box.AlignRight();
-                var text = box.Text(cell.Display);
-                if (row.Emphasis)
-                    text.Bold();
-            }
+            for (var i = 0; i < r.Cells.Count; i++)
+                Cell(row.Cells[i], r.Cells[i].Display, r.Cells[i].Kind != ReportCellKind.Text);
+        }
+    }
+
+    private static void Cell(Cell cell, string text, bool right)
+    {
+        var p = cell.AddParagraph(text);
+        p.Format.Alignment = right ? ParagraphAlignment.Right : ParagraphAlignment.Left;
     }
 }

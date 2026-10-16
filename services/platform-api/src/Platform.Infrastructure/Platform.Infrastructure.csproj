@@ -16,10 +16,14 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-    <PackageReference Include="QuestPDF" />
+    <PackageReference Include="PDFsharp-MigraDoc" />
   </ItemGroup>
 
   
+  <ItemGroup>
+    <EmbeddedResource Include="Reports\Fonts\*.ttf" />
+  </ItemGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

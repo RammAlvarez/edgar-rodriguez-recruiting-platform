@@ -20,7 +20,10 @@
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.13" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <PackageVersion Include="QuestPDF" Version="2026.9.1" />
+    <!-- Exact pin: 6.2.4 is the last MIT release of PDFsharp/MigraDoc; 6.5.0 and later are AGPL-3.0 (PLAN D81). Never upgrade. -->
+    <PackageVersion Include="PDFsharp-MigraDoc" Version="[6.2.4]" />
+    <!-- Transitive pin: PDFsharp-MigraDoc 6.2.4 asks for 8.0.1, which has CVE-2026-70162 / CVE-2026-84008 (DoS). -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="xunit" Version="2.9.3" />
