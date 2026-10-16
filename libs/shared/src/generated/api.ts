@@ -50,6 +50,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/catalogs": {
         parameters: {
             query?: never;
@@ -642,6 +658,214 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/openings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListOpenings"];
+        put?: never;
+        post: operations["CreateOpening"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListOpeningOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetOpening"];
+        put: operations["UpdateOpening"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChangeOpeningStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DuplicateOpening"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}/recruiters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AssignRecruiters"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}/recruiters/{userId}/lead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MakeLeadRecruiter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}/recruiters/{userId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RemoveRecruiter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListOpeningEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/openings/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListOpeningComments"];
+        put?: never;
+        post: operations["PostOpeningComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListRecruiters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetRecruiter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiters/{id}/openings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AssignOpenings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -650,6 +874,16 @@ export type components = {
             /** Format: uuid */
             id: string;
             displayName: string;
+        };
+        /** @enum {unknown} */
+        AssignmentRole: "lead" | "support";
+        AssignOpeningsRequest: {
+            openingIds: string[];
+            role: components["schemas"]["AssignmentRole"];
+        };
+        AssignRecruitersRequest: {
+            userIds: string[];
+            role: components["schemas"]["AssignmentRole"];
         };
         BankDto: {
             /** Format: uuid */
@@ -683,6 +917,8 @@ export type components = {
         };
         /** @enum {unknown} */
         CandidateSource: "facebook" | "linkedin" | "whatsapp" | "referral" | "job_board" | "other" | null;
+        /** @enum {unknown} */
+        CandidateStage: "new" | "contacted" | "interview" | "suitable" | "not_suitable" | "hired" | "discarded";
         CatalogPositionDto: {
             /** Format: uuid */
             id: string;
@@ -927,6 +1163,149 @@ export type components = {
             email: null | string;
             phone: null | string;
         };
+        OpeningCommentDto: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            author: string;
+            visibleToClient: boolean;
+            /** Format: date-time */
+            createdAt: Date;
+        };
+        OpeningCommentRequest: {
+            body: string;
+            visibleToClient: boolean;
+        };
+        OpeningDetailDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            /** Format: uuid */
+            zoneId: null | string;
+            zoneName: null | string;
+            positionName: string;
+            /** Format: int32 */
+            headcountRequested: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: decimal */
+            monthlySalary: Decimal | null;
+            benefits: string[];
+            schedule: null | string;
+            paymentBankIds: string[];
+            /** Format: uuid */
+            educationLevelId: null | string;
+            /** Format: int32 */
+            yearsExperience: null | number | string;
+            requiredExperience: null | string;
+            genderRequirement: components["schemas"]["Gender"];
+            ageRange: null | string;
+            priority: components["schemas"]["OpeningPriority"];
+            status: components["schemas"]["OpeningStatus"];
+            /** Format: date */
+            requestedAt: DateKey;
+            /** Format: date */
+            filledAt: DateKey | null;
+            /** Format: int32 */
+            daysOpen: number | string;
+            /** Format: uuid */
+            leadRecruiterId: null | string;
+            leadRecruiterName: null | string;
+            /** Format: uuid */
+            documentTemplateId: null | string;
+            visibleToClient: boolean;
+            notes: null | string;
+            recruiters: components["schemas"]["OpeningRecruiterDto"][];
+            stageCounts: components["schemas"]["StageCountDto"][];
+        };
+        OpeningListItemDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            positionName: string;
+            /** Format: uuid */
+            zoneId: null | string;
+            zoneName: null | string;
+            /** Format: int32 */
+            headcountRequested: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: int32 */
+            candidates: number | string;
+            priority: components["schemas"]["OpeningPriority"];
+            status: components["schemas"]["OpeningStatus"];
+            /** Format: date */
+            requestedAt: DateKey;
+            /** Format: date */
+            filledAt: DateKey | null;
+            /** Format: int32 */
+            daysOpen: number | string;
+            /** Format: uuid */
+            leadRecruiterId: null | string;
+            leadRecruiterName: null | string;
+        };
+        OpeningOptionDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            /** Format: int32 */
+            headcountRequested: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            leadRecruiterName: null | string;
+        };
+        /** @enum {unknown} */
+        OpeningPriority: "high" | "medium" | "low";
+        OpeningRecruiterDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            isLead: boolean;
+            /** Format: date */
+            assignedAt: DateKey;
+        };
+        OpeningRequest: {
+            /** Format: uuid */
+            clientId: string;
+            /** Format: uuid */
+            zoneId: null | string;
+            positionName: string;
+            /** Format: int32 */
+            headcountRequested: number | string;
+            /** Format: decimal */
+            monthlySalary: Decimal | null;
+            benefits: null | string[];
+            schedule: null | string;
+            paymentBankIds: null | string[];
+            /** Format: uuid */
+            educationLevelId: null | string;
+            /** Format: int32 */
+            yearsExperience: null | number | string;
+            requiredExperience: null | string;
+            genderRequirement: components["schemas"]["Gender"];
+            ageRange: null | string;
+            priority: components["schemas"]["OpeningPriority"];
+            /** Format: uuid */
+            leadRecruiterId: null | string;
+            /** Format: uuid */
+            documentTemplateId: null | string;
+            visibleToClient: boolean;
+            notes: null | string;
+            /** Format: date */
+            requestedAt: DateKey | null;
+        };
+        /** @enum {unknown} */
+        OpeningStatus: "open" | "in_progress" | "filled" | "cancelled" | "paused";
+        OpeningStatusRequest: {
+            status: components["schemas"]["OpeningStatus"];
+            reason: null | string;
+        };
         /** @enum {unknown} */
         PermissionModule: "recruiting" | "recruiting_reports" | "payroll_prepayroll" | "payroll_attendance" | "payroll_incidents" | "payroll_staff" | "payroll_payment_files" | "payroll_card_requests" | "users";
         PersonDocumentDto: {
@@ -1038,10 +1417,47 @@ export type components = {
             detail?: null | string;
             instance?: null | string;
         };
+        RecruiterAssignmentDto: {
+            /** Format: uuid */
+            openingId: string;
+            displayName: string;
+            isLead: boolean;
+            /** Format: date */
+            assignedAt: DateKey;
+            status: components["schemas"]["OpeningStatus"];
+            /** Format: int32 */
+            daysOpen: number | string;
+            /** Format: int32 */
+            candidates: number | string;
+        };
+        RecruiterDetailDto: {
+            recruiter: components["schemas"]["RecruiterSummaryDto"];
+            assignments: components["schemas"]["RecruiterAssignmentDto"][];
+        };
+        RecruiterSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            email: string;
+            phone: null | string;
+            isActive: boolean;
+            /** Format: int32 */
+            openingsAssigned: number | string;
+            /** Format: int32 */
+            candidatesPresented: number | string;
+            /** Format: int32 */
+            candidatesSuitable: number | string;
+            /** Format: int32 */
+            candidatesHired: number | string;
+        };
         /** @enum {unknown} */
         RegistrationBank: "banorte" | "banregio" | null;
         RejectDocumentRequest: {
             reason: string;
+        };
+        RemoveRecruiterRequest: {
+            /** Format: uuid */
+            newLeadId: null | string;
         };
         SiteDto: {
             /** Format: uuid */
@@ -1070,6 +1486,17 @@ export type components = {
             state: null | string;
             /** @default true */
             isActive: boolean;
+        };
+        StaffOptionDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            role: components["schemas"]["UserRole"];
+        };
+        StageCountDto: {
+            stage: components["schemas"]["CandidateStage"];
+            /** Format: int32 */
+            count: number | string;
         };
         StatutoryHolidaysRequest: {
             /** Format: int32 */
@@ -1139,11 +1566,15 @@ export type components = {
     pathItems: never;
 };
 export type ActingForDto = components['schemas']['ActingForDto'];
+export type AssignmentRole = components['schemas']['AssignmentRole'];
+export type AssignOpeningsRequest = components['schemas']['AssignOpeningsRequest'];
+export type AssignRecruitersRequest = components['schemas']['AssignRecruitersRequest'];
 export type BankDto = components['schemas']['BankDto'];
 export type BankRequest = components['schemas']['BankRequest'];
 export type BenefitDto = components['schemas']['BenefitDto'];
 export type BenefitRequest = components['schemas']['BenefitRequest'];
 export type CandidateSource = components['schemas']['CandidateSource'];
+export type CandidateStage = components['schemas']['CandidateStage'];
 export type CatalogPositionDto = components['schemas']['CatalogPositionDto'];
 export type CatalogPositionRequest = components['schemas']['CatalogPositionRequest'];
 export type CatalogsDto = components['schemas']['CatalogsDto'];
@@ -1176,6 +1607,16 @@ export type InviteResultDto = components['schemas']['InviteResultDto'];
 export type InviteUserRequest = components['schemas']['InviteUserRequest'];
 export type MeDto = components['schemas']['MeDto'];
 export type NewContactFields = components['schemas']['NewContactFields'];
+export type OpeningCommentDto = components['schemas']['OpeningCommentDto'];
+export type OpeningCommentRequest = components['schemas']['OpeningCommentRequest'];
+export type OpeningDetailDto = components['schemas']['OpeningDetailDto'];
+export type OpeningListItemDto = components['schemas']['OpeningListItemDto'];
+export type OpeningOptionDto = components['schemas']['OpeningOptionDto'];
+export type OpeningPriority = components['schemas']['OpeningPriority'];
+export type OpeningRecruiterDto = components['schemas']['OpeningRecruiterDto'];
+export type OpeningRequest = components['schemas']['OpeningRequest'];
+export type OpeningStatus = components['schemas']['OpeningStatus'];
+export type OpeningStatusRequest = components['schemas']['OpeningStatusRequest'];
 export type PermissionModule = components['schemas']['PermissionModule'];
 export type PersonDocumentDto = components['schemas']['PersonDocumentDto'];
 export type PersonDto = components['schemas']['PersonDto'];
@@ -1184,10 +1625,16 @@ export type PersonSummaryDto = components['schemas']['PersonSummaryDto'];
 export type PresignUploadRequest = components['schemas']['PresignUploadRequest'];
 export type PresignUploadResponse = components['schemas']['PresignUploadResponse'];
 export type ProblemDetails = components['schemas']['ProblemDetails'];
+export type RecruiterAssignmentDto = components['schemas']['RecruiterAssignmentDto'];
+export type RecruiterDetailDto = components['schemas']['RecruiterDetailDto'];
+export type RecruiterSummaryDto = components['schemas']['RecruiterSummaryDto'];
 export type RegistrationBank = components['schemas']['RegistrationBank'];
 export type RejectDocumentRequest = components['schemas']['RejectDocumentRequest'];
+export type RemoveRecruiterRequest = components['schemas']['RemoveRecruiterRequest'];
 export type SiteDto = components['schemas']['SiteDto'];
 export type SiteRequest = components['schemas']['SiteRequest'];
+export type StaffOptionDto = components['schemas']['StaffOptionDto'];
+export type StageCountDto = components['schemas']['StageCountDto'];
 export type StatutoryHolidaysRequest = components['schemas']['StatutoryHolidaysRequest'];
 export type StatutoryHolidaysResult = components['schemas']['StatutoryHolidaysResult'];
 export type UpdateClientRequest = components['schemas']['UpdateClientRequest'];
@@ -1276,6 +1723,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffOptionDto"][];
                 };
             };
         };
@@ -3245,6 +3712,607 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InviteResultDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListOpenings: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                status?: string;
+                recruiterId?: string;
+                priority?: string;
+                zoneId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningListItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateOpening: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListOpeningOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningOptionDto"][];
+                };
+            };
+        };
+    };
+    GetOpening: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateOpening: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangeOpeningStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DuplicateOpening: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AssignRecruiters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignRecruitersRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MakeLeadRecruiter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveRecruiter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveRecruiterRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListOpeningEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListOpeningComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PostOpeningComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningCommentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListRecruiters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruiterSummaryDto"][];
+                };
+            };
+        };
+    };
+    GetRecruiter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruiterDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AssignOpenings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignOpeningsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruiterDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
             /** @description Not Found */

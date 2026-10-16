@@ -5,6 +5,8 @@ using Platform.Core.Audit;
 using Platform.Core.Catalogs;
 using Platform.Core.People;
 using Platform.Core.Users;
+using Platform.Recruiting.Candidates;
+using Platform.Recruiting.Openings;
 
 namespace Platform.Infrastructure.Persistence;
 
@@ -30,6 +32,11 @@ public static class PostgresEnums
         Of<Gender>("gender"),
         Of<CandidateSource>("candidate_source"),
         Of<DocumentStatus>("document_status"),
+        Of<OpeningStatus>("opening_status"),
+        Of<OpeningPriority>("opening_priority"),
+        Of<OpeningEventKind>("opening_event_kind"),
+        Of<CandidateStage>("candidate_stage"),
+        Of<InterviewOutcome>("interview_outcome"),
     ];
 
     private static Entry Of<T>(string name) where T : struct, Enum => new(

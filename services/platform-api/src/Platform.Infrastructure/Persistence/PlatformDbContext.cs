@@ -15,6 +15,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     public static readonly System.Reflection.Assembly[] ModuleAssemblies =
     [
         typeof(User).Assembly, // Platform.Core
+        typeof(Platform.Recruiting.Openings.JobOpening).Assembly, // Platform.Recruiting
     ];
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -16,6 +16,9 @@ using Platform.Core.Users;
 using Platform.Infrastructure.Email;
 using Platform.Infrastructure.Persistence;
 using Platform.Infrastructure.Storage;
+using Platform.Recruiting;
+using Platform.Recruiting.Openings;
+using Platform.Recruiting.Recruiters;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -62,6 +65,7 @@ else
     builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 builder.Services.AddValidatorsFromAssemblyContaining<MeDto>(includeInternalTypes: true);
+builder.Services.AddValidatorsFromAssemblyContaining<OpeningRequest>(includeInternalTypes: true);
 
 var app = builder.Build();
 
@@ -99,6 +103,8 @@ v1.MapClientEndpoints();
 v1.MapPeopleEndpoints();
 v1.MapDocumentEndpoints();
 v1.MapUserEndpoints();
+v1.MapOpeningEndpoints();
+v1.MapRecruiterEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 
