@@ -248,7 +248,7 @@ Seed codes: `INE`, `CURP`, `RFC`, `NSS`, `ACTA_NAC`, `DOMICILIO`, `ESTUDIOS`, `C
 | id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
 | person_id | uuid FK | |
 | document_type_id | uuid FK | |
-| status | document_status default `pending` | |
+| status | document_status default `delivered` | a row exists once a file is confirmed, so «pending» in the checklist is the absence of a row (PLAN D66) |
 | storage_key | text | S3 object key decided by the API: `people/<person uid>/<doc_type>/<uuid>.<ext>` (bucket from env); objects private, presigned URLs only |
 | original_filename, content_type, size_bytes | | ≤ 10 MB |
 | issued_at, expires_at | date | `expired` set by the daily `document-expiry` job (`POST /internal/jobs/document-expiry`) |

@@ -192,7 +192,7 @@ public static partial class UserEndpoints
         try
         {
             var link = user.Role == UserRole.Client ? links.Clients : await auth.CreatePasswordSetupLinkAsync(user.Email, ct);
-            await email.SendAsync(InvitationEmail.Build(user, ctx.RequiredPrincipal.DisplayName, link), ct);
+            await email.SendAsync(InvitationEmail.Build(user, ctx.RequiredPrincipal.DisplayName, link, links.Admin), ct);
             return true;
         }
         catch (Exception e) when (e is not OperationCanceledException)

@@ -6,7 +6,8 @@ namespace Platform.Core.Users;
 /// <summary>The invitation (SPEC §6, ARCHITECTURE §4.1 step 1): staff set a password; Cliente users sign in by email link.</summary>
 public static class InvitationEmail
 {
-    public static EmailMessage Build(User user, string inviter, string link)
+    /// <param name="appUrl">Where staff sign in once the password is set (Admin app).</param>
+    public static EmailMessage Build(User user, string inviter, string link, string appUrl)
     {
         var role = user.Role switch
         {
@@ -18,7 +19,7 @@ public static class InvitationEmail
             ? ("Entra al portal de clientes con este correo; te enviaremos un enlace para iniciar sesión, sin contraseña.",
                 "Abrir el portal", "")
             : ("Para entrar, define tu contraseña con el enlace siguiente.", "Definir contraseña",
-                "El enlace es de un solo uso y vence en una hora; si vence, pide que te reenvíen la invitación.");
+                $"Después entra en {appUrl} con tu correo y esa contraseña. El enlace es de un solo uso y vence en una hora; si vence, pide que te reenvíen la invitación.");
         var subject = "Tu acceso a la Plataforma de Reclutamiento y Prenómina";
         var text = $"""
             Hola {user.DisplayName}:

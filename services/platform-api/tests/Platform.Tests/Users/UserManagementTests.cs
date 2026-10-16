@@ -35,6 +35,7 @@ public sealed class UserManagementTests(ApiFactory factory) : ApiTest(factory)
         var mail = Assert.Single(Factory.Email.To(email));
         Assert.Contains("https://auth.test/setup?email=", mail.Text, StringComparison.Ordinal);
         Assert.Contains("Administrador", mail.Text, StringComparison.Ordinal);
+        Assert.Contains("http://localhost:4300", mail.Text, StringComparison.Ordinal);
         Assert.Equal($"auth-{email}", await WithDb(db => db.Set<User>().Where(u => u.Email == email).Select(u => u.AuthUid).SingleAsync()));
     }
 
