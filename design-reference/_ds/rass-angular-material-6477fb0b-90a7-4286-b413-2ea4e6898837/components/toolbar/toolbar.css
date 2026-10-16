@@ -1,0 +1,10 @@
+/* mat-toolbar */
+.rass-toolbar{display:flex;align-items:center;gap:8px;height:var(--rass-toolbar-height);padding:0 16px;box-sizing:border-box;background:var(--mat-sys-surface);color:var(--mat-sys-on-surface);font:var(--mat-sys-title-large);letter-spacing:var(--mat-sys-title-large-tracking);flex-shrink:0;position:relative;z-index:3;transition:background var(--rass-duration-short4) linear}
+.rass-toolbar--scrolled{background:var(--mat-sys-surface-container)}
+.rass-toolbar--container{background:var(--mat-sys-surface-container)}
+.rass-toolbar--primary{background:var(--mat-sys-primary);color:var(--mat-sys-on-primary)}
+.rass-toolbar--primary .rass-icon-btn{color:var(--mat-sys-on-primary)}
+.rass-toolbar__title{margin:0 8px 0 4px;font:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rass-toolbar__spacer{flex:1}
+.rass-toolbar__actions{display:flex;align-items:center;gap:4px}
+.rass-toolbar--divider{border-bottom:1px solid var(--mat-sys-outline-variant)}

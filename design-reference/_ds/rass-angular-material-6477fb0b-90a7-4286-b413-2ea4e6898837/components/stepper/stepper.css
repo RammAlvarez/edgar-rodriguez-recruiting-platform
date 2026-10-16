@@ -1,0 +1,25 @@
+/* mat-stepper (horizontal / vertical) */
+.rass-stepper{background:var(--mat-sys-surface);color:var(--mat-sys-on-surface)}
+.rass-stepper__header{display:flex;align-items:center}
+.rass-step{all:unset;position:relative;isolation:isolate;box-sizing:border-box;display:flex;align-items:center;gap:8px;height:var(--rass-step-header);padding:0 24px;border-radius:var(--mat-sys-corner-medium);cursor:pointer;flex-shrink:0;--rass-sl-color:var(--mat-sys-on-surface)}
+.rass-step[aria-disabled="true"]{cursor:default}
+.rass-step:focus-visible{outline:var(--rass-focus-ring-width) solid var(--rass-focus-ring-color);outline-offset:-3px}
+.rass-step__icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--mat-sys-on-surface-variant);color:var(--mat-sys-surface);font:var(--mat-sys-body-small);font-weight:500;flex-shrink:0}
+.rass-step__icon .rass-icon{font-size:16px}
+.rass-step--selected .rass-step__icon,.rass-step--done .rass-step__icon{background:var(--mat-sys-primary);color:var(--mat-sys-on-primary)}
+.rass-step--error .rass-step__icon{background:transparent;color:var(--mat-sys-error)}
+.rass-step--error .rass-step__icon .rass-icon{font-size:24px}
+.rass-step__labels{display:flex;flex-direction:column}
+.rass-step__label{font:var(--mat-sys-title-small);letter-spacing:var(--mat-sys-title-small-tracking);color:var(--mat-sys-on-surface-variant);white-space:nowrap}
+.rass-step--selected .rass-step__label{color:var(--mat-sys-on-surface)}
+.rass-step--error .rass-step__label{color:var(--mat-sys-error)}
+.rass-step__optional{font:var(--mat-sys-body-small);color:var(--mat-sys-on-surface-variant)}
+.rass-step--error .rass-step__optional{color:var(--mat-sys-error)}
+.rass-stepper__line{flex:1;min-width:24px;height:1px;background:var(--mat-sys-outline-variant)}
+.rass-stepper__content{padding:0 24px 24px}
+.rass-stepper__actions{display:flex;gap:8px;padding-top:16px}
+.rass-stepper--vertical .rass-stepper__vstep{position:relative}
+.rass-stepper--vertical .rass-step{height:auto;padding:24px;width:100%}
+.rass-stepper--vertical .rass-stepper__vbody{margin-left:36px;padding:0 24px 16px 23px;border-left:1px solid var(--mat-sys-outline-variant);min-height:16px}
+.rass-stepper--vertical .rass-stepper__vstep:last-child .rass-stepper__vbody{border-left-color:transparent}
+.rass-stepper--vertical .rass-stepper__vstep:not(:last-child)>.rass-stepper__vbody:empty{min-height:24px}

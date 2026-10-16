@@ -1,0 +1,27 @@
+/* Density scale (mat.theme density: 0 | -1 | -2). Each step removes 4px from interactive heights.
+   RASS default is -1 (back-office). Wrap data-heavy desktop areas in [data-density="-2"];
+   mobile / customer-facing screens in [data-density="0"]. */
+:root,[data-density="-1"]{
+--rass-density:-1;/* @kind other */
+--rass-button-height:36px;--rass-icon-button-size:36px;--rass-field-height:52px;--rass-chip-height:28px;
+--rass-control-state-size:36px;--rass-list-item-1:52px;--rass-list-item-2:68px;--rass-nav-item-height:52px;
+--rass-table-header-height:52px;--rass-table-row-height:48px;--rass-paginator-height:52px;
+--rass-toolbar-height:60px;--rass-tab-height:44px;--rass-menu-item-height:44px;--rass-toggle-height:36px;
+--rass-expansion-header:44px;--rass-expansion-header-expanded:60px;--rass-step-header:68px;
+}
+[data-density="0"]{
+--rass-density:0;/* @kind other */
+--rass-button-height:40px;--rass-icon-button-size:40px;--rass-field-height:56px;--rass-chip-height:32px;
+--rass-control-state-size:40px;--rass-list-item-1:56px;--rass-list-item-2:72px;--rass-nav-item-height:56px;
+--rass-table-header-height:56px;--rass-table-row-height:52px;--rass-paginator-height:56px;
+--rass-toolbar-height:64px;--rass-tab-height:48px;--rass-menu-item-height:48px;--rass-toggle-height:40px;
+--rass-expansion-header:48px;--rass-expansion-header-expanded:64px;--rass-step-header:72px;
+}
+[data-density="-2"]{
+--rass-density:-2;/* @kind other */
+--rass-button-height:32px;--rass-icon-button-size:32px;--rass-field-height:48px;--rass-chip-height:24px;
+--rass-control-state-size:32px;--rass-list-item-1:48px;--rass-list-item-2:64px;--rass-nav-item-height:48px;
+--rass-table-header-height:48px;--rass-table-row-height:44px;--rass-paginator-height:48px;
+--rass-toolbar-height:56px;--rass-tab-height:40px;--rass-menu-item-height:40px;--rass-toggle-height:32px;
+--rass-expansion-header:40px;--rass-expansion-header-expanded:56px;--rass-step-header:64px;
+}

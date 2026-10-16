@@ -1,0 +1,16 @@
+/* mat-slider with matSliderThumb (single) – M3 */
+.rass-slider{position:relative;display:inline-flex;align-items:center;height:48px;width:240px;max-width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rass-slider--block{width:100%}
+.rass-slider__track{position:absolute;left:0;right:0;height:4px;border-radius:2px;background:var(--mat-sys-surface-variant);top:50%;margin-top:-2px}
+.rass-slider__active{position:absolute;left:0;height:6px;margin-top:-3px;top:50%;border-radius:3px;background:var(--mat-sys-primary)}
+.rass-slider__tick{position:absolute;top:50%;width:2px;height:2px;margin:-1px 0 0 -1px;border-radius:50%;background:var(--mat-sys-on-surface-variant)}
+.rass-slider__tick--on{background:var(--mat-sys-on-primary)}
+.rass-slider__thumb-wrap{position:absolute;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--mat-sys-primary);pointer-events:none}
+.rass-slider__thumb{width:20px;height:20px;border-radius:50%;background:var(--mat-sys-primary);box-shadow:var(--mat-sys-level1)}
+.rass-slider__label{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);min-width:28px;height:28px;padding:0 6px;box-sizing:border-box;border-radius:var(--mat-sys-corner-full);background:var(--mat-sys-primary);color:var(--mat-sys-on-primary);font:var(--mat-sys-label-medium);display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.rass-slider__input{position:absolute;inset:0;width:100%;margin:0;opacity:0;cursor:pointer}
+.rass-slider__input:focus-visible~.rass-slider__thumb-wrap{outline:var(--rass-focus-ring-width) solid var(--rass-focus-ring-color)}
+.rass-slider:hover .rass-slider__thumb-wrap::before{content:"";position:absolute;inset:0;border-radius:50%;background:currentColor;opacity:var(--mat-sys-hover-state-layer-opacity)}
+.rass-slider--disabled{cursor:default}
+.rass-slider--disabled .rass-slider__active,.rass-slider--disabled .rass-slider__thumb{background:var(--rass-disabled-content);box-shadow:none}
+.rass-slider--disabled .rass-slider__track{background:var(--rass-disabled-container)}

@@ -1,0 +1,16 @@
+/* M3 motion + interaction state layers. */
+:root{
+--rass-easing-standard:cubic-bezier(0.2,0,0,1);/* @kind other */
+--rass-easing-standard-decelerate:cubic-bezier(0,0,0,1);/* @kind other */
+--rass-easing-standard-accelerate:cubic-bezier(0.3,0,1,1);/* @kind other */
+--rass-easing-emphasized-decelerate:cubic-bezier(0.05,0.7,0.1,1);/* @kind other */
+--rass-easing-emphasized-accelerate:cubic-bezier(0.3,0,0.8,0.15);/* @kind other */
+--rass-duration-short1:50ms;/* @kind other */--rass-duration-short2:100ms;/* @kind other */--rass-duration-short3:150ms;/* @kind other */--rass-duration-short4:200ms;/* @kind other */
+--rass-duration-medium1:250ms;/* @kind other */--rass-duration-medium2:300ms;/* @kind other */--rass-duration-medium3:350ms;/* @kind other */--rass-duration-medium4:400ms;/* @kind other */
+--rass-duration-long1:450ms;/* @kind other */--rass-duration-long2:500ms;/* @kind other */
+--mat-sys-hover-state-layer-opacity:0.08;/* @kind other */
+--mat-sys-focus-state-layer-opacity:0.12;/* @kind other */
+--mat-sys-pressed-state-layer-opacity:0.12;/* @kind other */
+--mat-sys-dragged-state-layer-opacity:0.16;/* @kind other */
+--rass-focus-ring-width:3px;--rass-focus-ring-offset:2px;--rass-focus-ring-color:var(--mat-sys-secondary);
+}

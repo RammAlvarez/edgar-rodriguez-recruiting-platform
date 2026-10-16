@@ -1,0 +1,5 @@
+/* Roboto + Roboto Mono (variable, latin subset) and Material Symbols Outlined (variable: opsz, wght, FILL, GRAD).
+   Self-hosted copies of the Google Fonts binaries. */
+@font-face{font-family:"Roboto";font-style:normal;font-weight:100 900;font-stretch:100%;font-display:swap;src:url("../assets/fonts/Roboto-Variable.woff2") format("woff2")}
+@font-face{font-family:"Roboto Mono";font-style:normal;font-weight:100 700;font-display:swap;src:url("../assets/fonts/RobotoMono-Variable.woff2") format("woff2")}
+@font-face{font-family:"Material Symbols Outlined";font-style:normal;font-weight:100 700;font-display:block;src:url("../assets/fonts/MaterialSymbolsOutlined.woff2") format("woff2")}

@@ -1,0 +1,12 @@
+/* matBadge (M3: error container, label-small) */
+.rass-badge-host{position:relative;display:inline-flex}
+.rass-badge{position:absolute;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;background:var(--mat-sys-error);color:var(--mat-sys-on-error);font:var(--mat-sys-label-small);letter-spacing:var(--mat-sys-label-small-tracking);border-radius:var(--mat-sys-corner-full);pointer-events:none;z-index:1;white-space:nowrap}
+.rass-badge--medium,.rass-badge--large{min-width:16px;height:16px;padding:0 4px}
+.rass-badge--small{width:6px;height:6px;padding:0}
+.rass-badge--above.rass-badge--after{top:-2px;right:-2px;transform:translate(25%,-25%)}
+.rass-badge--above.rass-badge--before{top:-2px;left:-2px;transform:translate(-25%,-25%)}
+.rass-badge--below.rass-badge--after{bottom:-2px;right:-2px;transform:translate(25%,25%)}
+.rass-badge--below.rass-badge--before{bottom:-2px;left:-2px;transform:translate(-25%,25%)}
+.rass-badge--overlap.rass-badge--above.rass-badge--after{top:4px;right:4px;transform:translate(50%,-50%)}
+.rass-badge--small.rass-badge--overlap.rass-badge--above.rass-badge--after{top:8px;right:8px}
+.rass-badge--inline{position:static;transform:none;margin-left:8px}

@@ -1,0 +1,20 @@
+/* mat-list / mat-nav-list / mat-selection-list (M3 list items) */
+.rass-list{display:flex;flex-direction:column;padding:8px 0;margin:0;background:transparent;list-style:none}
+.rass-list__subheader{display:flex;align-items:center;height:48px;padding:0 16px;font:var(--mat-sys-title-small);letter-spacing:var(--mat-sys-title-small-tracking);color:var(--mat-sys-on-surface-variant)}
+.rass-li{all:unset;position:relative;isolation:isolate;box-sizing:border-box;display:flex;align-items:center;gap:16px;min-height:var(--rass-list-item-1);padding:8px 24px 8px 16px;color:var(--mat-sys-on-surface);text-decoration:none;width:100%}
+.rass-li--two{min-height:var(--rass-list-item-2)}
+.rass-li--three{min-height:88px;align-items:flex-start;padding-top:12px;padding-bottom:12px}
+.rass-li--interactive{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.rass-li__lead{color:var(--mat-sys-on-surface-variant);display:flex}
+.rass-li__avatar{width:40px;height:40px;border-radius:50%;background:var(--mat-sys-primary-container);color:var(--mat-sys-on-primary-container);display:flex;align-items:center;justify-content:center;font:var(--mat-sys-title-medium);flex-shrink:0;overflow:hidden}
+.rass-li__text{flex:1;min-width:0;display:flex;flex-direction:column}
+.rass-li__headline{font:var(--mat-sys-body-large);letter-spacing:var(--mat-sys-body-large-tracking);color:var(--mat-sys-on-surface);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rass-li__support{font:var(--mat-sys-body-medium);letter-spacing:var(--mat-sys-body-medium-tracking);color:var(--mat-sys-on-surface-variant);overflow:hidden;text-overflow:ellipsis}
+.rass-li--two .rass-li__support{white-space:nowrap}
+.rass-li--three .rass-li__support{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rass-li__trail{font:var(--mat-sys-label-small);letter-spacing:var(--mat-sys-label-small-tracking);color:var(--mat-sys-on-surface-variant);display:flex;align-items:center;gap:4px}
+.rass-li__trail .rass-icon{font-size:24px}
+.rass-li[aria-selected="true"]{background:var(--mat-sys-secondary-container)}
+.rass-li[aria-selected="true"] .rass-li__headline,.rass-li[aria-selected="true"] .rass-li__lead{color:var(--mat-sys-on-secondary-container)}
+.rass-li--disabled{opacity:.38;pointer-events:none}
+.rass-li:focus-visible{outline:var(--rass-focus-ring-width) solid var(--rass-focus-ring-color);outline-offset:-3px}

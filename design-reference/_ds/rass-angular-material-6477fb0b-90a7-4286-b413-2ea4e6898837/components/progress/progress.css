@@ -1,0 +1,15 @@
+/* mat-progress-bar / mat-progress-spinner (M3) */
+.rass-progress{position:relative;height:4px;width:100%;overflow:hidden;background:var(--mat-sys-surface-variant);border-radius:0}
+.rass-progress__bar{position:absolute;top:0;bottom:0;left:0;background:var(--mat-sys-primary);transition:width var(--rass-duration-medium2) var(--rass-easing-standard)}
+.rass-progress__buffer{position:absolute;top:0;bottom:0;left:0;background:var(--mat-sys-surface-variant)}
+.rass-progress--buffer{background:transparent;background-image:radial-gradient(circle,var(--mat-sys-surface-variant) 2px,transparent 2px);background-size:8px 4px}
+.rass-progress--indeterminate .rass-progress__bar{width:40%;animation:rass-progress-ind 1.6s var(--rass-easing-standard) infinite}
+.rass-progress--query .rass-progress__bar{width:40%;animation:rass-progress-ind 1.6s var(--rass-easing-standard) infinite reverse}
+@keyframes rass-progress-ind{0%{left:-40%}100%{left:100%}}
+.rass-spinner{display:inline-block;flex-shrink:0;color:var(--mat-sys-primary)}
+.rass-spinner circle{fill:none;stroke:currentColor;stroke-linecap:butt;transition:stroke-dashoffset var(--rass-duration-medium2) var(--rass-easing-standard)}
+.rass-spinner--indeterminate svg{animation:rass-spin 1.4s linear infinite}
+.rass-spinner--indeterminate circle{animation:rass-spin-dash 1.4s ease-in-out infinite}
+@keyframes rass-spin{to{transform:rotate(360deg)}}
+@keyframes rass-spin-dash{0%{stroke-dasharray:1 200;stroke-dashoffset:0}50%{stroke-dasharray:90 200;stroke-dashoffset:-35}100%{stroke-dasharray:90 200;stroke-dashoffset:-124}}
+@media (prefers-reduced-motion:reduce){.rass-progress--indeterminate .rass-progress__bar,.rass-spinner--indeterminate svg,.rass-spinner--indeterminate circle{animation-duration:4s}}

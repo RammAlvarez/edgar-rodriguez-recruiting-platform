@@ -1,0 +1,8 @@
+/* 4px base grid + CDK Layout breakpoints (Breakpoints.XSmall … XLarge). */
+:root{
+--rass-space-1:4px;--rass-space-2:8px;--rass-space-3:12px;--rass-space-4:16px;--rass-space-6:24px;--rass-space-8:32px;--rass-space-12:48px;
+--rass-gutter:24px;--rass-gutter-compact:16px;
+--rass-bp-small:600px;--rass-bp-medium:960px;--rass-bp-large:1280px;--rass-bp-xlarge:1920px;
+--rass-sidenav-width:280px;--rass-rail-width:80px;--rass-content-max:1440px;
+--rass-touch-target:48px;--rass-touch-target-dense:40px;
+}

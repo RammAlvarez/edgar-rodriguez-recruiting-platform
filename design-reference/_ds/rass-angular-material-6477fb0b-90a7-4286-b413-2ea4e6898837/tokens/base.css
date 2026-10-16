@@ -1,0 +1,15 @@
+/* Document defaults (Angular: html{@include mat.theme(...)} + body{background:var(--mat-sys-surface)}) and shared helpers. */
+html{background:var(--mat-sys-surface);color:var(--mat-sys-on-surface);font:var(--mat-sys-body-medium);letter-spacing:var(--mat-sys-body-medium-tracking);-webkit-font-smoothing:antialiased}
+body{margin:0}
+.material-symbols-outlined,.rass-icon{font-family:"Material Symbols Outlined";font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:"liga";font-feature-settings:"liga";-webkit-font-smoothing:antialiased;font-variation-settings:"FILL" 0,"wght" 400,"GRAD" 0,"opsz" 24;user-select:none;flex-shrink:0}
+.rass-icon[data-fill="1"]{font-variation-settings:"FILL" 1,"wght" 400,"GRAD" 0,"opsz" 24}
+a{color:var(--mat-sys-primary)}a:hover{color:var(--mat-sys-on-primary-container)}
+
+/* State layer: any .rass-sl gets an overlay in currentColor (or --rass-sl-color). data-state forces a state for specimens. */
+.rass-sl{position:relative;isolation:isolate}
+.rass-sl::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--rass-sl-color,currentColor);opacity:0;pointer-events:none;transition:opacity var(--rass-duration-short3) linear;z-index:-1}
+.rass-sl:hover::before,.rass-sl[data-state="hover"]::before{opacity:var(--mat-sys-hover-state-layer-opacity)}
+.rass-sl:focus-visible::before,.rass-sl[data-state="focus"]::before,.rass-sl:active::before,.rass-sl[data-state="pressed"]::before{opacity:var(--mat-sys-focus-state-layer-opacity)}
+.rass-focus-ring:focus-visible,.rass-focus-ring[data-state="focus"]{outline:var(--rass-focus-ring-width) solid var(--rass-focus-ring-color);outline-offset:var(--rass-focus-ring-offset)}
+.rass-sl[aria-disabled="true"]::before,.rass-sl:disabled::before{display:none}
+.rass-mono{font-family:var(--rass-font-mono)}

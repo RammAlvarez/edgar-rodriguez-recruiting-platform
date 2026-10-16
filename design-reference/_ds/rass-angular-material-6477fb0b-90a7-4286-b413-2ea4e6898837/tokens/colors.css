@@ -1,0 +1,80 @@
+/* Angular Material "azure-blue" theme.
+   Reference palettes copied verbatim from @angular/material src/material/core/theming/_palettes.scss
+   ($azure-palette = primary/secondary/neutral/neutral-variant, $blue-palette = tertiary, error patch).
+   System roles (--mat-sys-*) use light-dark() exactly like mat.theme() output, so
+   `color-scheme: light dark` follows the OS and [data-theme] / .dark-theme force a scheme. */
+:root{
+color-scheme:light dark;
+/* ---- Reference: primary (mat.$azure-palette) ---- */
+--rass-ref-primary0:#000000;--rass-ref-primary10:#001b3f;--rass-ref-primary20:#002f65;--rass-ref-primary25:#003a7a;--rass-ref-primary30:#00458f;--rass-ref-primary35:#0050a5;--rass-ref-primary40:#005cbb;--rass-ref-primary50:#0074e9;--rass-ref-primary60:#438fff;--rass-ref-primary70:#7cabff;--rass-ref-primary80:#abc7ff;--rass-ref-primary90:#d7e3ff;--rass-ref-primary95:#ecf0ff;--rass-ref-primary98:#f9f9ff;--rass-ref-primary99:#fdfbff;--rass-ref-primary100:#ffffff;
+/* ---- Reference: secondary (azure secondary) ---- */
+--rass-ref-secondary10:#131c2b;--rass-ref-secondary20:#283041;--rass-ref-secondary30:#3e4759;--rass-ref-secondary40:#565e71;--rass-ref-secondary50:#6f778b;--rass-ref-secondary60:#8891a5;--rass-ref-secondary70:#a3abc0;--rass-ref-secondary80:#bec6dc;--rass-ref-secondary90:#dae2f9;--rass-ref-secondary95:#ecf0ff;--rass-ref-secondary100:#ffffff;
+/* ---- Reference: tertiary (mat.$blue-palette) ---- */
+--rass-ref-tertiary10:#00006e;--rass-ref-tertiary20:#0001ac;--rass-ref-tertiary30:#0000ef;--rass-ref-tertiary40:#343dff;--rass-ref-tertiary50:#5a64ff;--rass-ref-tertiary60:#7c84ff;--rass-ref-tertiary70:#9da3ff;--rass-ref-tertiary80:#bec2ff;--rass-ref-tertiary90:#e0e0ff;--rass-ref-tertiary95:#f1efff;--rass-ref-tertiary100:#ffffff;
+/* ---- Reference: error ---- */
+--rass-ref-error10:#410002;--rass-ref-error20:#690005;--rass-ref-error30:#93000a;--rass-ref-error40:#ba1a1a;--rass-ref-error50:#de3730;--rass-ref-error60:#ff5449;--rass-ref-error70:#ff897d;--rass-ref-error80:#ffb4ab;--rass-ref-error90:#ffdad6;--rass-ref-error95:#ffedea;--rass-ref-error100:#ffffff;
+/* ---- Reference: neutral (azure neutral) ---- */
+--rass-ref-neutral0:#000000;--rass-ref-neutral4:#0d0e11;--rass-ref-neutral6:#121316;--rass-ref-neutral10:#1a1b1f;--rass-ref-neutral12:#1f2022;--rass-ref-neutral17:#292a2c;--rass-ref-neutral20:#2f3033;--rass-ref-neutral22:#343537;--rass-ref-neutral24:#38393c;--rass-ref-neutral30:#46464a;--rass-ref-neutral40:#5e5e62;--rass-ref-neutral50:#77777a;--rass-ref-neutral60:#919094;--rass-ref-neutral70:#ababaf;--rass-ref-neutral80:#c7c6ca;--rass-ref-neutral87:#dbd9dd;--rass-ref-neutral90:#e3e2e6;--rass-ref-neutral92:#e9e7eb;--rass-ref-neutral94:#efedf0;--rass-ref-neutral95:#f2f0f4;--rass-ref-neutral96:#f4f3f6;--rass-ref-neutral98:#faf9fd;--rass-ref-neutral99:#fdfbff;--rass-ref-neutral100:#ffffff;
+/* ---- Reference: neutral-variant ---- */
+--rass-ref-neutral-variant10:#181c22;--rass-ref-neutral-variant20:#2d3038;--rass-ref-neutral-variant30:#44474e;--rass-ref-neutral-variant40:#5b5e66;--rass-ref-neutral-variant50:#74777f;--rass-ref-neutral-variant60:#8e9099;--rass-ref-neutral-variant70:#a9abb4;--rass-ref-neutral-variant80:#c4c6d0;--rass-ref-neutral-variant90:#e0e2ec;--rass-ref-neutral-variant95:#eff0fa;
+
+/* ======== System color roles (what designs and code should reference) ======== */
+--mat-sys-primary:light-dark(#005cbb,#abc7ff);
+--mat-sys-on-primary:light-dark(#ffffff,#002f65);
+--mat-sys-primary-container:light-dark(#d7e3ff,#00458f);
+--mat-sys-on-primary-container:light-dark(#00458f,#d7e3ff);
+--mat-sys-primary-fixed:light-dark(#d7e3ff,#d7e3ff);
+--mat-sys-primary-fixed-dim:light-dark(#abc7ff,#abc7ff);
+--mat-sys-on-primary-fixed:light-dark(#001b3f,#001b3f);
+--mat-sys-on-primary-fixed-variant:light-dark(#00458f,#00458f);
+--mat-sys-inverse-primary:light-dark(#abc7ff,#005cbb);
+--mat-sys-secondary:light-dark(#565e71,#bec6dc);
+--mat-sys-on-secondary:light-dark(#ffffff,#283041);
+--mat-sys-secondary-container:light-dark(#dae2f9,#3e4759);
+--mat-sys-on-secondary-container:light-dark(#3e4759,#dae2f9);
+--mat-sys-secondary-fixed:light-dark(#dae2f9,#dae2f9);
+--mat-sys-secondary-fixed-dim:light-dark(#bec6dc,#bec6dc);
+--mat-sys-on-secondary-fixed:light-dark(#131c2b,#131c2b);
+--mat-sys-on-secondary-fixed-variant:light-dark(#3e4759,#3e4759);
+--mat-sys-tertiary:light-dark(#343dff,#bec2ff);
+--mat-sys-on-tertiary:light-dark(#ffffff,#0001ac);
+--mat-sys-tertiary-container:light-dark(#e0e0ff,#0000ef);
+--mat-sys-on-tertiary-container:light-dark(#0000ef,#e0e0ff);
+--mat-sys-tertiary-fixed:light-dark(#e0e0ff,#e0e0ff);
+--mat-sys-tertiary-fixed-dim:light-dark(#bec2ff,#bec2ff);
+--mat-sys-on-tertiary-fixed:light-dark(#00006e,#00006e);
+--mat-sys-on-tertiary-fixed-variant:light-dark(#0000ef,#0000ef);
+--mat-sys-error:light-dark(#ba1a1a,#ffb4ab);
+--mat-sys-on-error:light-dark(#ffffff,#690005);
+--mat-sys-error-container:light-dark(#ffdad6,#93000a);
+--mat-sys-on-error-container:light-dark(#93000a,#ffdad6);
+--mat-sys-background:light-dark(#faf9fd,#121316);
+--mat-sys-on-background:light-dark(#1a1b1f,#e3e2e6);
+--mat-sys-surface:light-dark(#faf9fd,#121316);
+--mat-sys-on-surface:light-dark(#1a1b1f,#e3e2e6);
+--mat-sys-surface-variant:light-dark(#e0e2ec,#44474e);
+--mat-sys-on-surface-variant:light-dark(#44474e,#c4c6d0);
+--mat-sys-surface-dim:light-dark(#dbd9dd,#121316);
+--mat-sys-surface-bright:light-dark(#faf9fd,#38393c);
+--mat-sys-surface-container-lowest:light-dark(#ffffff,#0d0e11);
+--mat-sys-surface-container-low:light-dark(#f4f3f6,#1a1b1f);
+--mat-sys-surface-container:light-dark(#efedf0,#1f2022);
+--mat-sys-surface-container-high:light-dark(#e9e7eb,#292a2c);
+--mat-sys-surface-container-highest:light-dark(#e3e2e6,#343537);
+--mat-sys-surface-tint:light-dark(#005cbb,#abc7ff);
+--mat-sys-inverse-surface:light-dark(#2f3033,#e3e2e6);
+--mat-sys-inverse-on-surface:light-dark(#f2f0f4,#2f3033);
+--mat-sys-outline:light-dark(#74777f,#8e9099);
+--mat-sys-outline-variant:light-dark(#c4c6d0,#44474e);
+--mat-sys-neutral10:#1a1b1f;
+--mat-sys-neutral-variant20:#2d3038;
+--mat-sys-shadow:#000000;
+--mat-sys-scrim:#000000;
+
+/* ---- Derived helpers (M3 disabled + state layer recipes) ---- */
+--rass-disabled-container:color-mix(in srgb,var(--mat-sys-on-surface) 12%,transparent);
+--rass-disabled-content:color-mix(in srgb,var(--mat-sys-on-surface) 38%,transparent);
+--rass-scrim-32:color-mix(in srgb,var(--mat-sys-scrim) 32%,transparent);
+}
+.dark-theme,[data-theme="dark"]{color-scheme:dark}
+.light-theme,[data-theme="light"]{color-scheme:light}
