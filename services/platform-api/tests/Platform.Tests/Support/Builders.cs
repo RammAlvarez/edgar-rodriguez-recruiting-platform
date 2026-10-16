@@ -1,4 +1,5 @@
 using Platform.Core.Clients;
+using Platform.Core.People;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
 
@@ -30,5 +31,14 @@ public static class Builders
         db.Add(client);
         await db.SaveChangesAsync();
         return client;
+    }
+
+    public static async Task<Person> AddPerson(this PlatformDbContext db, string firstNames = "ANA", string lastNamePaternal = "PÉREZ",
+        string? lastNameMaternal = "LÓPEZ")
+    {
+        var person = new Person { FirstNames = firstNames, LastNamePaternal = lastNamePaternal, LastNameMaternal = lastNameMaternal };
+        db.Add(person);
+        await db.SaveChangesAsync();
+        return person;
     }
 }

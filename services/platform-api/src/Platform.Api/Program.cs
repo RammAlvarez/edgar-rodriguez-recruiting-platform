@@ -20,6 +20,7 @@ using Platform.Infrastructure.Persistence;
 using Platform.Infrastructure.Reports;
 using Platform.Infrastructure.Storage;
 using Platform.Payroll.Groups;
+using Platform.Payroll.Staff;
 using Platform.Recruiting;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
@@ -122,6 +123,7 @@ v1.MapCandidatePortalEndpoints();
 v1.MapClientPortalEndpoints();
 v1.MapRecruitingReportEndpoints();
 v1.MapPayrollGroupEndpoints();
+v1.MapEmployeeEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

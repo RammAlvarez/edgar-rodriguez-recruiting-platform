@@ -35,8 +35,10 @@ public static class PayrollSql
         ALTER TABLE platform.employee_status_periods ADD CONSTRAINT ex_employee_status_periods_overlap
             EXCLUDE USING gist (employee_id WITH =, daterange(start_date, end_date, '[]') WITH &&);
 
+        -- EF does not see this FK (raw SQL), so «Convertir en empleado» may update the candidate before the employee row is
+        -- inserted in the same SaveChanges: checked at commit.
         ALTER TABLE platform.candidates ADD CONSTRAINT fk_candidates_employees_employee_id
-            FOREIGN KEY (employee_id) REFERENCES platform.employees (uid) ON DELETE RESTRICT;
+            FOREIGN KEY (employee_id) REFERENCES platform.employees (uid) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
         """;
 
     public const string Down = """
