@@ -193,7 +193,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
               <mat-error>{{ s.msg('cardBank') }}</mat-error>
             </mat-form-field>
           } @else {
-            <div formGroupName="account">
+            <div formGroupName="bankAccount">
               <div class="row">
                 <mat-form-field>
                   <mat-label>Banco</mat-label>
@@ -202,7 +202,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
                       <mat-option [value]="b.id">{{ b.name }}</mat-option>
                     }
                   </mat-select>
-                  <mat-error>{{ s.msg('account.bankId') }}</mat-error>
+                  <mat-error>{{ s.msg('bankAccount.bankId') }}</mat-error>
                 </mat-form-field>
                 <mat-form-field>
                   <mat-label>Tipo</mat-label>
@@ -217,7 +217,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
                 <mat-label>Número</mat-label>
                 <input matInput formControlName="accountNumber" inputmode="numeric" autocomplete="off" />
                 <mat-hint>{{ accountHint() }}</mat-hint>
-                <mat-error>{{ s.msg('account.accountNumber') ?? s.msg('bankAccount.accountNumber') }}</mat-error>
+                <mat-error>{{ s.msg('bankAccount.accountNumber') }}</mat-error>
               </mat-form-field>
               <mat-form-field>
                 <mat-label>Titular (si no es el empleado)</mat-label>
@@ -311,7 +311,8 @@ export class EmployeePanel {
     pocket: ['', zodValidator(decimalString())],
     hourly: ['', zodValidator(hourly)],
     cardBank: [(this.data.conversion?.suggestedBank ?? 'banorte') as RegistrationBank | null],
-    account: this.fb.nonNullable.group({
+    // Named like the request field, so the server's «bankAccount.accountNumber» error lands under the field.
+    bankAccount: this.fb.nonNullable.group({
       bankId: [null as string | null, Validators.required],
       accountType: ['debit_card' as BankAccountType],
       accountNumber: ['', Validators.required],
@@ -322,7 +323,7 @@ export class EmployeePanel {
 
   private readonly groupId = toSignal(this.form.controls.payrollGroupId.valueChanges, { initialValue: null });
   private readonly positionId = toSignal(this.form.controls.positionId.valueChanges, { initialValue: null });
-  private readonly accountType = toSignal(this.form.controls.account.controls.accountType.valueChanges, { initialValue: 'debit_card' as BankAccountType });
+  private readonly accountType = toSignal(this.form.controls.bankAccount.controls.accountType.valueChanges, { initialValue: 'debit_card' as BankAccountType });
 
   /** A conversion offers only the vacante's client's groups. */
   readonly groups = computed(() =>
@@ -349,7 +350,7 @@ export class EmployeePanel {
     const toggle = (c: { enable: (o: object) => void; disable: (o: object) => void }, on: boolean) =>
       on ? c.enable({ emitEvent: false }) : c.disable({ emitEvent: false });
     toggle(f.person, !this.fixedPerson && this.personMode() === 'new');
-    toggle(f.account, !this.personHasAccount && this.payMode() === 'account');
+    toggle(f.bankAccount, !this.personHasAccount && this.payMode() === 'account');
     toggle(f.cardBank, !this.personHasAccount && this.payMode() === 'card');
     if (!this.fixedPerson && this.personMode() === 'existing' && !this.person()) {
       this.s.alert.set('Busca y elige a la persona, o captura una nueva.');
@@ -374,8 +375,8 @@ export class EmployeePanel {
       }
       const account = !this.personHasAccount && this.payMode() === 'account'
         ? {
-            bankId: v.account.bankId!, accountType: v.account.accountType, accountNumber: v.account.accountNumber,
-            holderName: text(v.account.holderName), alias: null, validFrom: null, makePrimary: true,
+            bankId: v.bankAccount.bankId!, accountType: v.bankAccount.accountType, accountNumber: v.bankAccount.accountNumber,
+            holderName: text(v.bankAccount.holderName), alias: null, validFrom: null, makePrimary: true,
           }
         : null;
       const cardBank = !this.personHasAccount && this.payMode() === 'card' ? v.cardBank : null;
