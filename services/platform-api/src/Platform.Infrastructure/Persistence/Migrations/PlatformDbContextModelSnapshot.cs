@@ -13,6 +13,7 @@ using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
 using Platform.Payroll.Engine;
 using Platform.Payroll.Groups;
+using Platform.Payroll.Periods;
 using Platform.Payroll.Staff;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
@@ -49,6 +50,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_event_kind", new[] { "created", "edited", "status_changed", "recruiter_assigned", "recruiter_removed", "lead_changed" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_priority", new[] { "high", "medium", "low" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_status", new[] { "open", "in_progress", "filled", "cancelled", "paused" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "period_status", new[] { "capturing", "in_review", "paid" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "period_type", new[] { "weekly", "biweekly" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "permission_module", new[] { "recruiting", "recruiting_reports", "payroll_prepayroll", "payroll_attendance", "payroll_incidents", "payroll_staff", "payroll_payment_files", "payroll_card_requests", "users" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "registration_bank", new[] { "banorte", "banregio" });
@@ -1978,6 +1980,110 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Platform.Payroll.Periods.PayrollPeriod", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("DepositDate")
+                        .HasColumnType("date")
+                        .HasColumnName("deposit_date");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<Guid?>("PaidBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paid_by");
+
+                    b.Property<Guid>("PayrollGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payroll_group_id");
+
+                    b.Property<int>("PeriodNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("period_number");
+
+                    b.Property<DateTimeOffset?>("ReviewStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("review_started_at");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<PeriodStatus>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.period_status")
+                        .HasDefaultValue(PeriodStatus.Capturing)
+                        .HasColumnName("status");
+
+                    b.Property<decimal?>("TotalNet")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("total_net");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payroll_periods");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_payroll_periods_uid");
+
+                    b.HasIndex("PaidBy")
+                        .HasDatabaseName("ix_payroll_periods_paid_by");
+
+                    b.HasIndex("PayrollGroupId", "StartDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payroll_periods_payroll_group_id_start_date");
+
+                    b.HasIndex("PayrollGroupId", "Year", "PeriodNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payroll_periods_payroll_group_id_year_period_number");
+
+                    b.ToTable("payroll_periods", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_payroll_periods_dates", "end_date >= start_date");
+                        });
+                });
+
             modelBuilder.Entity("Platform.Payroll.Staff.AttendanceRecord", b =>
                 {
                     b.Property<long>("Id")
@@ -2075,6 +2181,61 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_attendance_records_overtime", "overtime_hours BETWEEN 0 AND 24");
                         });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.AttendanceUnlock", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("AttendanceRecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("attendance_record_id");
+
+                    b.Property<string>("NewValue")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_value");
+
+                    b.Property<string>("PreviousValue")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("previous_value");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UnlockedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("unlocked_at");
+
+                    b.Property<Guid>("UnlockedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("unlocked_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attendance_unlocks");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_attendance_unlocks_uid");
+
+                    b.HasIndex("AttendanceRecordId")
+                        .HasDatabaseName("ix_attendance_unlocks_attendance_record_id");
+
+                    b.HasIndex("UnlockedBy")
+                        .HasDatabaseName("ix_attendance_unlocks_unlocked_by");
+
+                    b.ToTable("attendance_unlocks", "platform");
                 });
 
             modelBuilder.Entity("Platform.Payroll.Staff.CardRequest", b =>
@@ -3395,6 +3556,24 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_position_rates_positions_position_id");
                 });
 
+            modelBuilder.Entity("Platform.Payroll.Periods.PayrollPeriod", b =>
+                {
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("PaidBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_payroll_periods_users_paid_by");
+
+                    b.HasOne("Platform.Payroll.Groups.PayrollGroup", null)
+                        .WithMany()
+                        .HasForeignKey("PayrollGroupId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payroll_periods_payroll_groups_payroll_group_id");
+                });
+
             modelBuilder.Entity("Platform.Payroll.Staff.AttendanceRecord", b =>
                 {
                     b.HasOne("Platform.Core.Clients.ClientSite", null)
@@ -3418,6 +3597,25 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasPrincipalKey("Uid")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_attendance_records_employee_status_period_status_period_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.AttendanceUnlock", b =>
+                {
+                    b.HasOne("Platform.Payroll.Staff.AttendanceRecord", null)
+                        .WithMany()
+                        .HasForeignKey("AttendanceRecordId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_attendance_unlocks_attendance_records_attendance_record_id");
+
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UnlockedBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_attendance_unlocks_users_unlocked_by");
                 });
 
             modelBuilder.Entity("Platform.Payroll.Staff.CardRequest", b =>

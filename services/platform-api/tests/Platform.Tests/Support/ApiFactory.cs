@@ -22,6 +22,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public FakeEmailSender Email { get; } = new();
 
+    public FakeClock Clock { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -32,6 +34,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddSingleton<IAuthProvider>(Auth);
             services.AddSingleton<IObjectStorage>(Storage);
             services.AddSingleton<IEmailSender>(Email);
+            services.AddSingleton<IClock>(Clock);
         });
     }
 
@@ -58,7 +61,11 @@ public abstract class ApiTest(ApiFactory factory) : IAsyncLifetime
 {
     protected ApiFactory Factory { get; } = factory;
 
-    public Task InitializeAsync() => TestDatabase.TruncateAsync();
+    public Task InitializeAsync()
+    {
+        Factory.Clock.Now = null;
+        return TestDatabase.TruncateAsync();
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
