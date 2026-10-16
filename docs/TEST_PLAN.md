@@ -80,5 +80,13 @@ Data: `npm run seed` (adds the Cliente user heb@local.test). Email links come fr
 8. Post a comment → it appears in the thread, in Comentarios, and in the admin «Comentarios del cliente» tab.
 9. 390 px: no page-level horizontal scroll on every screen of both apps.
 
-### S6–S12
+### S6 — Reportes de reclutamiento
+Data: `npm run seed` (13 vacantes, 32 candidatos). Sign in as the owner (edgar@local.test), who holds `recruiting_reports`. API-level: `RecruitingReportTests` (every figure of the six reports on a hand-computed dataset, filters, grant, Excel/PDF exports and their `audit_log` row), `S3ObjectStorageTests.An_export_the_api_writes_…` (MinIO).
+1. Reportes → Rendimiento por reclutador (default *Año en curso*): one shaded total row per recruiter (vacantes asignadas, cubiertas, % efectividad, días promedio), then her vacantes; a filled vacante shows its días para cubrir and the total row the same average.
+2. Each of the other five reports opens with figures that agree with each other (vacantes, candidatos and contratados totals of Resumen = Vacantes por cliente total row = Σ Fuentes).
+3. Cliente = HEB and «Este mes» → the report re-runs with the filters; report 3 hides the range («situación al …»).
+4. Exportar Excel / PDF → a file named «<reporte> <desde> a <hasta>» downloads from the `exports` bucket; it shows the same figures as the screen; `audit_log` has an `export` row.
+5. 390 px: no page-level horizontal scroll on any of the six reports (tables scroll inside their card).
+
+### S7–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

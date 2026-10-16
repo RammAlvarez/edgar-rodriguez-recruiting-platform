@@ -25,3 +25,15 @@ export function formatTimestamp(value: Date | null | undefined, timeZone = DEFAU
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '';
   return `${get('day')}/${get('month')}/${get('year')} ${get('hour')}:${get('minute')}`;
 }
+
+/** Today's calendar date in the business time zone, as the API's `IClock.Today()` (SPEC §8). */
+export function todayKey(now: Date = new Date(), timeZone = DEFAULT_TIME_ZONE): DateKey {
+  // en-CA formats as yyyy-MM-dd.
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now) as DateKey;
+}
+
+/** "2026-10-16" + n days, on the calendar (no time zone involved). */
+export function addDaysToKey(value: DateKey, days: number): DateKey {
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10) as DateKey;
+}

@@ -1138,6 +1138,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/recruiting-reports/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetRecruitingReportOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recruiting-reports/recruiter-performance": {
         parameters: {
             query?: never;
@@ -2282,6 +2298,15 @@ export type components = {
         };
         /** @enum {unknown} */
         ReportFormat: "xlsx" | "pdf";
+        ReportOptionDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        ReportOptionsDto: {
+            clients: components["schemas"]["ReportOptionDto"][];
+            recruiters: components["schemas"]["ReportOptionDto"][];
+        };
         SiteDto: {
             /** Format: uuid */
             id: string;
@@ -2567,6 +2592,8 @@ export type ReportExportDto = components['schemas']['ReportExportDto'];
 export type ReportExportRequest = components['schemas']['ReportExportRequest'];
 export type ReportFiltersDto = components['schemas']['ReportFiltersDto'];
 export type ReportFormat = components['schemas']['ReportFormat'];
+export type ReportOptionDto = components['schemas']['ReportOptionDto'];
+export type ReportOptionsDto = components['schemas']['ReportOptionsDto'];
 export type SiteDto = components['schemas']['SiteDto'];
 export type SiteRequest = components['schemas']['SiteRequest'];
 export type SourceRowDto = components['schemas']['SourceRowDto'];
@@ -6122,6 +6149,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientCommentDto"][];
+                };
+            };
+        };
+    };
+    GetRecruitingReportOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOptionsDto"];
                 };
             };
         };

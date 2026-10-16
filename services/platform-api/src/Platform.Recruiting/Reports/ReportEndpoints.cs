@@ -6,9 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Audit;
+using Platform.Core.Clients;
 using Platform.Core.Http;
 using Platform.Core.Reports;
 using Platform.Core.Users;
+using Platform.Recruiting.Candidates;
+using Platform.Recruiting.Openings;
 
 namespace Platform.Recruiting.Reports;
 
@@ -32,6 +35,18 @@ public static class ReportEndpoints
     public static IEndpointRouteBuilder MapRecruitingReportEndpoints(this IEndpointRouteBuilder v1)
     {
         var g = v1.MapGroup("/recruiting-reports").WithTags("RecruitingReports");
+
+        g.MapGet("/options", async (DbContext db, CancellationToken ct) =>
+            {
+                var clients = await db.Set<Client>().OrderBy(c => c.ShortName).Select(c => new ReportOptionDto(c.Uid, c.ShortName)).ToListAsync(ct);
+                var recruiters = await db.Set<User>()
+                    .Where(u => u.Role == UserRole.Recruiter
+                        || db.Set<JobOpeningRecruiter>().Any(r => r.UserId == u.Uid)
+                        || db.Set<Candidate>().Any(c => c.RecruiterId == u.Uid))
+                    .OrderBy(u => u.DisplayName).Select(u => new ReportOptionDto(u.Uid, u.DisplayName)).ToListAsync(ct);
+                return TypedResults.Ok(new ReportOptionsDto(clients, recruiters));
+            })
+            .WithName("GetRecruitingReportOptions").RequireAccess(Access);
 
         Get(g, "/recruiter-performance", "GetRecruiterPerformanceReport", (db, f, _, ct) => ReportQueries.RecruiterPerformance(db, f, ct));
         Get(g, "/summary", "GetRecruitingSummaryReport", (db, f, _, ct) => ReportQueries.Summary(db, f, ct));

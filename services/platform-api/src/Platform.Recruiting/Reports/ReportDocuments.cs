@@ -1,4 +1,5 @@
 using System.Globalization;
+using Platform.Core.Abstractions;
 using Platform.Core.People;
 using Platform.Core.Reports;
 using Platform.Recruiting.Candidates;
@@ -53,6 +54,11 @@ public static class ReportDocuments
 
     public static string Date(DateOnly date) => date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
+    /// <summary>«16/10/2026 13:05» in America/Monterrey, as the screen's timestamp pipe.</summary>
+    public static string Timestamp(DateTimeOffset at) =>
+        TimeZoneInfo.ConvertTime(at, TimeZoneInfo.FindSystemTimeZoneById(ClockExtensions.DefaultTimeZone))
+            .ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+
     /// <summary>«HEB · Mónica Soto · 01/01/2026 – 16/10/2026» (report 3: «… · al 16/10/2026»).</summary>
     public static string FiltersLine(ReportFiltersDto f, DateOnly? asOf = null) => string.Join(" · ",
         f.ClientName ?? "Todos los clientes",
@@ -72,9 +78,10 @@ public static class ReportDocuments
         var rows = new List<ReportRow>();
         foreach (var g in r.Recruiters)
         {
-            rows.Add(new ReportRow([T(g.RecruiterName), T($"{g.Assigned} vacantes asignadas"), T($"{g.Filled} cubiertas"),
+            rows.Add(new ReportRow([T(g.RecruiterName), T(g.Assigned == 1 ? "1 vacante asignada" : $"{g.Assigned} vacantes asignadas"),
+                T(g.Filled == 1 ? "1 cubierta" : $"{g.Filled} cubiertas"),
                 T($"{ReportCell.Percent(g.Effectiveness).Display} efectividad"), T($"{ReportCell.Average(g.AvgDaysToFill).Display} días promedio"),
-                T(null), T(null), T(null), T(null)], Emphasis: true));
+                ReportCell.Blank, ReportCell.Blank, ReportCell.Blank, ReportCell.Blank], Emphasis: true));
             rows.AddRange(g.Openings.Select(o => new ReportRow([T(o.OpeningName), T(o.ClientName), T(o.PositionName),
                 T(Date(o.AssignedAt) + (o.IsLead ? " (líder)" : "")), N(o.Presented), N(o.Suitable), N(o.Hired), P(o.Conversion), N(o.DaysToFill)])));
         }
@@ -117,7 +124,7 @@ public static class ReportDocuments
                     "Contactado", "Entrevista", "Apto", "Último movimiento", "Reclutador", "Alerta"],
                 r.Openings.Select(o => new ReportRow([T(o.OpeningName), T(o.ClientName), T(o.PositionName), T(Priority(o.Priority)),
                     N(o.Requested), N(o.Hired), N(o.DaysOpen), N(o.New), N(o.Contacted), N(o.Interview), N(o.Suitable),
-                    T(Date(r.AsOf.AddDays(-o.IdleDays))), T(o.LeadRecruiterName ?? "Sin líder"),
+                    T(Timestamp(o.LastActivityAt)), T(o.LeadRecruiterName ?? "Sin líder"),
                     T(o.Stale ? $"Sin actividad {o.IdleDays} días" : null)])).ToList()),
         ]);
 

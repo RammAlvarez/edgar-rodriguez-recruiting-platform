@@ -132,9 +132,10 @@ public sealed class ReportRenderer : IReportRenderer
             for (var i = 0; i < row.Cells.Count; i++)
             {
                 var cell = row.Cells[i];
-                var box = t.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3);
+                var box = t.Cell().BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2);
                 if (row.Emphasis)
                     box = box.Background("#F3F4F8");
+                box = box.Padding(3);
                 if (cell.Kind != ReportCellKind.Text)
                     box = box.AlignRight();
                 var text = box.Text(cell.Display);

@@ -19,6 +19,9 @@ public sealed record ReportCell(ReportCellKind Kind, string Display, decimal? Va
 {
     public const string Empty = "—";
 
+    /// <summary>An empty filler cell (the rest of a group row).</summary>
+    public static ReportCell Blank { get; } = new(ReportCellKind.Text, "", null);
+
     public static ReportCell Text(string? text) => new(ReportCellKind.Text, string.IsNullOrEmpty(text) ? Empty : text, null);
 
     public static ReportCell Count(int? value) => new(ReportCellKind.Count, value?.ToString(Format) ?? Empty, value);

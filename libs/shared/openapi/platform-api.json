@@ -4650,6 +4650,26 @@
         }
       }
     },
+    "/v1/recruiting-reports/options": {
+      "get": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "GetRecruitingReportOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOptionsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recruiting-reports/recruiter-performance": {
       "get": {
         "tags": [
@@ -9514,6 +9534,43 @@
           "xlsx",
           "pdf"
         ]
+      },
+      "ReportOptionDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportOptionsDto": {
+        "required": [
+          "clients",
+          "recruiters"
+        ],
+        "type": "object",
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportOptionDto"
+            }
+          },
+          "recruiters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportOptionDto"
+            }
+          }
+        }
       },
       "SiteDto": {
         "required": [

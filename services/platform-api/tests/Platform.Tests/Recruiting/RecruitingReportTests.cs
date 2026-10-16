@@ -241,6 +241,16 @@ public sealed class RecruitingReportTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task The_pickers_list_every_client_and_whoever_recruits()
+    {
+        await Arrange();
+        var options = await Get("options");
+        Assert.Equal(["HEB", "OXXO"], options.GetProperty("clients").EnumerateArray().Select(c => c.GetProperty("name").GetString()));
+        var names = options.GetProperty("recruiters").EnumerateArray().Select(c => c.GetProperty("name").GetString()).ToList();
+        Assert.Equal(["Mónica Soto", "Pedro Salas"], names); // the owner neither leads nor owns a candidate
+    }
+
+    [Fact]
     public async Task The_default_range_is_the_current_year_and_bad_filters_are_refused()
     {
         await Arrange();

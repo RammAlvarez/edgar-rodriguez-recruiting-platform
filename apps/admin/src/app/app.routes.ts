@@ -6,7 +6,7 @@ import { Session } from '@platform/ui/session';
 import { CoverMode } from './shell/cover-mode';
 import { ALL_NAV_ITEMS, homePath } from './shell/navigation';
 
-/** Screens delivered so far (S4); the other sections keep the «próxima entrega» placeholder. */
+/** Screens delivered so far (S6); the other sections keep the «próxima entrega» placeholder. */
 const SCREENS: Record<string, () => Promise<Type<unknown>>> = {
   vacantes: () => import('./openings/openings-page').then((m) => m.OpeningsPage),
   'mis-vacantes': () => import('./openings/openings-page').then((m) => m.OpeningsPage),
@@ -17,6 +17,7 @@ const SCREENS: Record<string, () => Promise<Type<unknown>>> = {
   clientes: () => import('./clients/clients-page').then((m) => m.ClientsPage),
   'clientes-nomina': () => import('./clients/payroll-clients-page').then((m) => m.PayrollClientsPage),
   catalogos: () => import('./catalogs/catalogs-page').then((m) => m.CatalogsPage),
+  reportes: () => import('./reports/reports-page').then((m) => m.ReportsPage),
 };
 
 const navItem = (path: string) => ALL_NAV_ITEMS.find((i) => i.path === path)!;

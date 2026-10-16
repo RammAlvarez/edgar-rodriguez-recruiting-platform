@@ -77,6 +77,11 @@ public sealed record ClientOpeningsRowDto(Guid? ClientId, string ClientName, int
 
 public sealed record ClientOpeningsReportDto(ReportFiltersDto Filters, IReadOnlyList<ClientOpeningsRowDto> Clients, ClientOpeningsRowDto Total);
 
+public sealed record ReportOptionDto(Guid Id, string Name);
+
+/// <summary>The Cliente and Reclutador pickers: every client, and everyone who is or was on a vacante or owns a candidate.</summary>
+public sealed record ReportOptionsDto(IReadOnlyList<ReportOptionDto> Clients, IReadOnlyList<ReportOptionDto> Recruiters);
+
 /// <summary>«Exportar Excel / PDF»: the same filters as the screen.</summary>
 public sealed record ReportExportRequest(RecruitingReport Report, ReportFormat Format, Guid? ClientId, Guid? RecruiterId, DateOnly? From,
     DateOnly? To);
