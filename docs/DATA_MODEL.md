@@ -604,7 +604,7 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 | incident_date | date | |
 | quantity | numeric(8,2) | hours, days, 1 |
 | unit_value | numeric(12,4) | rate used |
-| amount | numeric(12,2) NOT NULL | signed by concept kind at calc time |
+| amount | numeric(12,2) NOT NULL | stored positive, the concept kind gives the sign at calc time; only `MANUAL_ADJUSTMENT` is signed (change to net pay) — PLAN D63 |
 | reason | text | required for deductions |
 | evidence_document_id | uuid FK person_documents NULL | |
 | reported_by | uuid FK users | |
