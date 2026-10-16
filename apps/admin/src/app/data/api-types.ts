@@ -40,6 +40,7 @@ export type CandidateListItemDto = S['CandidateListItemDto'];
 export type CandidateDetailDto = S['CandidateDetailDto'];
 export type CreateCandidateRequest = S['CreateCandidateRequest'];
 export type MoveStageResultDto = S['MoveStageResultDto'];
+export type CandidateInvitationResultDto = S['CandidateInvitationResultDto'];
 export type TimelineEntryDto = S['TimelineEntryDto'];
 export type NoteDto = S['NoteDto'];
 export type InterviewDto = S['InterviewDto'];

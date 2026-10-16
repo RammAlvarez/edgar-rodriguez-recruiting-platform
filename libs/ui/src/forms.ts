@@ -1,5 +1,6 @@
+import { signal } from '@angular/core';
 import type { AbstractControl, FormGroup, ValidatorFn } from '@angular/forms';
-import type { ApiError } from '@platform/api-client';
+import { ApiError } from '@platform/api-client';
 import type { z } from 'zod';
 
 /**
@@ -58,4 +59,31 @@ export function blankToNull<T extends Record<string, unknown>>(value: T): { [K i
   return Object.fromEntries(
     Object.entries(value).map(([k, v]) => [k, typeof v === 'string' && v.trim() === '' ? null : v]),
   ) as never;
+}
+
+/** Shared submit plumbing of forms and side panels: busy flag, 400 → fields, anything else → one alert line. */
+export class PanelState {
+  readonly busy = signal(false);
+  readonly alert = signal<string | null>(null);
+
+  constructor(private readonly form: FormGroup) {}
+
+  msg(field: string): string | null {
+    return errorMessage(this.form.get(field));
+  }
+
+  async run(work: () => Promise<void>): Promise<void> {
+    this.form.markAllAsTouched();
+    if (this.form.invalid) return;
+    this.busy.set(true);
+    this.alert.set(null);
+    try {
+      await work();
+    } catch (e) {
+      if (e instanceof ApiError && e.isValidation) this.alert.set(applyServerErrors(this.form, e)[0] ?? null);
+      else this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
+    } finally {
+      this.busy.set(false);
+    }
+  }
 }

@@ -33,9 +33,14 @@ export const accessGuard =
   () => {
     const session = inject(Session);
     const router = inject(Router);
-    const me = session.me();
-    // A role outside the app (e.g. a Cliente in the admin app) gets the "sin acceso" page; redirecting to "/" would loop.
-    if (!me || !roles.includes(me.role)) return router.createUrlTree(['/sin-acceso']);
-    const allowed = !grant || me.role !== 'administrator' || session.hasGrant(grant);
-    return allowed || router.createUrlTree(['/']);
+    // Waits for /v1/me like signedInGuard: guards of one route run together, so this one may start while it is loading.
+    return settled().pipe(
+      map(() => {
+        const me = session.me();
+        // A role outside the app (e.g. a Cliente in the admin app) gets the "sin acceso" page; redirecting to "/" would loop.
+        if (!me || !roles.includes(me.role)) return router.createUrlTree(['/sin-acceso']);
+        const allowed = !grant || me.role !== 'administrator' || session.hasGrant(grant);
+        return allowed || router.createUrlTree(['/']);
+      }),
+    );
   };

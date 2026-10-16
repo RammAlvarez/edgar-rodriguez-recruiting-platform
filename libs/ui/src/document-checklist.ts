@@ -78,7 +78,7 @@ const STATUS: Record<string, { label: string; tone: string }> = {
             <label class="upload">
               <input type="file" accept="application/pdf,image/jpeg,image/png" [disabled]="!!uploading()"
                      (change)="pick(item, $event)" />
-              <span>{{ item.current ? 'Reemplazar' : 'Subir' }}</span>
+              <span>{{ item.current ? replaceLabel() : uploadLabel() }}</span>
             </label>
           </div>
         </div>
@@ -160,6 +160,9 @@ const STATUS: Record<string, { label: string; tone: string }> = {
 export class DocumentChecklist {
   readonly checklist = input.required<Checklist>();
   readonly canReview = input(false);
+  /** The candidate's wording ("Subir foto o PDF"); staff keep the short labels. */
+  readonly uploadLabel = input('Subir');
+  readonly replaceLabel = input('Reemplazar');
   readonly uploading = input<{ documentTypeId: string; progress: number } | null>(null);
 
   readonly upload = output<{ item: ChecklistItem; file: File }>();

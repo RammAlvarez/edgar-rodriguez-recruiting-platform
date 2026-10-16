@@ -4,6 +4,7 @@ import { API_CLIENT, liveQuery } from '@platform/ui';
 import type {
   AssignmentRole,
   CandidateDetailDto,
+  CandidateInvitationResultDto,
   CandidateListItemDto,
   ChecklistItemDto,
   CreateCandidateRequest,
@@ -127,6 +128,11 @@ export class CandidatesRepository {
 
   detail(id: () => string) {
     return liveQuery(() => this.api.get<CandidateDetailDto>(`/v1/candidates/${id()}`), ['candidates', 'people']);
+  }
+
+  /** «Reenviar invitación» to the Candidates app (PLAN D77). */
+  invite(id: string): Promise<CandidateInvitationResultDto> {
+    return this.api.post(`/v1/candidates/${id}/invitation`);
   }
 
   history(id: () => string) {

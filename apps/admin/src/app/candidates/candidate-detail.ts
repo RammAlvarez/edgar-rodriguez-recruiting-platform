@@ -110,6 +110,11 @@ import { StageMove } from './stage-move';
                   <dt>Fecha de ingreso</dt><dd>{{ c.hiredAt | dateKey }}</dd>
                 }
               </dl>
+              @if (c.person.email) {
+                <button matButton type="button" class="invite" (click)="invite(c)" [disabled]="inviting()">
+                  <mat-icon fontSet="material-symbols-outlined">forward_to_inbox</mat-icon>Reenviar invitación a Mi postulación
+                </button>
+              }
             </section>
             <section class="card">
               <div class="card-header"><h2>Notas</h2></div>
@@ -223,6 +228,9 @@ import { StageMove } from './stage-move';
       align-items: center;
       justify-content: space-between;
       margin-bottom: 8px;
+    }
+    .invite {
+      margin-top: 8px;
     }
     dl {
       display: grid;
@@ -383,6 +391,22 @@ export class CandidateDetail {
   async reject(d: ChecklistDocument): Promise<void> {
     const reason = await prompt(this.dialog, { title: 'Rechazar documento', label: 'Motivo', confirm: 'Rechazar', kind: 'text', destructive: true });
     if (reason) await this.attempt(() => this.people.reject(d.id, reason), 'Documento rechazado');
+  }
+
+  readonly inviting = signal(false);
+
+  /** The capture invitation again (the first one goes out with «Nuevo candidato», PLAN D77). */
+  async invite(c: CandidateDetailDto): Promise<void> {
+    this.inviting.set(true);
+    try {
+      const r = await this.repo.invite(c.id);
+      this.snack.open(r.sent ? `Invitación enviada a ${r.email}` : 'No se pudo enviar el correo; inténtalo más tarde.', undefined,
+        { duration: r.sent ? 4000 : 6000 });
+    } catch (e) {
+      this.snack.open(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+    } finally {
+      this.inviting.set(false);
+    }
   }
 
   private async attempt(work: () => Promise<unknown>, done: string): Promise<void> {

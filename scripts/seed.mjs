@@ -6,7 +6,8 @@
 //       (razón social, RFC, contacto principal, one site with its zona) and the 6 recruiters (same local password);
 //   S4  the 13 vacantes and 30 candidatos of data.js at their etapas (HEB has two open CAJERO vacantes, so the date suffix
 //       shows), two hires that fill GTS, the paused / cancelled vacantes, and the two sample notes. Skipped once any
-//       vacante exists.
+//       vacante exists. Candidate emails are rewritten to @local.test (capture emails an invitation since S5);
+//   S5  a Cliente user for HEB (heb@local.test) for the Clients app.
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
 import { addDays, candidatos as sampleCandidates, clients as sampleClients, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
 
@@ -164,7 +165,8 @@ if ((await api(token, 'GET', '/v1/openings')).body.length > 0) {
         gender: i % 2 ? 'male' : 'female',
         isForeign: false,
         mobilePhone: c.telefono,
-        email: c.correo,
+        // Capture sends the Candidates app invitation (S5): never to the prototype's real-looking addresses.
+        email: c.correo ? c.correo.replace(/@.*$/, '@local.test') : null,
         street: c.calle ?? null,
         extNumber: c.numero ?? null,
         neighborhood: c.colonia ?? null,
@@ -196,4 +198,14 @@ if ((await api(token, 'GET', '/v1/openings')).body.length > 0) {
     if (v.estatus === 'Cancelada') await api(token, 'POST', `/v1/openings/${ids[i]}/status`, { status: 'cancelled', reason: 'El cliente canceló el proyecto' });
   }
   console.log(`vacantes: ${ids.length} created; candidatos: ${candidateIds.length}`);
+}
+
+// ---- S5: a Cliente user for HEB (Clients app, email-link sign-in) ----
+const HEB_USER = { email: 'heb@local.test', name: 'Gabriela Villarreal' };
+if (emails.has(HEB_USER.email)) {
+  console.log(`client user already exists: ${HEB_USER.email}`);
+} else {
+  const heb = (await api(token, 'GET', '/v1/clients')).body.find((c) => c.shortName === 'HEB');
+  await api(token, 'POST', '/v1/users', { email: HEB_USER.email, displayName: HEB_USER.name, role: 'client', clientId: heb.id, grants: null, clientContactId: null });
+  console.log(`client user: ${HEB_USER.email} (Clients app, sign-in link from the Auth emulator)`);
 }
