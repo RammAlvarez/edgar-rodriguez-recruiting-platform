@@ -332,3 +332,43 @@ if ((await api(token, 'GET', '/v1/payroll/groups')).body.length > 0) {
   }
   console.log(`payroll: ${Object.keys(groupIds).length} groups, ${Object.keys(positionIds).length} puestos, ${created} employees`);
 }
+
+// ---- S8: field supervisor, periods, attendance ----
+const SUPERVISOR = { email: 'supervisor@local.test', name: 'Javier Supervisor ECOVIA' };
+if ((await api(token, 'GET', '/v1/users')).body.some((u) => u.email === SUPERVISOR.email)) {
+  console.log(`supervisor already exists: ${SUPERVISOR.email}`);
+} else {
+  const ecovia = (await api(token, 'GET', '/v1/clients')).body.find((c) => c.shortName === 'ECOVIA');
+  await signUpInEmulator({ email: SUPERVISOR.email, password: LOCAL_OWNER.password, name: SUPERVISOR.name });
+  await api(token, 'POST', '/v1/users', {
+    email: SUPERVISOR.email, displayName: SUPERVISOR.name, role: 'administrator', clientId: null,
+    grants: [{ module: 'payroll_attendance', clientId: ecovia.id }], clientContactId: null,
+  });
+  console.log(`supervisor: ${SUPERVISOR.email} / ${LOCAL_OWNER.password} (Asistencia, ECOVIA only)`);
+
+  for (const job of ['period-roll', 'status-roll']) await internal(`jobs/${job}`, {});
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Monterrey' }).format(new Date());
+  const yesterday = addDays(today, -1);
+  let captured = 0;
+  let unlocked = 0;
+  for (const site of (await api(token, 'GET', `/v1/attendance/sites?date=${today}`)).body.filter((x) => x.clientName === 'ECOVIA')) {
+    const day = (await api(token, 'GET', `/v1/attendance/day?siteId=${site.siteId}&date=${today}`)).body;
+    // One partial day and one falta so the screen shows more than «Presente».
+    const entries = day.entries.filter((e) => !e.statusPeriod).map((e, i) => ({
+      employeeId: e.employeeId, status: i === 2 ? 'partial' : i === 5 ? 'absent' : 'present', hoursWorked: i === 2 ? '8' : null,
+      overtimeHours: null, note: null,
+    }));
+    if (entries.length) await api(token, 'PUT', '/v1/attendance/day', { siteId: site.siteId, date: today, entries });
+    captured += entries.length;
+    const before = (await api(token, 'GET', `/v1/attendance/day?siteId=${site.siteId}&date=${yesterday}`)).body;
+    for (const e of before.entries.filter((x) => !x.statusPeriod && !x.record)) {
+      await api(token, 'POST', '/v1/attendance/unlock', {
+        employeeId: e.employeeId, date: yesterday, siteId: site.siteId, status: 'present', hoursWorked: null, overtimeHours: null,
+        note: null, reason: 'Carga inicial',
+      });
+      unlocked++;
+    }
+  }
+  await internal('jobs/attendance-lock', {});
+  console.log(`attendance: ${captured} ECOVIA days captured today, ${unlocked} yesterday through the unlock path`);
+}
