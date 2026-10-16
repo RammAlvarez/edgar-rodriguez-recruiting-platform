@@ -90,6 +90,8 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | `opening_status` | `open`, `in_progress`, `filled`, `cancelled`, `paused` |
 | `opening_priority` | `high`, `medium`, `low` |
 | `candidate_stage` | `new`, `contacted`, `interview`, `suitable`, `not_suitable`, `hired`, `discarded` |
+| `interview_outcome` | `pending`, `attended`, `no_show` |
+| `opening_event_kind` | `created`, `edited`, `status_changed`, `recruiter_assigned`, `recruiter_removed`, `lead_changed` |
 | `candidate_source` | `facebook`, `linkedin`, `whatsapp`, `referral`, `job_board`, `other` |
 | `employee_status` | `active`, `vacation`, `sick_leave`, `suspended`, `terminated` — current value, derived from `employee_status_periods` |
 | `period_type` | `weekly`, `biweekly` |
@@ -305,22 +307,26 @@ Catalog rows are deactivated (`is_active`), never deleted, so past records keep 
 | notes | text | |
 | days_open | int GENERATED (view) | `(filled_at ?? current_date) - requested_at` |
 
-Trigger: when `count(candidates where stage='hired') >= headcount_requested` → status `filled`, `filled_at = today`.
+Derived in the API, in the same transaction as the candidate write (PLAN D70): when `count(candidates where stage='hired') >= headcount_requested` → status `filled`, `filled_at = today`; back to `in_progress` when a hire is undone.
 
 ```sql
 CREATE VIEW platform.job_opening_display AS
-SELECT o.id,
+SELECT o.uid AS id,
        cl.short_name || ' – ' || o.position_name
-       || CASE WHEN count(*) OVER (PARTITION BY o.client_id, lower(o.position_name))
-                    FILTER (WHERE o.status IN ('open','in_progress')) > 1
+       || CASE WHEN count(*) FILTER (WHERE o.status IN ('open','in_progress'))
+                    OVER (PARTITION BY o.client_id, lower(o.position_name)) > 1
                THEN ' · ' || to_char(o.requested_at, 'DD/MM/YYYY') ELSE '' END AS display_name
 FROM platform.job_openings o JOIN platform.clients cl ON cl.uid = o.client_id;
 ```
 Every DTO that references a vacante carries `display_name`; the UI never shows ids.
 
+### 4.1b `job_opening_events` (Actividad, PLAN D70)
+
+`(id, uid, job_opening_id, kind opening_event_kind, from_status, to_status, reason, recruiter_user_id NULL, user_id, acting_for_user_id NULL, occurred_at)` — append-only; the reason of Pausada/Cancelada lives here.
+
 ### 4.2 `job_opening_recruiters`
 
-`(job_opening_id, user_id, assigned_at, is_lead)` — supports several recruiters per vacante; `BD_RECLUTADORES.FECHA_ASIGNACION`.
+`(job_opening_id, user_id, assigned_at, is_lead)` — supports several recruiters per vacante; `BD_RECLUTADORES.FECHA_ASIGNACION`. UNIQUE `(job_opening_id, user_id)`; at most one `is_lead` per vacante, and it equals `job_openings.lead_recruiter_id` (PLAN D71).
 
 ### 4.3 `candidates` (one application = person × vacante)
 
@@ -340,7 +346,7 @@ Every DTO that references a vacante carries `display_name`; the UI never shows i
 | offered_salary | numeric(12,2) | |
 | comments | text | |
 | discard_reason | text | required when `discarded` / `not_suitable` |
-| employee_id | uuid FK platform.employees NULL | set by "Convertir en empleado" |
+| employee_id | uuid NULL | set by "Convertir en empleado"; FK to `employees` added with that table in S7 (PLAN D72) |
 | UNIQUE | (person_id, job_opening_id) | |
 
 `days_in_process` = `(hired_at ?? current_date) - captured_at` (view).
@@ -366,7 +372,7 @@ Never exposed to `client` or candidate scopes.
 
 ### 4.5 `interviews`
 
-`(id, candidate_id, scheduled_at timestamptz, interviewer_id FK users, location/text, outcome enum('pending','attended','no_show'), notes)`.
+`(id, candidate_id, scheduled_at timestamptz, interviewer_id FK users, location/text, outcome interview_outcome default 'pending', notes)`.
 
 ### 4.6 `opening_comments`
 
