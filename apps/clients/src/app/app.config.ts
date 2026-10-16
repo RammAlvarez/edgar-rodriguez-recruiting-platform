@@ -9,6 +9,7 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import type { EmailLinkAuthProvider, RuntimeConfig } from '@platform/api-client';
 import { EMAIL_LINK_AUTH, provideApiClient } from '@platform/ui/api';
+import { providePlatformMaterial } from '@platform/ui/material';
 import { routes } from './app.routes';
 
 registerLocaleData(localeEsMx);
@@ -16,6 +17,7 @@ registerLocaleData(localeEsMx);
 export function createAppConfig(config: RuntimeConfig, auth: EmailLinkAuthProvider): ApplicationConfig {
   return {
     providers: [
+      providePlatformMaterial(),
       provideBrowserGlobalErrorListeners(),
       provideZonelessChangeDetection(),
       provideRouter(routes, withComponentInputBinding()),

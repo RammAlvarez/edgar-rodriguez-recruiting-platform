@@ -147,6 +147,8 @@ Delegated grants for `administrator` users (SPEC §2.2).
 | rfc | text | 12/13 chars |
 | uses_recruiting | boolean default false | set true when created from Reclutamiento or when the first `job_opening` is created; never asked in the UI |
 | uses_payroll | boolean default false | set true when created from Nómina or when the first `payroll_group` is created; never asked in the UI |
+
+The client has no zone column: lists show the zone of its first active site (PLAN D68, P7).
 | notes | text | |
 | is_active | boolean default true | |
 
@@ -255,7 +257,7 @@ Seed codes: `INE`, `CURP`, `RFC`, `NSS`, `ACTA_NAC`, `DOMICILIO`, `ESTUDIOS`, `C
 | rejection_reason | text | |
 | version | int | re-uploads create a new row; previous kept (`superseded_by`) |
 
-View `platform.person_document_completeness(person_id, template_id) → numeric(5,2)` used by both apps.
+View `platform.person_document_completeness(person_id, template_id) → numeric(5,2)` used by both apps: required items whose current document is `delivered` or `validated`, truncated to two decimals (PLAN D66). The current document of a type is the row with `superseded_by IS NULL` (partial unique index); `superseded_by` is a deferrable FK so a re-upload swaps versions in one transaction.
 
 ### 3.11 Catalogs
 

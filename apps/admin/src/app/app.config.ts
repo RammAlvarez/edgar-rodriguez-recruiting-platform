@@ -9,6 +9,7 @@ import localeEsMx from '@angular/common/locales/es-MX';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import type { RuntimeConfig } from '@platform/api-client';
 import { provideApiClient } from '@platform/ui/api';
+import { providePlatformMaterial } from '@platform/ui/material';
 import type { PasswordAuthProvider } from '../auth/firebase-auth';
 import { PASSWORD_AUTH } from './auth-token';
 import { routes } from './app.routes';
@@ -20,6 +21,7 @@ export function createAppConfig(config: RuntimeConfig, auth: PasswordAuthProvide
   const coverMode = new CoverMode();
   return {
     providers: [
+      providePlatformMaterial(),
       provideBrowserGlobalErrorListeners(),
       provideZonelessChangeDetection(),
       provideRouter(routes, withComponentInputBinding()),

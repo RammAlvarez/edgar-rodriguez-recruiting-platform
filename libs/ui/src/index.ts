@@ -9,3 +9,4 @@ export * from './email-link-sign-in';
 export * from './top-nav-shell';
 export * from './side-panel';
 export * from './forms';
+export * from './material';

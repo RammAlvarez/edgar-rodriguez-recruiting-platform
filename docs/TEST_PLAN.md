@@ -41,5 +41,20 @@ Each check lists the steps and the expected result; a failed expectation becomes
 6. At 390 px wide the sidebar collapses behind the menu button.
 7. Candidates and clients apps (:4301, :4302) open on the email-link page; sending a link to an address shows the confirmation.
 
-### S1–S12
+### S1–S2
+Pure libraries: covered by the xUnit golden and layout tests, no screens.
+
+### S3 — Core registry
+Data: `npm run seed` (owner, 11 clients, 6 recruiters, LFT holidays, puestos). Emails are written to the API log (`RESEND_API_KEY` empty).
+1. *Usuarios* lists the owner («tú», last access set) and the six recruiters («Invitación pendiente»).
+2. «Invitar usuario», rol Administrador → *Permisos delegados* has every box checked except Reportes de reclutamiento; «Enviar invitación» → toast, the row appears without reloading, the API log shows the email with a password-setup link.
+3. *Clientes* lists the 11 seed clients with zona and contacto principal; a row opens the detail with tabs Vacantes / Contactos / Sitios.
+4. Contactos → «Invitar al portal» → confirm → the contact shows «Con acceso al portal», cannot be deleted, and a Cliente user appears in Usuarios.
+5. «Nuevo cliente» with an existing short name → «Ya existe un cliente con ese nombre corto.» in the panel.
+6. *Clientes (nómina)*: empty «proyectos activos», «Todos los clientes» with search, every row «Sin proyecto»; a row opens the payroll detail (empty groups / puestos).
+7. *Catálogos*: tabs for every catalog; the 51 municipios; «Agregar festivos de ley» adds the year once.
+8. Document upload/download: S3 has no people screen (PLAN S3 lists none), so the check is API-level — `DocumentTests` (presign → confirm → versions → review → logged view/download) and `S3ObjectStorageTests` (presigned PUT/GET against MinIO). The browser check moves to the S4 candidate detail.
+9. 390 px (carried from S0 step 6).
+
+### S4–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

@@ -5,6 +5,7 @@
 | Run | Slice | Result |
 |---|---|---|
 | [2026-10-16-01](2026-10-16-01-s0-foundation.md) | S0 Foundation | pass after fixing D-001, D-002 (D-003 found in review, fixed) |
+| [2026-10-16-02](2026-10-16-02-s3-core-registry.md) | S3 Core registry | pass; 390 px not run (carried to S4); D-005 found by the API tests |
 
 ## Defects
 
