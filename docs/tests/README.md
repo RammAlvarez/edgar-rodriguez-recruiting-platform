@@ -10,6 +10,7 @@
 | [2026-10-16-04](2026-10-16-04-s5-portals.md) | S5 Candidates app + Clients app | gate 1 pass; D-009 fixed; 390 px checked |
 | [2026-10-16-05](2026-10-16-05-s6-reports.md) | S6 Reportes de reclutamiento | pass; 390 px checked |
 | [2026-10-16-06](2026-10-16-06-s7-personal.md) | S7 Personal | pass after fixing D-010; 390 px checked |
+| [2026-10-16-07](2026-10-16-07-s8-asistencia.md) | S8 Asistencia + jobs | pass; capture driven in a 390 px frame |
 
 ## Defects
 

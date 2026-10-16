@@ -131,7 +131,7 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
                     <div class="hours">
                       <label>
                         Horas
-                        <input type="number" inputmode="decimal" min="0" max="24" step="0.5" [value]="dr.hours" [placeholder]="'' + e.shiftHours"
+                        <input type="number" inputmode="decimal" min="0" max="24" step="0.5" [value]="dr.hours" [placeholder]="'' + (+e.shiftHours)"
                           (input)="setHours(e, 'hours', $event)" />
                       </label>
                       <label>

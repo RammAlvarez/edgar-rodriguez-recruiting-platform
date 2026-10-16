@@ -100,5 +100,12 @@ Data: `npm run seed` (3 payroll groups, 5 puestos, 32 employees: two vacations, 
 8. Candidates app → Mi perfil → «Cuenta para tu pago» adds a card, shown as «•••• 1237».
 9. 390 px: Personal, employee detail, Calendario, payroll client detail.
 
-### S8–S12
+### S8 — Asistencia + jobs
+Data: `npm run seed` (adds supervisor@local.test — Administrador, Asistencia for ECOVIA only —, the current and next periods, today's ECOVIA attendance and yesterday's entered through the unlock path). API-level: `AttendanceTests` (scope, lock moment, unlock rules, status-period days, holidays), `JobTests` (each job twice, zones, period close with automatic faltas, through `/internal/jobs`), `PeriodCalendarTests`.
+1. As the owner, Asistencia today → a site → «Todos presentes», one Falta, one Incompleto with hours → Guardar → «n/n» and check marks.
+2. The previous day → «Este día ya cerró»; «Cambiar» on someone without capture → status and reason → the row shows the new value; `attendance_unlocks` has the row.
+3. As supervisor@local.test in a 390 px frame: the menu shows only Calendario and Asistencia; the ECOVIA site roster wraps, vacation and incapacidad rows are read-only; change one person and Guardar; yesterday is closed with no «Cambiar».
+4. Calendario día → «Capturar asistencia» opens that site and date; the employee detail's Asistencia tab lists the last days with a lock on closed ones.
+
+### S9–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

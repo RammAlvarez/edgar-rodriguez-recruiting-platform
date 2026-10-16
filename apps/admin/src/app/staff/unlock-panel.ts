@@ -49,7 +49,7 @@ export interface UnlockPanelData {
             <mat-form-field>
               <mat-label>Horas</mat-label>
               <input matInput formControlName="hoursWorked" inputmode="decimal" autocomplete="off" />
-              <mat-hint>{{ status() === 'partial' ? 'Menos de ' + data.entry.shiftHours : 'Vacío = ' + data.entry.shiftHours }}</mat-hint>
+              <mat-hint>{{ status() === 'partial' ? 'Menos de ' + (+data.entry.shiftHours) : 'Vacío = ' + (+data.entry.shiftHours) }}</mat-hint>
               <mat-error>{{ s.msg('hoursWorked') }}</mat-error>
             </mat-form-field>
             <mat-form-field>

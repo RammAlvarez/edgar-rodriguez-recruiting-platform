@@ -623,7 +623,7 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 | hours_worked | numeric(4,2) | default group `shift_hours` for `present`; < shift for `partial` |
 | overtime_hours | numeric(4,2) default 0 | |
 | client_site_id | uuid FK NULL | where |
-| is_locked | boolean default false | set by the `attendance-lock` job (every 15 min) once `attendance_lock_time` in the group's time zone has passed |
+| is_locked | boolean default false | set by the `attendance-lock` job (every 15 min) once `attendance_lock_time` in the group's time zone has passed; the API applies the same rule by time on every write, so a late job never reopens a day (PLAN D83) |
 | is_auto_absent | boolean default false | created at period close for missing days |
 | recorded_by | uuid FK users | |
 | recorded_at | timestamptz | |
@@ -633,7 +633,7 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 
 ### 5.8 `attendance_unlocks`
 
-`(id, attendance_record_id, unlocked_by, unlocked_at, reason, previous_value jsonb, new_value jsonb)` — the owner's "a menos que yo le dé permiso".
+`(id, attendance_record_id, unlocked_by, unlocked_at, reason, previous_value jsonb, new_value jsonb)` — the owner's "a menos que yo le dé permiso". Append-only (trigger, as D53). `previous_value` is null when the closed day had no record; the day stays locked after the change (PLAN D83).
 
 ### 5.9 `incidents`
 
