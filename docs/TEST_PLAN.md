@@ -107,5 +107,13 @@ Data: `npm run seed` (adds supervisor@local.test — Administrador, Asistencia f
 3. As supervisor@local.test in a 390 px frame: the menu shows only Calendario and Asistencia; the ECOVIA site roster wraps, vacation and incapacidad rows are read-only; change one person and Guardar; yesterday is closed with no «Cambiar».
 4. Calendario día → «Capturar asistencia» opens that site and date; the employee detail's Asistencia tab lists the last days with a lock on closed ones.
 
-### S9–S12
+### S9 — Incidencias + Prenómina
+Data: `npm run seed` on a fresh database (S9 block: ECOVIA's employees are the SEM 38 rows; Semana 38 loaded through the unlock path, closed by `attendance-lock`; the seed fails unless the grid totals 334,654.83 payable and 334,655.149146 exact on 115 lines). API-level: `PrepayrollTests` (SEM 38 golden through the API, incidencias, ajustes, retroactivo to the next open period, paid-period freeze, rates reach open periods only, exports, grants), `AttendanceSummariesTests` (D84).
+1. Prenómina → ECOVIA Semana 38 (En revisión): 115 personas, Total neto a pagar $334,654.83; the client's columns K–U; footers under each column and the note that they are informative; payment columns with bank, last four and state.
+2. Tap a SUELDO cell → desglose with the exact items; «Ajustar celda» to another amount with a reason → the cell shows it, the row is marked, the total moves by the difference; remove the ajuste from the desglose.
+3. Incidencias → Nueva incidencia: Tiempo extra doble 2 h for someone → the row's TIEMPO EXTRA DOBLE and total move; a Descuento shows negative.
+4. Excel, Resumen PDF and Recibos download; the Excel's row 5 matches the client's B5:W5.
+5. «Tarjetas por solicitar» lists the two queued people by name; 390 px: Prenómina and Incidencias have no page-wide horizontal scroll (the grid scrolls inside).
+
+### S10–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

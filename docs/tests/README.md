@@ -11,6 +11,7 @@
 | [2026-10-16-05](2026-10-16-05-s6-reports.md) | S6 Reportes de reclutamiento | pass; 390 px checked |
 | [2026-10-16-06](2026-10-16-06-s7-personal.md) | S7 Personal | pass after fixing D-010; 390 px checked |
 | [2026-10-16-07](2026-10-16-07-s8-asistencia.md) | S8 Asistencia + jobs | pass; capture driven in a 390 px frame |
+| [2026-10-16-08](2026-10-16-08-s9-prenomina.md) | S9 Incidencias + Prenómina | pass on the S8 data after fixing D-011, D-012; the seeded Semana 38 gate waits for a fresh database |
 
 ## Defects
 
@@ -26,3 +27,5 @@
 | D-008 | 2026-10-16-03 | Making a recruiter líder of a vacante she was not on logged two Actividad entries, «como apoyo» then «como líder». | fixed — the row created for a líder is not logged as an apoyo assignment (`OpeningRules.Assign(log: false)`; `OpeningTests`) |
 | D-009 | 2026-10-16-04 | After sending a comment in the Clients app the emptied box turned red as «required»: `form.reset()` keeps the form directive's *submitted* flag, which Material uses to show errors. | fixed — `FormGroupDirective.resetForm()` (`apps/clients/src/app/openings/comment-thread.ts`) |
 | D-010 | 2026-10-16-06 | «Cerrar sesión» on the shared «Sin acceso» page signed out but stayed on the page, which then said «Tu cuenta no tiene acceso» again instead of offering to sign in with another email. | fixed — navigates to «Entrar» after signing out (`libs/ui/src/status-pages.ts`) |
+| D-011 | 2026-10-16-08 | The grid's Cuenta column read «A nombre de NOE ALANIS TREVINO» for the employee's own account: the holder was compared with the name accents included. | fixed — `PrepayrollQueries.SameName` ignores order, case and accents; test `The_holder_is_the_employee_whatever_the_order_case_or_accents` |
+| D-012 | 2026-10-16-08 | «Nueva incidencia» showed an empty Empleado list: `/v1/payroll/incidents/employees` answered 500 (EF cannot sort after projecting into the record). | fixed — sorted before the projection; the pickers are asserted in `PrepayrollTests` |

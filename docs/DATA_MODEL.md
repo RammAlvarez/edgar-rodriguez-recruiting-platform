@@ -644,12 +644,14 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 | payroll_period_id | uuid FK | period it affects (next open one when `origin_period_id` is set) |
 | origin_period_id | uuid FK payroll_periods NULL | the already-paid period the incident really belongs to (shown as "corresponde a Semana 38") |
 | pay_concept_id | uuid FK | |
+| adjusted_concept_id | uuid FK pay_concepts NULL | a `MANUAL_ADJUSTMENT`'s column: the concept it adjusts (D63, PLAN E13) |
 | incident_date | date | |
 | quantity | numeric(8,2) | hours, days, 1 |
 | unit_value | numeric(12,4) | rate used |
 | amount | numeric(12,2) NOT NULL | stored positive, the concept kind gives the sign at calc time; only `MANUAL_ADJUSTMENT` is signed (change to net pay) — PLAN D63 |
 | reason | text | required for deductions |
-| evidence_document_id | uuid FK person_documents NULL | |
+| evidence_document_id | uuid FK person_documents NULL | not built yet (PLAN E13) |
+| during_review | boolean default false | captured while the period was `in_review` («cambio durante revisión») |
 | reported_by | uuid FK users | |
 
 ### 5.10 `payroll_periods`
@@ -687,8 +689,8 @@ Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (
 | total_deductions | numeric(18,6) | Σ deduction items |
 | total_net_exact | numeric(18,6) | `gross_earnings − total_deductions` |
 | total_net | numeric(12,2) | TOTAL NETO A PAGAR = `trunc(total_net_exact, 2)` — truncated, not rounded; the amount paid |
-| bank_id, account_type, account_number_enc, account_last4, holder_name | snapshot | taken from the employee's primary account at `paid`; NULL while live |
-| payment_status | payment_row_status | derived live (`ready` / `missing_account` / `invalid_account`), then tracked (`pending` / `paid` / `rejected`) |
+| bank_id, account_type, account_number_enc, account_last4, holder_name | snapshot | taken from the employee's primary account at `paid` (S10); S9 shows them live from the person's primary account |
+| payment_status | payment_row_status | S10; S9 derives the state live: ready / tarjeta en trámite / sin cuenta (an invalid number cannot be captured, D82) |
 | comments | text | free text only — no bank data |
 | UNIQUE | (payroll_period_id, employee_id) | |
 
@@ -696,7 +698,7 @@ Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (
 
 `(id, prepayroll_line_id, pay_concept_id, quantity, unit_value, amount numeric(18,6) (calculated exactly, stored truncated to 6 decimals, never rounded), source enum('attendance','incident','position','manual'), incident_id FK NULL)` — the per-column breakdown; the export pivots these into the Excel columns via `pay_concepts.export_column`.
 
-Invariant (DB CHECK via trigger): `prepayroll_lines.total_net_exact = Σ items(earning) − Σ items(deduction)`, `total_net = trunc(total_net_exact, 2)`, and lines of a `paid` period are immutable (row-level trigger raises). Engine order: earnings → deductions → `total_net_exact` → truncate to cents → `total_net`. No pensión alimenticia (SPEC D16 revised).
+Invariant: `prepayroll_lines.total_net_exact = Σ items(earning) − Σ items(deduction)` — kept by the API, which writes the items and the totals together from the engine's result; CHECKs `total_net_exact = gross_earnings − total_deductions` and `total_net = trunc(total_net_exact, 2)`; lines, items and incidents of a `paid` period are immutable (row-level trigger raises) — PLAN E13. Engine order: earnings → deductions → `total_net_exact` → truncate to cents → `total_net`. No pensión alimenticia (SPEC D16 revised).
 
 ---
 
