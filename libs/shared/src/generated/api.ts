@@ -98,6 +98,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/employees/{id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListEmployeeAttendance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/catalogs": {
         parameters: {
             query?: never;
@@ -1666,6 +1682,54 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/attendance/sites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListAttendanceSites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetAttendanceDay"];
+        put: operations["SaveAttendanceDay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UnlockAttendanceDay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -1695,6 +1759,76 @@ export type components = {
         AssignRecruitersRequest: {
             userIds: string[];
             role: components["schemas"]["AssignmentRole"];
+        };
+        AttendanceDayDto: {
+            /** Format: date */
+            date: DateKey;
+            holiday: null | string;
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            canUnlock: boolean;
+            entries: components["schemas"]["AttendanceEntryDto"][];
+            others: components["schemas"]["EmployeePickDto"][];
+        };
+        AttendanceEntryDto: {
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            positionName: string;
+            /** Format: decimal */
+            shiftHours: Decimal;
+            /** Format: time */
+            startTime: null | string;
+            /** Format: time */
+            endTime: null | string;
+            scheduled: boolean;
+            record: null | components["schemas"]["AttendanceRecordDto"];
+            locked: boolean;
+            statusPeriod: null | string;
+        };
+        AttendanceEntryRequest: {
+            /** Format: uuid */
+            employeeId: string;
+            status: components["schemas"]["AttendanceStatus"];
+            /** Format: decimal */
+            hoursWorked: Decimal | null;
+            /** Format: decimal */
+            overtimeHours: Decimal | null;
+            note: null | string;
+        };
+        AttendanceRecordDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            workDate: DateKey;
+            status: components["schemas"]["AttendanceStatus"];
+            /** Format: decimal */
+            hoursWorked: Decimal | null;
+            /** Format: decimal */
+            overtimeHours: Decimal;
+            /** Format: uuid */
+            clientSiteId: null | string;
+            siteName: null | string;
+            note: null | string;
+            isLocked: boolean;
+            isAutoAbsent: boolean;
+            fromStatusPeriod: boolean;
+        };
+        AttendanceSiteDto: {
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            /** Format: int32 */
+            expected: number | string;
+            /** Format: int32 */
+            captured: number | string;
         };
         /** @enum {unknown} */
         AttendanceStatus: "present" | "partial" | "absent" | "rest_day" | "rest_day_worked" | "holiday" | "holiday_worked" | "sick_leave" | "leave_paid" | "leave_unpaid" | "vacation" | null;
@@ -2314,6 +2448,12 @@ export type components = {
             groups: components["schemas"]["GroupOptionDto"][];
             shifts: string[];
             terminationReasons: string[];
+        };
+        EmployeePickDto: {
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            positionName: string;
         };
         EmployeeRatesDto: {
             /** Format: decimal */
@@ -3097,6 +3237,13 @@ export type components = {
             clients: components["schemas"]["ReportOptionDto"][];
             recruiters: components["schemas"]["ReportOptionDto"][];
         };
+        SaveAttendanceRequest: {
+            /** Format: uuid */
+            siteId: string;
+            /** Format: date */
+            date: DateKey;
+            entries: components["schemas"]["AttendanceEntryRequest"][];
+        };
         SiteDto: {
             /** Format: uuid */
             id: string;
@@ -3237,6 +3384,21 @@ export type components = {
         };
         /** @enum {unknown} */
         TimelineKind: "stage" | "note" | "interview";
+        UnlockAttendanceRequest: {
+            /** Format: uuid */
+            employeeId: string;
+            /** Format: date */
+            date: DateKey;
+            /** Format: uuid */
+            siteId: null | string;
+            status: components["schemas"]["AttendanceStatus"];
+            /** Format: decimal */
+            hoursWorked: Decimal | null;
+            /** Format: decimal */
+            overtimeHours: Decimal | null;
+            note: null | string;
+            reason: string;
+        };
         UpdateBankAccountRequest: {
             holderName: string;
             alias: null | string;
@@ -3370,6 +3532,11 @@ export type AssignmentRequest = components['schemas']['AssignmentRequest'];
 export type AssignmentRole = components['schemas']['AssignmentRole'];
 export type AssignOpeningsRequest = components['schemas']['AssignOpeningsRequest'];
 export type AssignRecruitersRequest = components['schemas']['AssignRecruitersRequest'];
+export type AttendanceDayDto = components['schemas']['AttendanceDayDto'];
+export type AttendanceEntryDto = components['schemas']['AttendanceEntryDto'];
+export type AttendanceEntryRequest = components['schemas']['AttendanceEntryRequest'];
+export type AttendanceRecordDto = components['schemas']['AttendanceRecordDto'];
+export type AttendanceSiteDto = components['schemas']['AttendanceSiteDto'];
 export type AttendanceStatus = components['schemas']['AttendanceStatus'];
 export type BankAccountDto = components['schemas']['BankAccountDto'];
 export type BankAccountRequest = components['schemas']['BankAccountRequest'];
@@ -3430,6 +3597,7 @@ export type EducationLevelRequest = components['schemas']['EducationLevelRequest
 export type EmployeeDetailDto = components['schemas']['EmployeeDetailDto'];
 export type EmployeeListItemDto = components['schemas']['EmployeeListItemDto'];
 export type EmployeeOptionsDto = components['schemas']['EmployeeOptionsDto'];
+export type EmployeePickDto = components['schemas']['EmployeePickDto'];
 export type EmployeeRatesDto = components['schemas']['EmployeeRatesDto'];
 export type EmployeeRequest = components['schemas']['EmployeeRequest'];
 export type EmployeeStatus = components['schemas']['EmployeeStatus'];
@@ -3505,6 +3673,7 @@ export type ReportFiltersDto = components['schemas']['ReportFiltersDto'];
 export type ReportFormat = components['schemas']['ReportFormat'];
 export type ReportOptionDto = components['schemas']['ReportOptionDto'];
 export type ReportOptionsDto = components['schemas']['ReportOptionsDto'];
+export type SaveAttendanceRequest = components['schemas']['SaveAttendanceRequest'];
 export type SiteDto = components['schemas']['SiteDto'];
 export type SiteOptionDto = components['schemas']['SiteOptionDto'];
 export type SiteRequest = components['schemas']['SiteRequest'];
@@ -3521,6 +3690,7 @@ export type SummaryMetricsDto = components['schemas']['SummaryMetricsDto'];
 export type SummaryReportDto = components['schemas']['SummaryReportDto'];
 export type TimelineEntryDto = components['schemas']['TimelineEntryDto'];
 export type TimelineKind = components['schemas']['TimelineKind'];
+export type UnlockAttendanceRequest = components['schemas']['UnlockAttendanceRequest'];
 export type UpdateBankAccountRequest = components['schemas']['UpdateBankAccountRequest'];
 export type UpdateCandidateRequest = components['schemas']['UpdateCandidateRequest'];
 export type UpdateClientRequest = components['schemas']['UpdateClientRequest'];
@@ -3698,6 +3868,49 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ListEmployeeAttendance: {
+        parameters: {
+            query: {
+                from: DateKey;
+                to: DateKey;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceRecordDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -8659,6 +8872,171 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListAttendanceSites: {
+        parameters: {
+            query: {
+                date: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSiteDto"][];
+                };
+            };
+        };
+    };
+    GetAttendanceDay: {
+        parameters: {
+            query: {
+                siteId: string;
+                date: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceDayDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveAttendanceDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAttendanceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceDayDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UnlockAttendanceDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlockAttendanceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceRecordDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

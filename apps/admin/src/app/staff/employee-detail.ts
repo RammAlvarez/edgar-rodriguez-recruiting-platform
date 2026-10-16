@@ -8,13 +8,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
-import { type DateKey, formatDateKey } from '@platform/shared';
+import { addDaysToKey, type DateKey, formatDateKey, todayKey } from '@platform/shared';
 import { openSidePanel } from '@platform/ui';
 import { DocumentChecklist, type ChecklistDocument, type ChecklistItem } from '@platform/ui/document-checklist';
 import { DateKeyPipe, MoneyPipe } from '@platform/ui/pipes';
 import type { BankAccountDto, EmployeeDetailDto, RegistrationBank, StatusPeriodDto, WorkScheduleDto } from '../data/api-types';
-import { ACCOUNT_TYPE, EMPLOYEE_STATUS, hourlyText, PERIOD_STATUS_LABEL, REGISTRATION_BANK, weekdaysText } from '../data/payroll-labels';
-import { EmployeesRepository } from '../data/payroll-repositories';
+import { ACCOUNT_TYPE, ATTENDANCE, EMPLOYEE_STATUS, hourlyText, PERIOD_STATUS_LABEL, REGISTRATION_BANK, weekdaysText } from '../data/payroll-labels';
+import { AttendanceRepository, EmployeesRepository } from '../data/payroll-repositories';
 import { PeopleRepository } from '../data/recruiting-repositories';
 import { CatalogsRepository } from '../data/repositories';
 import { prompt } from '../openings/prompt-dialog';
@@ -207,6 +207,29 @@ import { StatusPanel, type StatusPanelData } from './status-panel';
             </div>
           </mat-tab>
 
+          <mat-tab label="Asistencia">
+            <p class="muted range">Últimos 14 días</p>
+            <div class="list-card">
+              @for (a of days.value() ?? []; track a.id) {
+                <div class="list-row">
+                  <span class="date">{{ a.workDate | dateKey }}</span>
+                  <span class="grow">
+                    <span class="pill" [class]="attendance[a.status!].tone">{{ attendance[a.status!].label }}</span>
+                    @if (a.hoursWorked) { <span class="muted"> {{ +a.hoursWorked }} h</span> }
+                    @if (+a.overtimeHours > 0) { <span class="muted"> + {{ +a.overtimeHours }} extra</span> }
+                    @if (a.siteName) { <span class="muted"> · {{ a.siteName }}</span> }
+                    @if (a.isAutoAbsent) { <span class="muted"> · automática</span> }
+                  </span>
+                  @if (a.isLocked) { <mat-icon fontSet="material-symbols-outlined" class="muted" aria-label="Cerrado">lock</mat-icon> }
+                </div>
+              } @empty {
+                @if (days.value()) {
+                  <p class="list-empty">Sin asistencia registrada en estos días.</p>
+                }
+              }
+            </div>
+          </mat-tab>
+
           @for (t of later; track t.label) {
             <mat-tab [label]="t.label">
               <div class="empty-state">
@@ -284,6 +307,13 @@ import { StatusPanel, type StatusPanelData } from './status-panel';
     .list-row.closed {
       opacity: 0.6;
     }
+    .range {
+      margin: 16px 0 8px;
+    }
+    .date {
+      width: 96px;
+      font-variant-numeric: tabular-nums;
+    }
   `,
 })
 export class EmployeeDetail {
@@ -298,6 +328,8 @@ export class EmployeeDetail {
   readonly employee = this.repo.detail(() => this.employeeId);
   readonly accounts = this.repo.accounts(() => this.employeeId);
   readonly schedules = this.repo.schedules(() => this.employeeId);
+  readonly days = inject(AttendanceRepository).employeeDays(() => this.employeeId, addDaysToKey(todayKey(), -13), todayKey());
+  readonly attendance = ATTENDANCE;
   private readonly personId = computed(() => this.employee.value()?.personId ?? null);
   private readonly templateId = computed(() => this.employee.value()?.documentTemplateId ?? null);
   readonly checklist = this.people.checklist(() => this.personId(), () => this.templateId());
@@ -310,7 +342,6 @@ export class EmployeeDetail {
   readonly cardBanks: RegistrationBank[] = ['banorte', 'banregio'];
   readonly today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Monterrey' }).format(new Date());
   readonly later = [
-    { label: 'Asistencia', icon: 'fact_check', text: 'La asistencia diaria se captura en la siguiente entrega de Nómina. Los días de vacaciones e incapacidad ya se registran.' },
     { label: 'Incidencias', icon: 'edit_note', text: 'Las incidencias llegan con la Prenómina.' },
     { label: 'Pagos', icon: 'payments', text: 'Los pagos aparecen cuando se generen los archivos de pago.' },
   ];

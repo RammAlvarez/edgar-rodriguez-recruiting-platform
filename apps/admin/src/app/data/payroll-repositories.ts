@@ -2,6 +2,10 @@ import { inject, Injectable } from '@angular/core';
 import type { DateKey } from '@platform/shared';
 import { API_CLIENT, liveQuery } from '@platform/ui';
 import type {
+  AttendanceDayDto,
+  AttendanceEntryRequest,
+  AttendanceRecordDto,
+  AttendanceSiteDto,
   BankAccountDto,
   BankAccountRequest,
   CalendarDayDto,
@@ -19,6 +23,7 @@ import type {
   RegistrationBank,
   StatusPeriodRequest,
   UpdateBankAccountRequest,
+  UnlockAttendanceRequest,
   UpdateEmployeeRequest,
   WorkScheduleDto,
   WorkScheduleRequest,
@@ -165,5 +170,37 @@ export class CalendarRepository {
       const r = range();
       return this.api.get<CalendarDayDto[]>('/v1/calendar', { from: r.from, to: r.to, clientId: r.clientId });
     }, ['schedules', 'employees']);
+  }
+}
+
+/** Asistencia (grant payroll_attendance): capture by site and date, and the unlock of a closed day. */
+@Injectable({ providedIn: 'root' })
+export class AttendanceRepository {
+  private readonly api = inject(API_CLIENT);
+
+  sites(date: () => DateKey) {
+    return liveQuery(() => this.api.get<AttendanceSiteDto[]>('/v1/attendance/sites', { date: date() }), ['attendance', 'schedules']);
+  }
+
+  /** Resolves to undefined until a site is chosen. */
+  day(query: () => { siteId: string | null; date: DateKey }) {
+    return liveQuery(() => {
+      const q = query();
+      return q.siteId
+        ? this.api.get<AttendanceDayDto | undefined>('/v1/attendance/day', { siteId: q.siteId, date: q.date })
+        : Promise.resolve(undefined);
+    }, ['attendance', 'employees']);
+  }
+
+  save(siteId: string, date: DateKey, entries: AttendanceEntryRequest[]): Promise<AttendanceDayDto> {
+    return this.api.put('/v1/attendance/day', { siteId, date, entries });
+  }
+
+  unlock(body: UnlockAttendanceRequest): Promise<AttendanceRecordDto> {
+    return this.api.post('/v1/attendance/unlock', body);
+  }
+
+  employeeDays(id: () => string, from: DateKey, to: DateKey) {
+    return liveQuery(() => this.api.get<AttendanceRecordDto[]>(`/v1/employees/${id()}/attendance`, { from, to }), ['attendance']);
   }
 }

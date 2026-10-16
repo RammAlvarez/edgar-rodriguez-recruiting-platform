@@ -70,7 +70,12 @@ function isoWeekday(d: DateKey): number {
           @if (dayOf(anchor()); as d) {
             @for (s of d.sites; track s.siteId) {
               <section class="site" [style.border-left-color]="color(s.clientId)">
-                <h2>{{ s.siteName }} <span class="muted">· {{ s.entries.length }} esperados</span></h2>
+                <h2>
+                  {{ s.siteName }} <span class="muted">· {{ s.entries.length }} esperados</span>
+                  @if (d.date <= today) {
+                    <a matButton [routerLink]="['/asistencia']" [queryParams]="{ site: s.siteId, date: d.date }">Capturar asistencia</a>
+                  }
+                </h2>
                 <div class="list-card">
                   @for (x of s.entries; track x.employeeId) {
                     <a class="list-row clickable" [routerLink]="['/personal', x.employeeId]">
@@ -154,6 +159,10 @@ function isoWeekday(d: DateKey): number {
       padding-left: 12px;
       border-left: 4px solid;
       h2 {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px 8px;
         margin: 0 0 8px;
         font: var(--mat-sys-title-small);
       }
