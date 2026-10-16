@@ -32,7 +32,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
     o.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
 });
-builder.Services.AddProblemDetails();
+builder.Services.AddPlatformProblemDetails();
 builder.Services.AddOpenApi("v1", o => o.AddSchemaTransformer<DecimalAsStringSchemaTransformer>());
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins([.. settings.AppOrigins])

@@ -31,7 +31,7 @@ public sealed class HttpConventionTests : IAsyncLifetime
         builder.WebHost.UseTestServer();
         builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new DecimalStringJsonConverter()));
         builder.Services.AddScoped<IValidator<Payment>, PaymentValidator>();
-        builder.Services.AddProblemDetails();
+        builder.Services.AddPlatformProblemDetails();
         _app = builder.Build();
         _app.UseRouting();
         _app.UseExceptionHandler();
@@ -77,6 +77,24 @@ public sealed class HttpConventionTests : IAsyncLifetime
     public async Task Money_sent_as_a_json_number_is_rejected()
     {
         var response = await _client.PostAsync("/payments", Json("""{"name":"A","amount":1234.56}"""));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Theory]
+    [InlineData("Development")]
+    [InlineData("Production")]
+    public async Task Unreadable_body_is_400_in_every_environment(string environment)
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = environment });
+        builder.WebHost.UseTestServer();
+        builder.Services.AddPlatformProblemDetails();
+        await using var app = builder.Build();
+        app.UseExceptionHandler();
+        app.MapPost("/payments", (Payment p) => TypedResults.Ok(p));
+        await app.StartAsync();
+
+        var response = await app.GetTestClient().PostAsync("/payments", Json("{not json"));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
