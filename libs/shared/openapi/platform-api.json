@@ -118,6 +118,109 @@
         }
       }
     },
+    "/v1/card-requests": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "ListCardRequests",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardRequestDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/calendar": {
+      "get": {
+        "tags": [
+          "Calendar"
+        ],
+        "operationId": "GetCalendar",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarDayDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/catalogs": {
       "get": {
         "tags": [
@@ -4387,6 +4490,93 @@
         }
       }
     },
+    "/v1/candidate-portal/bank-accounts": {
+      "get": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "ListCandidateBankAccounts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "AddCandidateBankAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidate-portal/banks": {
+      "get": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "ListCandidateBanks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankOptionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/candidate-portal/privacy-notice": {
       "post": {
         "tags": [
@@ -5093,6 +5283,1679 @@
           }
         }
       }
+    },
+    "/v1/payroll/groups": {
+      "get": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "ListPayrollGroups",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollGroupListItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "CreatePayrollGroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayrollGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollGroupDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/groups/{id}": {
+      "get": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "GetPayrollGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollGroupDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "UpdatePayrollGroup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayrollGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollGroupDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/groups/{id}/positions": {
+      "post": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "CreatePosition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PositionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollGroupDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/groups/{id}/concepts": {
+      "put": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "UpdatePayrollGroupConcepts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupConceptsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollGroupDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/positions/{id}": {
+      "put": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "UpdatePosition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePositionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollGroupDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/positions/{id}/rates": {
+      "post": {
+        "tags": [
+          "Payroll groups"
+        ],
+        "operationId": "ChangePositionRates",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PositionRatesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollGroupDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/options": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "GetEmployeeOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeOptionsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/conversion/{candidateId}": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "GetEmployeeConversion",
+        "parameters": [
+          {
+            "name": "candidateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "ListEmployees",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "positionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeTerminated",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeListItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "CreateEmployee",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "GetEmployee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "UpdateEmployee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmployeeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/assignment": {
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "ChangeEmployeeAssignment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/status": {
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "AddEmployeeStatusPeriod",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusPeriodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/status/{periodId}": {
+      "put": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "UpdateEmployeeStatusPeriod",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStatusPeriodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/status/{periodId}/end": {
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "EndEmployeeStatusPeriod",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/rehire": {
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "RehireEmployee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RehireRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/card-request": {
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "RequestEmployeeCard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/bank-accounts": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "ListEmployeeBankAccounts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "AddEmployeeBankAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/bank-accounts/{accountId}": {
+      "put": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "UpdateEmployeeBankAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBankAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/bank-accounts/{accountId}/primary": {
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "MakeEmployeeBankAccountPrimary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/schedules": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "ListWorkSchedules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkScheduleDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "CreateWorkSchedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkScheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkScheduleDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/schedules/{scheduleId}": {
+      "put": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "UpdateWorkSchedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "scheduleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkScheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkScheduleDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Employees"
+        ],
+        "operationId": "DeleteWorkSchedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "scheduleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkScheduleDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5128,6 +6991,27 @@
           "interview",
           "result"
         ]
+      },
+      "AssignmentRequest": {
+        "required": [
+          "payrollGroupId",
+          "positionId",
+          "shift"
+        ],
+        "type": "object",
+        "properties": {
+          "payrollGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "positionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shift": {
+            "type": "string"
+          }
+        }
       },
       "AssignmentRole": {
         "enum": [
@@ -5173,6 +7057,148 @@
           }
         }
       },
+      "AttendanceStatus": {
+        "enum": [
+          "present",
+          "partial",
+          "absent",
+          "rest_day",
+          "rest_day_worked",
+          "holiday",
+          "holiday_worked",
+          "sick_leave",
+          "leave_paid",
+          "leave_unpaid",
+          "vacation",
+          null
+        ]
+      },
+      "BankAccountDto": {
+        "required": [
+          "id",
+          "bankId",
+          "bankName",
+          "bankCode",
+          "accountType",
+          "last4",
+          "holderName",
+          "alias",
+          "isPrimary",
+          "isThirdParty",
+          "validFrom",
+          "validTo",
+          "isCurrent",
+          "isFrequentAccountRegistered"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bankId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "bankCode": {
+            "type": "string"
+          },
+          "accountType": {
+            "$ref": "#/components/schemas/BankAccountType"
+          },
+          "last4": {
+            "type": "string"
+          },
+          "holderName": {
+            "type": "string"
+          },
+          "alias": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPrimary": {
+            "type": "boolean"
+          },
+          "isThirdParty": {
+            "type": "boolean"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "validTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "isFrequentAccountRegistered": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BankAccountRequest": {
+        "required": [
+          "bankId",
+          "accountType",
+          "accountNumber",
+          "holderName",
+          "alias",
+          "validFrom",
+          "makePrimary"
+        ],
+        "type": "object",
+        "properties": {
+          "bankId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountType": {
+            "$ref": "#/components/schemas/BankAccountType"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "holderName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "alias": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "makePrimary": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BankAccountType": {
+        "enum": [
+          "own_account",
+          "debit_card",
+          "clabe"
+        ]
+      },
       "BankDto": {
         "required": [
           "id",
@@ -5209,6 +7235,26 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "BankOptionDto": {
+        "required": [
+          "id",
+          "name",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
           }
         }
       },
@@ -5286,6 +7332,105 @@
           "isActive": {
             "type": "boolean",
             "default": true
+          }
+        }
+      },
+      "CalendarDayDto": {
+        "required": [
+          "date",
+          "sites"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "sites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarSiteDto"
+            }
+          }
+        }
+      },
+      "CalendarEntryDto": {
+        "required": [
+          "employeeId",
+          "fullName",
+          "positionName",
+          "startTime",
+          "endTime",
+          "jobDescription",
+          "attendance"
+        ],
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "jobDescription": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attendance": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AttendanceStatus"
+              }
+            ]
+          }
+        }
+      },
+      "CalendarSiteDto": {
+        "required": [
+          "siteId",
+          "siteName",
+          "clientId",
+          "clientName",
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarEntryDto"
+            }
           }
         }
       },
@@ -5895,6 +8040,56 @@
           "not_suitable",
           "hired",
           "discarded"
+        ]
+      },
+      "CardRequestDto": {
+        "required": [
+          "id",
+          "employeeId",
+          "bank",
+          "status",
+          "requestedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "employeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bank": {
+            "$ref": "#/components/schemas/RegistrationBank"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CardRequestStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CardRequestRequest": {
+        "required": [
+          "bank"
+        ],
+        "type": "object",
+        "properties": {
+          "bank": {
+            "$ref": "#/components/schemas/RegistrationBank"
+          }
+        }
+      },
+      "CardRequestStatus": {
+        "enum": [
+          "queued",
+          "in_batch",
+          "uploaded",
+          "received",
+          "cancelled"
         ]
       },
       "CatalogPositionDto": {
@@ -6537,6 +8732,18 @@
           }
         }
       },
+      "ConceptCalc": {
+        "enum": [
+          "fixed_amount",
+          "qty_times_hourly_rate",
+          "qty_times_hourly_rate_x2",
+          "qty_times_hourly_rate_x3",
+          "qty_times_daily_salary_x2",
+          "percent_of_daily_salary",
+          "per_day_worked",
+          "manual"
+        ]
+      },
       "ConfirmDocumentRequest": {
         "required": [
           "documentTypeId",
@@ -6655,6 +8862,67 @@
           },
           "isPrimary": {
             "type": "boolean"
+          }
+        }
+      },
+      "ConversionDto": {
+        "required": [
+          "candidateId",
+          "personId",
+          "fullName",
+          "clientId",
+          "openingName",
+          "hiredAt",
+          "suggestedBank",
+          "hasAccount",
+          "employeeId"
+        ],
+        "type": "object",
+        "properties": {
+          "candidateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "openingName": {
+            "type": "string"
+          },
+          "hiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "suggestedBank": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegistrationBank"
+              }
+            ]
+          },
+          "hasAccount": {
+            "type": "boolean"
+          },
+          "employeeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -7081,6 +9349,497 @@
           }
         }
       },
+      "EmployeeDetailDto": {
+        "required": [
+          "id",
+          "personId",
+          "fullName",
+          "curp",
+          "rfc",
+          "nss",
+          "mobilePhone",
+          "email",
+          "isForeign",
+          "clientId",
+          "clientName",
+          "payrollGroupId",
+          "groupName",
+          "positionId",
+          "positionName",
+          "shift",
+          "hiredAt",
+          "terminatedAt",
+          "status",
+          "period",
+          "nextPeriod",
+          "dailySalaryPocketOverride",
+          "dailySalaryImssOverride",
+          "hourlyRateOverride",
+          "daysWorkedBonusOverride",
+          "positionRates",
+          "rates",
+          "notes",
+          "candidateId",
+          "documentTemplateId",
+          "hasAccount",
+          "cardRequest"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "curp": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rfc": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nss": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobilePhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isForeign": {
+            "type": "boolean"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "payrollGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "positionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "shift": {
+            "type": "string"
+          },
+          "hiredAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "terminatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EmployeeStatus"
+          },
+          "period": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StatusPeriodDto"
+              }
+            ]
+          },
+          "nextPeriod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StatusPeriodDto"
+              }
+            ]
+          },
+          "dailySalaryPocketOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "dailySalaryImssOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "hourlyRateOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "daysWorkedBonusOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "positionRates": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EmployeeRatesDto"
+              }
+            ]
+          },
+          "rates": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EmployeeRatesDto"
+              }
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "candidateId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "documentTemplateId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "hasAccount": {
+            "type": "boolean"
+          },
+          "cardRequest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardRequestDto"
+              }
+            ]
+          }
+        }
+      },
+      "EmployeeListItemDto": {
+        "required": [
+          "id",
+          "personId",
+          "fullName",
+          "clientId",
+          "clientName",
+          "payrollGroupId",
+          "groupName",
+          "positionId",
+          "positionName",
+          "shift",
+          "hiredAt",
+          "terminatedAt",
+          "status",
+          "period",
+          "hasAccount",
+          "cardRequest",
+          "documentsCompleteness"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "payrollGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "positionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "shift": {
+            "type": "string"
+          },
+          "hiredAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "terminatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EmployeeStatus"
+          },
+          "period": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StatusPeriodDto"
+              }
+            ]
+          },
+          "hasAccount": {
+            "type": "boolean"
+          },
+          "cardRequest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardRequestDto"
+              }
+            ]
+          },
+          "documentsCompleteness": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          }
+        }
+      },
+      "EmployeeOptionsDto": {
+        "required": [
+          "groups",
+          "shifts",
+          "terminationReasons"
+        ],
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupOptionDto"
+            }
+          },
+          "shifts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "terminationReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "EmployeeRatesDto": {
+        "required": [
+          "dailySalaryPocket",
+          "dailySalaryImss",
+          "hourlyRate",
+          "daysWorkedBonus"
+        ],
+        "type": "object",
+        "properties": {
+          "dailySalaryPocket": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "dailySalaryImss": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "hourlyRate": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "daysWorkedBonus": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          }
+        }
+      },
+      "EmployeeRequest": {
+        "required": [
+          "personId",
+          "payrollGroupId",
+          "positionId",
+          "shift",
+          "hiredAt",
+          "dailySalaryPocketOverride",
+          "dailySalaryImssOverride",
+          "hourlyRateOverride",
+          "daysWorkedBonusOverride",
+          "notes",
+          "cardBank",
+          "candidateId"
+        ],
+        "type": "object",
+        "properties": {
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payrollGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "positionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shift": {
+            "type": "string"
+          },
+          "hiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dailySalaryPocketOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "dailySalaryImssOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "hourlyRateOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "daysWorkedBonusOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cardBank": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegistrationBank"
+              }
+            ]
+          },
+          "candidateId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "EmployeeStatus": {
+        "enum": [
+          "active",
+          "vacation",
+          "sick_leave",
+          "suspended",
+          "terminated"
+        ]
+      },
       "FunnelLossDto": {
         "required": [
           "outcome",
@@ -7208,6 +9967,130 @@
               "string"
             ],
             "format": "uuid"
+          }
+        }
+      },
+      "GroupConceptDto": {
+        "required": [
+          "code",
+          "name",
+          "calc",
+          "isActive",
+          "amount",
+          "daysBasis",
+          "amountFromPosition"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "calc": {
+            "$ref": "#/components/schemas/ConceptCalc"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "amount": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "daysBasis": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "amountFromPosition": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GroupConceptRequest": {
+        "required": [
+          "code",
+          "isActive",
+          "amount",
+          "daysBasis"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "amount": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "daysBasis": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          }
+        }
+      },
+      "GroupConceptsRequest": {
+        "required": [
+          "concepts"
+        ],
+        "type": "object",
+        "properties": {
+          "concepts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupConceptRequest"
+            }
+          }
+        }
+      },
+      "GroupOptionDto": {
+        "required": [
+          "id",
+          "clientId",
+          "clientName",
+          "name",
+          "positions"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionOptionDto"
+            }
           }
         }
       },
@@ -8537,6 +11420,261 @@
           }
         }
       },
+      "PayrollGroupDetailDto": {
+        "required": [
+          "id",
+          "clientId",
+          "clientName",
+          "name",
+          "periodType",
+          "cutoffWeekday",
+          "shiftHours",
+          "attendanceLockTime",
+          "seventhDayDivisor",
+          "sundayPremiumPct",
+          "holidayWorkedMultiplier",
+          "scheduleDescription",
+          "timeZone",
+          "isActive",
+          "positions",
+          "concepts"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "periodType": {
+            "$ref": "#/components/schemas/PeriodType"
+          },
+          "cutoffWeekday": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "shiftHours": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "attendanceLockTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "seventhDayDivisor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "sundayPremiumPct": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "holidayWorkedMultiplier": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "scheduleDescription": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionDto"
+            }
+          },
+          "concepts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupConceptDto"
+            }
+          }
+        }
+      },
+      "PayrollGroupListItemDto": {
+        "required": [
+          "id",
+          "clientId",
+          "clientName",
+          "name",
+          "periodType",
+          "cutoffWeekday",
+          "shiftHours",
+          "attendanceLockTime",
+          "isActive",
+          "positions",
+          "activeEmployees"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "periodType": {
+            "$ref": "#/components/schemas/PeriodType"
+          },
+          "cutoffWeekday": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "shiftHours": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "attendanceLockTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "positions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "activeEmployees": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PayrollGroupRequest": {
+        "required": [
+          "clientId",
+          "name",
+          "periodType",
+          "cutoffWeekday",
+          "shiftHours",
+          "attendanceLockTime",
+          "seventhDayDivisor",
+          "sundayPremiumPct",
+          "holidayWorkedMultiplier",
+          "scheduleDescription",
+          "timeZone",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "periodType": {
+            "$ref": "#/components/schemas/PeriodType"
+          },
+          "cutoffWeekday": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "shiftHours": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "attendanceLockTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "seventhDayDivisor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "sundayPremiumPct": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "holidayWorkedMultiplier": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "scheduleDescription": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "timeZone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PeriodType": {
+        "enum": [
+          "weekly",
+          "biweekly"
+        ]
+      },
       "PermissionModule": {
         "enum": [
           "recruiting",
@@ -8981,6 +12119,199 @@
           }
         }
       },
+      "PositionDto": {
+        "required": [
+          "id",
+          "name",
+          "isActive",
+          "current",
+          "history"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "current": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PositionRateDto"
+              }
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionRateDto"
+            }
+          }
+        }
+      },
+      "PositionOptionDto": {
+        "required": [
+          "id",
+          "name",
+          "rates"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rates": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EmployeeRatesDto"
+              }
+            ]
+          }
+        }
+      },
+      "PositionRateDto": {
+        "required": [
+          "id",
+          "dailySalaryPocket",
+          "dailySalaryImss",
+          "hourlyRate",
+          "daysWorkedBonus",
+          "validFrom",
+          "validTo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dailySalaryPocket": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "dailySalaryImss": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "hourlyRate": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "daysWorkedBonus": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "validTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "PositionRatesRequest": {
+        "required": [
+          "dailySalaryPocket",
+          "dailySalaryImss",
+          "hourlyRate",
+          "daysWorkedBonus",
+          "validFrom"
+        ],
+        "type": "object",
+        "properties": {
+          "dailySalaryPocket": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "dailySalaryImss": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "hourlyRate": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "daysWorkedBonus": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "PositionRequest": {
+        "required": [
+          "name",
+          "dailySalaryPocket",
+          "dailySalaryImss",
+          "hourlyRate",
+          "daysWorkedBonus",
+          "validFrom"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "dailySalaryPocket": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "dailySalaryImss": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "hourlyRate": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "daysWorkedBonus": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "validFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "PresignUploadRequest": {
         "required": [
           "personId",
@@ -9385,9 +12716,45 @@
       "RegistrationBank": {
         "enum": [
           "banorte",
-          "banregio",
-          null
+          "banregio"
         ]
+      },
+      "RehireRequest": {
+        "required": [
+          "payrollGroupId",
+          "positionId",
+          "shift",
+          "hiredAt",
+          "cardBank"
+        ],
+        "type": "object",
+        "properties": {
+          "payrollGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "positionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shift": {
+            "type": "string"
+          },
+          "hiredAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "cardBank": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegistrationBank"
+              }
+            ]
+          }
+        }
       },
       "RejectDocumentRequest": {
         "required": [
@@ -9860,6 +13227,87 @@
           }
         }
       },
+      "StatusPeriodDto": {
+        "required": [
+          "id",
+          "status",
+          "startDate",
+          "endDate",
+          "reason",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EmployeeStatus"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "StatusPeriodRequest": {
+        "required": [
+          "status",
+          "startDate",
+          "endDate",
+          "reason",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/EmployeeStatus"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "StatutoryHolidaysRequest": {
         "required": [
           "year"
@@ -10100,6 +13548,32 @@
           "interview"
         ]
       },
+      "UpdateBankAccountRequest": {
+        "required": [
+          "holderName",
+          "alias",
+          "validTo"
+        ],
+        "type": "object",
+        "properties": {
+          "holderName": {
+            "type": "string"
+          },
+          "alias": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "UpdateCandidateRequest": {
         "required": [
           "source",
@@ -10167,6 +13641,94 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "UpdateEmployeeRequest": {
+        "required": [
+          "shift",
+          "dailySalaryPocketOverride",
+          "dailySalaryImssOverride",
+          "hourlyRateOverride",
+          "daysWorkedBonusOverride",
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "shift": {
+            "type": "string"
+          },
+          "dailySalaryPocketOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "dailySalaryImssOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "hourlyRateOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "daysWorkedBonusOverride": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "UpdatePositionRequest": {
+        "required": [
+          "name",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateStatusPeriodRequest": {
+        "required": [
+          "endDate",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10300,6 +13862,142 @@
           "client"
         ]
       },
+      "WorkScheduleDto": {
+        "required": [
+          "id",
+          "clientSiteId",
+          "siteName",
+          "weekdays",
+          "oneOffDate",
+          "startTime",
+          "endTime",
+          "validFrom",
+          "validTo",
+          "jobDescription"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientSiteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int16"
+            }
+          },
+          "oneOffDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "validTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "jobDescription": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "WorkScheduleRequest": {
+        "required": [
+          "clientSiteId",
+          "weekdays",
+          "oneOffDate",
+          "startTime",
+          "endTime",
+          "validFrom",
+          "validTo",
+          "jobDescription"
+        ],
+        "type": "object",
+        "properties": {
+          "clientSiteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int16"
+            }
+          },
+          "oneOffDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "validFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "validTo": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "jobDescription": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ZoneDto": {
         "required": [
           "id",
@@ -10356,6 +14054,12 @@
       "name": "Recruiters"
     },
     {
+      "name": "Employees"
+    },
+    {
+      "name": "Calendar"
+    },
+    {
       "name": "Catalogs"
     },
     {
@@ -10378,6 +14082,9 @@
     },
     {
       "name": "RecruitingReports"
+    },
+    {
+      "name": "Payroll groups"
     }
   ]
 }

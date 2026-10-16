@@ -66,6 +66,38 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/card-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListCardRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/catalogs": {
         parameters: {
             query?: never;
@@ -1026,6 +1058,38 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/candidate-portal/bank-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListCandidateBankAccounts"];
+        put?: never;
+        post: operations["AddCandidateBankAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidate-portal/banks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListCandidateBanks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/candidate-portal/privacy-notice": {
         parameters: {
             query?: never;
@@ -1266,6 +1330,342 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListPayrollGroups"];
+        put?: never;
+        post: operations["CreatePayrollGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPayrollGroup"];
+        put: operations["UpdatePayrollGroup"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/groups/{id}/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreatePosition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/groups/{id}/concepts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdatePayrollGroupConcepts"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/positions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdatePosition"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/positions/{id}/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChangePositionRates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetEmployeeOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/conversion/{candidateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetEmployeeConversion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListEmployees"];
+        put?: never;
+        post: operations["CreateEmployee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetEmployee"];
+        put: operations["UpdateEmployee"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChangeEmployeeAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AddEmployeeStatusPeriod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/status/{periodId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateEmployeeStatusPeriod"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/status/{periodId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EndEmployeeStatusPeriod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/rehire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RehireEmployee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/card-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RequestEmployeeCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/bank-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListEmployeeBankAccounts"];
+        put?: never;
+        post: operations["AddEmployeeBankAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/bank-accounts/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateEmployeeBankAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/bank-accounts/{accountId}/primary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MakeEmployeeBankAccountPrimary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListWorkSchedules"];
+        put?: never;
+        post: operations["CreateWorkSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/employees/{id}/schedules/{scheduleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateWorkSchedule"];
+        post?: never;
+        delete: operations["DeleteWorkSchedule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -1279,6 +1679,13 @@ export type components = {
         ApplicationOutcome: "in_process" | "selected" | "hired" | "closed";
         /** @enum {unknown} */
         ApplicationStep: "received" | "contacted" | "interview" | "result";
+        AssignmentRequest: {
+            /** Format: uuid */
+            payrollGroupId: string;
+            /** Format: uuid */
+            positionId: string;
+            shift: string;
+        };
         /** @enum {unknown} */
         AssignmentRole: "lead" | "support";
         AssignOpeningsRequest: {
@@ -1289,6 +1696,41 @@ export type components = {
             userIds: string[];
             role: components["schemas"]["AssignmentRole"];
         };
+        /** @enum {unknown} */
+        AttendanceStatus: "present" | "partial" | "absent" | "rest_day" | "rest_day_worked" | "holiday" | "holiday_worked" | "sick_leave" | "leave_paid" | "leave_unpaid" | "vacation" | null;
+        BankAccountDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bankId: string;
+            bankName: string;
+            bankCode: string;
+            accountType: components["schemas"]["BankAccountType"];
+            last4: string;
+            holderName: string;
+            alias: null | string;
+            isPrimary: boolean;
+            isThirdParty: boolean;
+            /** Format: date */
+            validFrom: DateKey;
+            /** Format: date */
+            validTo: DateKey | null;
+            isCurrent: boolean;
+            isFrequentAccountRegistered: boolean;
+        };
+        BankAccountRequest: {
+            /** Format: uuid */
+            bankId: string;
+            accountType: components["schemas"]["BankAccountType"];
+            accountNumber: string;
+            holderName: null | string;
+            alias: null | string;
+            /** Format: date */
+            validFrom: DateKey | null;
+            makePrimary: boolean;
+        };
+        /** @enum {unknown} */
+        BankAccountType: "own_account" | "debit_card" | "clabe";
         BankDto: {
             /** Format: uuid */
             id: string;
@@ -1297,6 +1739,12 @@ export type components = {
             supportsRegistration: null | components["schemas"]["RegistrationBank"];
             supportsMassivePayment: boolean;
             isActive: boolean;
+        };
+        BankOptionDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            code: string;
         };
         BankRequest: {
             name: string;
@@ -1318,6 +1766,32 @@ export type components = {
             isDefault: boolean;
             /** @default true */
             isActive: boolean;
+        };
+        CalendarDayDto: {
+            /** Format: date */
+            date: DateKey;
+            sites: components["schemas"]["CalendarSiteDto"][];
+        };
+        CalendarEntryDto: {
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            positionName: string;
+            /** Format: time */
+            startTime: string;
+            /** Format: time */
+            endTime: string;
+            jobDescription: null | string;
+            attendance: null | components["schemas"]["AttendanceStatus"];
+        };
+        CalendarSiteDto: {
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            entries: components["schemas"]["CalendarEntryDto"][];
         };
         CandidateApplicationDto: {
             /** Format: uuid */
@@ -1446,6 +1920,21 @@ export type components = {
         CandidateSource: "facebook" | "linkedin" | "whatsapp" | "referral" | "job_board" | "other" | null;
         /** @enum {unknown} */
         CandidateStage: "new" | "contacted" | "interview" | "suitable" | "not_suitable" | "hired" | "discarded";
+        CardRequestDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            employeeId: string;
+            bank: components["schemas"]["RegistrationBank"];
+            status: components["schemas"]["CardRequestStatus"];
+            /** Format: date-time */
+            requestedAt: Date;
+        };
+        CardRequestRequest: {
+            bank: components["schemas"]["RegistrationBank"];
+        };
+        /** @enum {unknown} */
+        CardRequestStatus: "queued" | "in_batch" | "uploaded" | "received" | "cancelled";
         CatalogPositionDto: {
             /** Format: uuid */
             id: string;
@@ -1595,6 +2084,8 @@ export type components = {
             clientName: string;
             metrics: components["schemas"]["SummaryMetricsDto"];
         };
+        /** @enum {unknown} */
+        ConceptCalc: "fixed_amount" | "qty_times_hourly_rate" | "qty_times_hourly_rate_x2" | "qty_times_hourly_rate_x3" | "qty_times_daily_salary_x2" | "percent_of_daily_salary" | "per_day_worked" | "manual";
         ConfirmDocumentRequest: {
             /** Format: uuid */
             documentTypeId: string;
@@ -1622,6 +2113,22 @@ export type components = {
             phone: null | string;
             jobTitle: null | string;
             isPrimary: boolean;
+        };
+        ConversionDto: {
+            /** Format: uuid */
+            candidateId: string;
+            /** Format: uuid */
+            personId: string;
+            fullName: string;
+            /** Format: uuid */
+            clientId: string;
+            openingName: string;
+            /** Format: date */
+            hiredAt: DateKey | null;
+            suggestedBank: null | components["schemas"]["RegistrationBank"];
+            hasAccount: boolean;
+            /** Format: uuid */
+            employeeId: null | string;
         };
         CreateCandidateRequest: {
             /** Format: uuid */
@@ -1727,6 +2234,120 @@ export type components = {
             /** @default true */
             isActive: boolean;
         };
+        EmployeeDetailDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            fullName: string;
+            curp: null | string;
+            rfc: null | string;
+            nss: null | string;
+            mobilePhone: null | string;
+            email: null | string;
+            isForeign: boolean;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            /** Format: uuid */
+            payrollGroupId: string;
+            groupName: string;
+            /** Format: uuid */
+            positionId: string;
+            positionName: string;
+            shift: string;
+            /** Format: date */
+            hiredAt: DateKey;
+            /** Format: date */
+            terminatedAt: DateKey | null;
+            status: components["schemas"]["EmployeeStatus"];
+            period: null | components["schemas"]["StatusPeriodDto"];
+            nextPeriod: null | components["schemas"]["StatusPeriodDto"];
+            /** Format: decimal */
+            dailySalaryPocketOverride: Decimal | null;
+            /** Format: decimal */
+            dailySalaryImssOverride: Decimal | null;
+            /** Format: decimal */
+            hourlyRateOverride: Decimal | null;
+            /** Format: decimal */
+            daysWorkedBonusOverride: Decimal | null;
+            positionRates: null | components["schemas"]["EmployeeRatesDto"];
+            rates: null | components["schemas"]["EmployeeRatesDto"];
+            notes: null | string;
+            /** Format: uuid */
+            candidateId: null | string;
+            /** Format: uuid */
+            documentTemplateId: null | string;
+            hasAccount: boolean;
+            cardRequest: null | components["schemas"]["CardRequestDto"];
+        };
+        EmployeeListItemDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            fullName: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            /** Format: uuid */
+            payrollGroupId: string;
+            groupName: string;
+            /** Format: uuid */
+            positionId: string;
+            positionName: string;
+            shift: string;
+            /** Format: date */
+            hiredAt: DateKey;
+            /** Format: date */
+            terminatedAt: DateKey | null;
+            status: components["schemas"]["EmployeeStatus"];
+            period: null | components["schemas"]["StatusPeriodDto"];
+            hasAccount: boolean;
+            cardRequest: null | components["schemas"]["CardRequestDto"];
+            /** Format: decimal */
+            documentsCompleteness: Decimal;
+        };
+        EmployeeOptionsDto: {
+            groups: components["schemas"]["GroupOptionDto"][];
+            shifts: string[];
+            terminationReasons: string[];
+        };
+        EmployeeRatesDto: {
+            /** Format: decimal */
+            dailySalaryPocket: Decimal;
+            /** Format: decimal */
+            dailySalaryImss: Decimal;
+            /** Format: decimal */
+            hourlyRate: Decimal;
+            /** Format: decimal */
+            daysWorkedBonus: Decimal;
+        };
+        EmployeeRequest: {
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            payrollGroupId: string;
+            /** Format: uuid */
+            positionId: string;
+            shift: string;
+            /** Format: date */
+            hiredAt: DateKey | null;
+            /** Format: decimal */
+            dailySalaryPocketOverride: Decimal | null;
+            /** Format: decimal */
+            dailySalaryImssOverride: Decimal | null;
+            /** Format: decimal */
+            hourlyRateOverride: Decimal | null;
+            /** Format: decimal */
+            daysWorkedBonusOverride: Decimal | null;
+            notes: null | string;
+            cardBank: null | components["schemas"]["RegistrationBank"];
+            /** Format: uuid */
+            candidateId: null | string;
+        };
+        /** @enum {unknown} */
+        EmployeeStatus: "active" | "vacation" | "sick_leave" | "suspended" | "terminated";
         FunnelLossDto: {
             outcome: components["schemas"]["CandidateStage"];
             /** Format: int32 */
@@ -1757,6 +2378,37 @@ export type components = {
             module: components["schemas"]["PermissionModule"];
             /** Format: uuid */
             clientId: null | string;
+        };
+        GroupConceptDto: {
+            code: string;
+            name: string;
+            calc: components["schemas"]["ConceptCalc"];
+            isActive: boolean;
+            /** Format: decimal */
+            amount: Decimal | null;
+            /** Format: decimal */
+            daysBasis: Decimal | null;
+            amountFromPosition: boolean;
+        };
+        GroupConceptRequest: {
+            code: string;
+            isActive: boolean;
+            /** Format: decimal */
+            amount: Decimal | null;
+            /** Format: decimal */
+            daysBasis: Decimal | null;
+        };
+        GroupConceptsRequest: {
+            concepts: components["schemas"]["GroupConceptRequest"][];
+        };
+        GroupOptionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            name: string;
+            positions: components["schemas"]["PositionOptionDto"][];
         };
         HolidayDto: {
             /** Format: uuid */
@@ -2072,6 +2724,75 @@ export type components = {
             staleAfterDays: number | string;
             openings: components["schemas"]["OpenOpeningDto"][];
         };
+        PayrollGroupDetailDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            name: string;
+            periodType: components["schemas"]["PeriodType"];
+            /** Format: int16 */
+            cutoffWeekday: number | string;
+            /** Format: decimal */
+            shiftHours: Decimal;
+            /** Format: time */
+            attendanceLockTime: string;
+            /** Format: int16 */
+            seventhDayDivisor: number | string;
+            /** Format: decimal */
+            sundayPremiumPct: Decimal;
+            /** Format: decimal */
+            holidayWorkedMultiplier: Decimal;
+            scheduleDescription: null | string;
+            timeZone: string;
+            isActive: boolean;
+            positions: components["schemas"]["PositionDto"][];
+            concepts: components["schemas"]["GroupConceptDto"][];
+        };
+        PayrollGroupListItemDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            name: string;
+            periodType: components["schemas"]["PeriodType"];
+            /** Format: int16 */
+            cutoffWeekday: number | string;
+            /** Format: decimal */
+            shiftHours: Decimal;
+            /** Format: time */
+            attendanceLockTime: string;
+            isActive: boolean;
+            /** Format: int32 */
+            positions: number | string;
+            /** Format: int32 */
+            activeEmployees: number | string;
+        };
+        PayrollGroupRequest: {
+            /** Format: uuid */
+            clientId: string;
+            name: string;
+            periodType: components["schemas"]["PeriodType"];
+            /** Format: int16 */
+            cutoffWeekday: number | string;
+            /** Format: decimal */
+            shiftHours: Decimal;
+            /** Format: time */
+            attendanceLockTime: string;
+            /** Format: int16 */
+            seventhDayDivisor: number | string;
+            /** Format: decimal */
+            sundayPremiumPct: Decimal;
+            /** Format: decimal */
+            holidayWorkedMultiplier: Decimal;
+            scheduleDescription: null | string;
+            timeZone: null | string;
+            isActive: boolean;
+        };
+        /** @enum {unknown} */
+        PeriodType: "weekly" | "biweekly";
         /** @enum {unknown} */
         PermissionModule: "recruiting" | "recruiting_reports" | "payroll_prepayroll" | "payroll_attendance" | "payroll_incidents" | "payroll_staff" | "payroll_payment_files" | "payroll_card_requests" | "users";
         PersonDocumentDto: {
@@ -2155,6 +2876,61 @@ export type components = {
             rfc: null | string;
             mobilePhone: null | string;
             email: null | string;
+        };
+        PositionDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            isActive: boolean;
+            current: null | components["schemas"]["PositionRateDto"];
+            history: components["schemas"]["PositionRateDto"][];
+        };
+        PositionOptionDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            rates: null | components["schemas"]["EmployeeRatesDto"];
+        };
+        PositionRateDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: decimal */
+            dailySalaryPocket: Decimal;
+            /** Format: decimal */
+            dailySalaryImss: Decimal;
+            /** Format: decimal */
+            hourlyRate: Decimal;
+            /** Format: decimal */
+            daysWorkedBonus: Decimal;
+            /** Format: date */
+            validFrom: DateKey;
+            /** Format: date */
+            validTo: DateKey | null;
+        };
+        PositionRatesRequest: {
+            /** Format: decimal */
+            dailySalaryPocket: Decimal;
+            /** Format: decimal */
+            dailySalaryImss: Decimal;
+            /** Format: decimal */
+            hourlyRate: Decimal;
+            /** Format: decimal */
+            daysWorkedBonus: Decimal;
+            /** Format: date */
+            validFrom: DateKey;
+        };
+        PositionRequest: {
+            name: string;
+            /** Format: decimal */
+            dailySalaryPocket: Decimal;
+            /** Format: decimal */
+            dailySalaryImss: Decimal;
+            /** Format: decimal */
+            hourlyRate: Decimal;
+            /** Format: decimal */
+            daysWorkedBonus: Decimal;
+            /** Format: date */
+            validFrom: DateKey | null;
         };
         PresignUploadRequest: {
             /** Format: uuid */
@@ -2258,7 +3034,17 @@ export type components = {
         /** @enum {unknown} */
         RecruitingReport: "recruiter_performance" | "summary" | "open_openings" | "stage_funnel" | "sources" | "client_openings";
         /** @enum {unknown} */
-        RegistrationBank: "banorte" | "banregio" | null;
+        RegistrationBank: "banorte" | "banregio";
+        RehireRequest: {
+            /** Format: uuid */
+            payrollGroupId: string;
+            /** Format: uuid */
+            positionId: string;
+            shift: string;
+            /** Format: date */
+            hiredAt: DateKey;
+            cardBank: null | components["schemas"]["RegistrationBank"];
+        };
         RejectDocumentRequest: {
             reason: string;
         };
@@ -2368,6 +3154,26 @@ export type components = {
             stages: components["schemas"]["FunnelStageDto"][];
             losses: components["schemas"]["FunnelLossDto"][];
         };
+        StatusPeriodDto: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["EmployeeStatus"];
+            /** Format: date */
+            startDate: DateKey;
+            /** Format: date */
+            endDate: DateKey | null;
+            reason: null | string;
+            reference: null | string;
+        };
+        StatusPeriodRequest: {
+            status: components["schemas"]["EmployeeStatus"];
+            /** Format: date */
+            startDate: DateKey;
+            /** Format: date */
+            endDate: DateKey | null;
+            reason: null | string;
+            reference: null | string;
+        };
         StatutoryHolidaysRequest: {
             /** Format: int32 */
             year: number | string;
@@ -2422,6 +3228,12 @@ export type components = {
         };
         /** @enum {unknown} */
         TimelineKind: "stage" | "note" | "interview";
+        UpdateBankAccountRequest: {
+            holderName: string;
+            alias: null | string;
+            /** Format: date */
+            validTo: DateKey | null;
+        };
         UpdateCandidateRequest: {
             source: null | components["schemas"]["CandidateSource"];
             /** Format: decimal */
@@ -2434,6 +3246,27 @@ export type components = {
             rfc: null | string;
             notes: null | string;
             isActive: boolean;
+        };
+        UpdateEmployeeRequest: {
+            shift: string;
+            /** Format: decimal */
+            dailySalaryPocketOverride: Decimal | null;
+            /** Format: decimal */
+            dailySalaryImssOverride: Decimal | null;
+            /** Format: decimal */
+            hourlyRateOverride: Decimal | null;
+            /** Format: decimal */
+            daysWorkedBonusOverride: Decimal | null;
+            notes: null | string;
+        };
+        UpdatePositionRequest: {
+            name: string;
+            isActive: boolean;
+        };
+        UpdateStatusPeriodRequest: {
+            /** Format: date */
+            endDate: DateKey;
+            reference: null | string;
         };
         UpdateUserRequest: {
             email: string;
@@ -2466,6 +3299,41 @@ export type components = {
         };
         /** @enum {unknown} */
         UserRole: "administrator" | "recruiter" | "client";
+        WorkScheduleDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            clientSiteId: string;
+            siteName: string;
+            weekdays: (number | string)[];
+            /** Format: date */
+            oneOffDate: DateKey | null;
+            /** Format: time */
+            startTime: string;
+            /** Format: time */
+            endTime: string;
+            /** Format: date */
+            validFrom: DateKey;
+            /** Format: date */
+            validTo: DateKey | null;
+            jobDescription: null | string;
+        };
+        WorkScheduleRequest: {
+            /** Format: uuid */
+            clientSiteId: string;
+            weekdays: (number | string)[];
+            /** Format: date */
+            oneOffDate: DateKey | null;
+            /** Format: time */
+            startTime: string;
+            /** Format: time */
+            endTime: string;
+            /** Format: date */
+            validFrom: DateKey | null;
+            /** Format: date */
+            validTo: DateKey | null;
+            jobDescription: null | string;
+        };
         ZoneDto: {
             /** Format: uuid */
             id: string;
@@ -2489,13 +3357,22 @@ export type components = {
 export type ActingForDto = components['schemas']['ActingForDto'];
 export type ApplicationOutcome = components['schemas']['ApplicationOutcome'];
 export type ApplicationStep = components['schemas']['ApplicationStep'];
+export type AssignmentRequest = components['schemas']['AssignmentRequest'];
 export type AssignmentRole = components['schemas']['AssignmentRole'];
 export type AssignOpeningsRequest = components['schemas']['AssignOpeningsRequest'];
 export type AssignRecruitersRequest = components['schemas']['AssignRecruitersRequest'];
+export type AttendanceStatus = components['schemas']['AttendanceStatus'];
+export type BankAccountDto = components['schemas']['BankAccountDto'];
+export type BankAccountRequest = components['schemas']['BankAccountRequest'];
+export type BankAccountType = components['schemas']['BankAccountType'];
 export type BankDto = components['schemas']['BankDto'];
+export type BankOptionDto = components['schemas']['BankOptionDto'];
 export type BankRequest = components['schemas']['BankRequest'];
 export type BenefitDto = components['schemas']['BenefitDto'];
 export type BenefitRequest = components['schemas']['BenefitRequest'];
+export type CalendarDayDto = components['schemas']['CalendarDayDto'];
+export type CalendarEntryDto = components['schemas']['CalendarEntryDto'];
+export type CalendarSiteDto = components['schemas']['CalendarSiteDto'];
 export type CandidateApplicationDto = components['schemas']['CandidateApplicationDto'];
 export type CandidateDetailDto = components['schemas']['CandidateDetailDto'];
 export type CandidateInvitationResultDto = components['schemas']['CandidateInvitationResultDto'];
@@ -2504,6 +3381,9 @@ export type CandidateProfileDto = components['schemas']['CandidateProfileDto'];
 export type CandidateProfileRequest = components['schemas']['CandidateProfileRequest'];
 export type CandidateSource = components['schemas']['CandidateSource'];
 export type CandidateStage = components['schemas']['CandidateStage'];
+export type CardRequestDto = components['schemas']['CardRequestDto'];
+export type CardRequestRequest = components['schemas']['CardRequestRequest'];
+export type CardRequestStatus = components['schemas']['CardRequestStatus'];
 export type CatalogPositionDto = components['schemas']['CatalogPositionDto'];
 export type CatalogPositionRequest = components['schemas']['CatalogPositionRequest'];
 export type CatalogsDto = components['schemas']['CatalogsDto'];
@@ -2519,9 +3399,11 @@ export type ClientOpeningsReportDto = components['schemas']['ClientOpeningsRepor
 export type ClientOpeningsRowDto = components['schemas']['ClientOpeningsRowDto'];
 export type ClientOptionDto = components['schemas']['ClientOptionDto'];
 export type ClientSummaryDto = components['schemas']['ClientSummaryDto'];
+export type ConceptCalc = components['schemas']['ConceptCalc'];
 export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
 export type ContactRequest = components['schemas']['ContactRequest'];
+export type ConversionDto = components['schemas']['ConversionDto'];
 export type CreateCandidateRequest = components['schemas']['CreateCandidateRequest'];
 export type CreateClientRequest = components['schemas']['CreateClientRequest'];
 export type DocumentChecklistDto = components['schemas']['DocumentChecklistDto'];
@@ -2536,11 +3418,21 @@ export type DocumentUrlDto = components['schemas']['DocumentUrlDto'];
 export type DuplicatePersonDto = components['schemas']['DuplicatePersonDto'];
 export type EducationLevelDto = components['schemas']['EducationLevelDto'];
 export type EducationLevelRequest = components['schemas']['EducationLevelRequest'];
+export type EmployeeDetailDto = components['schemas']['EmployeeDetailDto'];
+export type EmployeeListItemDto = components['schemas']['EmployeeListItemDto'];
+export type EmployeeOptionsDto = components['schemas']['EmployeeOptionsDto'];
+export type EmployeeRatesDto = components['schemas']['EmployeeRatesDto'];
+export type EmployeeRequest = components['schemas']['EmployeeRequest'];
+export type EmployeeStatus = components['schemas']['EmployeeStatus'];
 export type FunnelLossDto = components['schemas']['FunnelLossDto'];
 export type FunnelReasonDto = components['schemas']['FunnelReasonDto'];
 export type FunnelStageDto = components['schemas']['FunnelStageDto'];
 export type Gender = components['schemas']['Gender'];
 export type GrantDto = components['schemas']['GrantDto'];
+export type GroupConceptDto = components['schemas']['GroupConceptDto'];
+export type GroupConceptRequest = components['schemas']['GroupConceptRequest'];
+export type GroupConceptsRequest = components['schemas']['GroupConceptsRequest'];
+export type GroupOptionDto = components['schemas']['GroupOptionDto'];
 export type HolidayDto = components['schemas']['HolidayDto'];
 export type HolidayRequest = components['schemas']['HolidayRequest'];
 export type HttpValidationProblemDetails = components['schemas']['HttpValidationProblemDetails'];
@@ -2570,11 +3462,20 @@ export type OpeningStatus = components['schemas']['OpeningStatus'];
 export type OpeningStatusRequest = components['schemas']['OpeningStatusRequest'];
 export type OpenOpeningDto = components['schemas']['OpenOpeningDto'];
 export type OpenOpeningsReportDto = components['schemas']['OpenOpeningsReportDto'];
+export type PayrollGroupDetailDto = components['schemas']['PayrollGroupDetailDto'];
+export type PayrollGroupListItemDto = components['schemas']['PayrollGroupListItemDto'];
+export type PayrollGroupRequest = components['schemas']['PayrollGroupRequest'];
+export type PeriodType = components['schemas']['PeriodType'];
 export type PermissionModule = components['schemas']['PermissionModule'];
 export type PersonDocumentDto = components['schemas']['PersonDocumentDto'];
 export type PersonDto = components['schemas']['PersonDto'];
 export type PersonRequest = components['schemas']['PersonRequest'];
 export type PersonSummaryDto = components['schemas']['PersonSummaryDto'];
+export type PositionDto = components['schemas']['PositionDto'];
+export type PositionOptionDto = components['schemas']['PositionOptionDto'];
+export type PositionRateDto = components['schemas']['PositionRateDto'];
+export type PositionRatesRequest = components['schemas']['PositionRatesRequest'];
+export type PositionRequest = components['schemas']['PositionRequest'];
 export type PresignUploadRequest = components['schemas']['PresignUploadRequest'];
 export type PresignUploadResponse = components['schemas']['PresignUploadResponse'];
 export type ProblemDetails = components['schemas']['ProblemDetails'];
@@ -2586,6 +3487,7 @@ export type RecruiterPerformanceRowDto = components['schemas']['RecruiterPerform
 export type RecruiterSummaryDto = components['schemas']['RecruiterSummaryDto'];
 export type RecruitingReport = components['schemas']['RecruitingReport'];
 export type RegistrationBank = components['schemas']['RegistrationBank'];
+export type RehireRequest = components['schemas']['RehireRequest'];
 export type RejectDocumentRequest = components['schemas']['RejectDocumentRequest'];
 export type RemoveRecruiterRequest = components['schemas']['RemoveRecruiterRequest'];
 export type ReportExportDto = components['schemas']['ReportExportDto'];
@@ -2601,17 +3503,25 @@ export type SourcesReportDto = components['schemas']['SourcesReportDto'];
 export type StaffOptionDto = components['schemas']['StaffOptionDto'];
 export type StageCountDto = components['schemas']['StageCountDto'];
 export type StageFunnelReportDto = components['schemas']['StageFunnelReportDto'];
+export type StatusPeriodDto = components['schemas']['StatusPeriodDto'];
+export type StatusPeriodRequest = components['schemas']['StatusPeriodRequest'];
 export type StatutoryHolidaysRequest = components['schemas']['StatutoryHolidaysRequest'];
 export type StatutoryHolidaysResult = components['schemas']['StatutoryHolidaysResult'];
 export type SummaryMetricsDto = components['schemas']['SummaryMetricsDto'];
 export type SummaryReportDto = components['schemas']['SummaryReportDto'];
 export type TimelineEntryDto = components['schemas']['TimelineEntryDto'];
 export type TimelineKind = components['schemas']['TimelineKind'];
+export type UpdateBankAccountRequest = components['schemas']['UpdateBankAccountRequest'];
 export type UpdateCandidateRequest = components['schemas']['UpdateCandidateRequest'];
 export type UpdateClientRequest = components['schemas']['UpdateClientRequest'];
+export type UpdateEmployeeRequest = components['schemas']['UpdateEmployeeRequest'];
+export type UpdatePositionRequest = components['schemas']['UpdatePositionRequest'];
+export type UpdateStatusPeriodRequest = components['schemas']['UpdateStatusPeriodRequest'];
 export type UpdateUserRequest = components['schemas']['UpdateUserRequest'];
 export type UserDto = components['schemas']['UserDto'];
 export type UserRole = components['schemas']['UserRole'];
+export type WorkScheduleDto = components['schemas']['WorkScheduleDto'];
+export type WorkScheduleRequest = components['schemas']['WorkScheduleRequest'];
 export type ZoneDto = components['schemas']['ZoneDto'];
 export type ZoneRequest = components['schemas']['ZoneRequest'];
 export type $defs = Record<string, never>;
@@ -2714,6 +3624,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffOptionDto"][];
+                };
+            };
+        };
+    };
+    ListCardRequests: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardRequestDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCalendar: {
+        parameters: {
+            query: {
+                from: DateKey;
+                to: DateKey;
+                clientId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarDayDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };
@@ -5938,6 +6912,79 @@ export interface operations {
             };
         };
     };
+    ListCandidateBankAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountDto"][];
+                };
+            };
+        };
+    };
+    AddCandidateBankAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ListCandidateBanks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankOptionDto"][];
+                };
+            };
+        };
+    };
     AcceptPrivacyNotice: {
         parameters: {
             query?: never;
@@ -6406,6 +7453,1207 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPayrollGroups: {
+        parameters: {
+            query?: {
+                clientId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupListItemDto"][];
+                };
+            };
+        };
+    };
+    CreatePayrollGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPayrollGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdatePayrollGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreatePosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PositionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdatePayrollGroupConcepts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupConceptsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdatePosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePositionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangePositionRates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PositionRatesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollGroupDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetEmployeeOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeOptionsDto"];
+                };
+            };
+        };
+    };
+    GetEmployeeConversion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversionDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListEmployees: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                groupId?: string;
+                positionId?: string;
+                status?: string;
+                includeTerminated?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeListItemDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEmployeeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangeEmployeeAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddEmployeeStatusPeriod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusPeriodRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateEmployeeStatusPeriod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                periodId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStatusPeriodRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EndEmployeeStatusPeriod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                periodId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RehireEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RehireRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RequestEmployeeCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListEmployeeBankAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddEmployeeBankAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateEmployeeBankAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBankAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MakeEmployeeBankAccountPrimary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                accountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListWorkSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkScheduleDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateWorkSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkScheduleDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateWorkSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkScheduleDto"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteWorkSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkScheduleDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
