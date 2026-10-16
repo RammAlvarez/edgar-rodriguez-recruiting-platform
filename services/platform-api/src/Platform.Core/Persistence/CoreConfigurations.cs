@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Platform.Core.Audit;
+using Platform.Core.Catalogs;
 using Platform.Core.Clients;
 using Platform.Core.Users;
 
@@ -21,6 +22,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(u => u.IsActive).HasDefaultValue(true);
         b.HasOne<Client>().WithMany().HasForeignKey(u => u.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasMany(u => u.Permissions).WithOne().HasForeignKey(p => p.UserId).HasPrincipalKey(u => u.Uid).OnDelete(DeleteBehavior.Cascade);
+        b.HasMany<ClientContact>().WithOne().HasForeignKey(c => c.UserId).HasPrincipalKey(u => u.Uid).OnDelete(DeleteBehavior.SetNull);
     }
 }
 
@@ -47,6 +49,35 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         b.Property(c => c.UsesRecruiting).HasDefaultValue(false);
         b.Property(c => c.UsesPayroll).HasDefaultValue(false);
         b.Property(c => c.IsActive).HasDefaultValue(true);
+        b.HasMany(c => c.Contacts).WithOne().HasForeignKey(x => x.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Cascade);
+        b.HasMany(c => c.Sites).WithOne().HasForeignKey(x => x.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+internal sealed class ClientContactConfiguration : IEntityTypeConfiguration<ClientContact>
+{
+    public void Configure(EntityTypeBuilder<ClientContact> b)
+    {
+        b.ToTable("client_contacts");
+        b.HasIdentityAndUid();
+        b.HasStamps();
+        b.Property(x => x.Email).HasColumnType("citext");
+        // One primary contact per client.
+        b.HasIndex(x => x.ClientId).IsUnique().HasFilter("is_primary").HasDatabaseName("ux_client_contacts_primary");
+        b.HasIndex(x => x.ClientId);
+    }
+}
+
+internal sealed class ClientSiteConfiguration : IEntityTypeConfiguration<ClientSite>
+{
+    public void Configure(EntityTypeBuilder<ClientSite> b)
+    {
+        b.ToTable("client_sites", t => t.HasCheckConstraint("ck_client_sites_postal_code", @"postal_code IS NULL OR postal_code ~ '^\d{5}$'"));
+        b.HasIdentityAndUid();
+        b.HasStamps();
+        b.HasIndex(x => new { x.ClientId, x.Name }).IsUnique();
+        b.Property(x => x.IsActive).HasDefaultValue(true);
+        b.HasOne<Zone>().WithMany().HasForeignKey(x => x.ZoneId).HasPrincipalKey(z => z.Uid).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

@@ -8,6 +8,7 @@ using Platform.Api.Internal;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Catalogs;
+using Platform.Core.Clients;
 using Platform.Core.Http;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
@@ -84,6 +85,7 @@ app.MapGet("/health", async (DbContext db, IObjectStorage storage, CancellationT
 var v1 = app.MapGroup("/v1");
 v1.MapMeEndpoints();
 v1.MapCatalogEndpoints();
+v1.MapClientEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

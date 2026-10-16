@@ -820,6 +820,182 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("clients", "platform");
                 });
 
+            modelBuilder.Entity("Platform.Core.Clients.ClientContact", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("citext")
+                        .HasColumnName("email");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("full_name");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_primary");
+
+                    b.Property<string>("JobTitle")
+                        .HasColumnType("text")
+                        .HasColumnName("job_title");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_client_contacts");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_client_contacts_uid");
+
+                    b.HasIndex("ClientId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_client_contacts_primary")
+                        .HasFilter("is_primary");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_client_contacts_user_id");
+
+                    b.ToTable("client_contacts", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Clients.ClientSite", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ExtNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("ext_number");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Municipality")
+                        .HasColumnType("text")
+                        .HasColumnName("municipality");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Neighborhood")
+                        .HasColumnType("text")
+                        .HasColumnName("neighborhood");
+
+                    b.Property<string>("PostalCode")
+                        .HasColumnType("text")
+                        .HasColumnName("postal_code");
+
+                    b.Property<string>("State")
+                        .HasColumnType("text")
+                        .HasColumnName("state");
+
+                    b.Property<string>("Street")
+                        .HasColumnType("text")
+                        .HasColumnName("street");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid?>("ZoneId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("zone_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_client_sites");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_client_sites_uid");
+
+                    b.HasIndex("ZoneId")
+                        .HasDatabaseName("ix_client_sites_zone_id");
+
+                    b.HasIndex("ClientId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_client_sites_client_id_name");
+
+                    b.ToTable("client_sites", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_client_sites_postal_code", "postal_code IS NULL OR postal_code ~ '^\\d{5}$'");
+                        });
+                });
+
             modelBuilder.Entity("Platform.Core.Users.User", b =>
                 {
                     b.Property<long>("Id")
@@ -1011,6 +1187,42 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_document_template_items_document_templates_template_id");
                 });
 
+            modelBuilder.Entity("Platform.Core.Clients.ClientContact", b =>
+                {
+                    b.HasOne("Platform.Core.Clients.Client", null)
+                        .WithMany("Contacts")
+                        .HasForeignKey("ClientId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_client_contacts_clients_client_id");
+
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_client_contacts_users_user_id");
+                });
+
+            modelBuilder.Entity("Platform.Core.Clients.ClientSite", b =>
+                {
+                    b.HasOne("Platform.Core.Clients.Client", null)
+                        .WithMany("Sites")
+                        .HasForeignKey("ClientId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_client_sites_clients_client_id");
+
+                    b.HasOne("Platform.Core.Catalogs.Zone", null)
+                        .WithMany()
+                        .HasForeignKey("ZoneId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_client_sites_zones_zone_id");
+                });
+
             modelBuilder.Entity("Platform.Core.Users.User", b =>
                 {
                     b.HasOne("Platform.Core.Clients.Client", null)
@@ -1042,6 +1254,13 @@ namespace Platform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Platform.Core.Catalogs.DocumentTemplate", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Platform.Core.Clients.Client", b =>
+                {
+                    b.Navigation("Contacts");
+
+                    b.Navigation("Sites");
                 });
 
             modelBuilder.Entity("Platform.Core.Users.User", b =>
