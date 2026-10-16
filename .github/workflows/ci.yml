@@ -1,0 +1,99 @@
+# CI gates (kickoff "Testing and CI"): lint, type-check, all tests, builds, provider-neutrality grep,
+# no pending EF model changes, and no diff after regenerating libs/shared from the API's OpenAPI document.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (lint, type-check, Vitest, builds)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Provider neutrality
+        run: npm run check:neutrality
+      - name: Lint
+        run: npx eslint .
+      - name: Type-check libs
+        run: npx tsc -p tsconfig.libs.json
+      - name: Vitest (libs, scripts)
+        run: npm run test:libs
+      - name: Vitest (apps)
+        run: npm run test:apps
+      - name: Build apps
+        run: npx ng build admin && npx ng build candidates && npx ng build clients
+
+  api:
+    name: API (format, tests on Postgres + Auth emulator, migrations, generated types)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18.0-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      PGHOST: localhost
+      PGPORT: "5433"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PLATFORM_DB_PORT: "5433"
+      FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9199
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      - name: Databases and roles (same as db/init/10-roles.sh)
+        run: |
+          for db in platform platform_test; do
+            psql -v ON_ERROR_STOP=1 -d postgres -c "CREATE DATABASE $db"
+            psql -v ON_ERROR_STOP=1 -d "$db" -v owner_password=platform_owner -v api_password=platform_api \
+              -v readonly_password=platform_readonly -f db/roles.sql
+          done
+      - name: Start the Firebase Auth emulator
+        run: |
+          npx --yes firebase-tools@15.27.0 emulators:start --only auth --project demo-platform > emulator.log 2>&1 &
+          for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:9199/ && exit 0; sleep 1; done
+          cat emulator.log; exit 1
+      - run: dotnet tool restore
+      - name: Format
+        run: dotnet format services/platform-api/Platform.slnx --verify-no-changes
+      - name: Build
+        run: dotnet build services/platform-api/Platform.slnx -c Release
+      - name: Tests (xUnit against Postgres, Firebase adapter against the emulator)
+        run: dotnet test services/platform-api/Platform.slnx -c Release --no-build
+      - name: No pending model changes
+        run: npm run check:migrations
+      - name: Generated API types are up to date
+        run: |
+          npm run generate:api-types
+          git diff --exit-code -- libs/shared
