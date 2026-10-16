@@ -23,7 +23,7 @@ describe('admin navigation', () => {
     ]);
     expect(paths(owner)).toEqual([
       'inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'reportes', 'personal', 'calendario',
-      'asistencia', 'incidencias', 'prenomina', 'clientes-nomina', 'reportes-nomina', 'usuarios',
+      'asistencia', 'incidencias', 'prenomina', 'clientes-nomina', 'reportes-nomina', 'usuarios', 'catalogos',
     ]);
   });
 
@@ -35,7 +35,7 @@ describe('admin navigation', () => {
   // matrix as written still shows Reclutamiento. This test pins the current matrix until P5 is decided.
   it('shows a supervisor with only Asistencia the attendance screens, plus recruiting (no grant exists yet, P5)', () => {
     const supervisor = me('administrator', ['payroll_attendance']);
-    expect(paths(supervisor)).toEqual(['inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'calendario', 'asistencia']);
+    expect(paths(supervisor)).toEqual(['inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'calendario', 'asistencia', 'catalogos']);
     expect(homePath(supervisor)).toBe('inicio');
   });
 

@@ -108,6 +108,99 @@
     }
   }
 
+  // Side panel (libs/ui side-panel.ts): docked right, square inner edge, header / scrolling body / footer.
+  .ui-side-panel {
+    .mat-mdc-dialog-surface {
+      border-radius: 0;
+    }
+    .mat-mdc-dialog-content {
+      max-height: none;
+      flex: 1;
+    }
+    .mat-mdc-dialog-component-host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+  }
+  .panel-form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 8px;
+    mat-form-field {
+      width: 100%;
+    }
+    .section-title {
+      margin: 16px 0 4px;
+      font: var(--mat-sys-title-small);
+    }
+    .secondary-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+  .form-alert {
+    margin: 8px 0 0;
+    color: var(--mat-sys-error);
+  }
+  button.destructive {
+    --mat-button-filled-container-color: var(--mat-sys-error);
+    --mat-button-filled-label-text-color: var(--mat-sys-on-error);
+    --mat-button-outlined-label-text-color: var(--mat-sys-error);
+    --mat-button-text-label-text-color: var(--mat-sys-error);
+  }
+
+  // Tables inside outlined cards (density -2), clickable rows, status pills.
+  .table-card {
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 12px;
+    overflow: auto;
+    @include mat.theme((density: -2));
+    table {
+      width: 100%;
+    }
+    tr.clickable {
+      cursor: pointer;
+      &:hover {
+        background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+      }
+    }
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .empty-row td {
+      padding: 24px 16px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font: var(--mat-sys-label-medium);
+    background: var(--mat-sys-surface-container-high);
+    color: var(--mat-sys-on-surface-variant);
+    &.positive {
+      background: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+    }
+    &.negative {
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+  }
+  .muted {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
   .empty-state {
     display: flex;
     flex-direction: column;

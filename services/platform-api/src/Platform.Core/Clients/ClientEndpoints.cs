@@ -34,10 +34,10 @@ public static class ClientEndpoints
         var payroll = v1.MapGroup("/payroll/clients").WithTags("Clients");
 
         clients.MapGet("", (DbContext db, CancellationToken ct) => List(db, null, ct))
-            .WithName("ListClients").RequireAccess(Admin);
+            .WithName("ListClients").Produces<List<ClientListItemDto>>().RequireAccess(Admin);
         payroll.MapGet("", (DbContext db, RequestContext ctx, CancellationToken ct) =>
                 List(db, ctx.RequiredPrincipal.ClientScope(PermissionModule.PayrollPrepayroll), ct))
-            .WithName("ListPayrollClients").RequireAccess(Payroll);
+            .WithName("ListPayrollClients").Produces<List<ClientListItemDto>>().RequireAccess(Payroll);
 
         clients.MapGet("/{id:guid}", (Guid id, DbContext db, CancellationToken ct) => Detail(db, id, ct))
             .WithName("GetClient").Produces<ClientDetailDto>().ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Admin);

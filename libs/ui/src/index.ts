@@ -7,3 +7,5 @@ export * from './guards';
 export * from './status-pages';
 export * from './email-link-sign-in';
 export * from './top-nav-shell';
+export * from './side-panel';
+export * from './forms';

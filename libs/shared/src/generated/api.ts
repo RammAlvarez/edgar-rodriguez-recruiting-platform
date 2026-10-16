@@ -711,6 +711,18 @@ export type components = {
             contacts: components["schemas"]["ContactDto"][];
             sites: components["schemas"]["SiteDto"][];
         };
+        ClientListItemDto: {
+            /** Format: uuid */
+            id: string;
+            shortName: string;
+            legalName: null | string;
+            rfc: null | string;
+            usesRecruiting: boolean;
+            usesPayroll: boolean;
+            isActive: boolean;
+            zone: null | string;
+            primaryContact: null | components["schemas"]["ContactDto"];
+        };
         ConfirmDocumentRequest: {
             /** Format: uuid */
             documentTypeId: string;
@@ -1115,6 +1127,7 @@ export type CatalogPositionRequest = components['schemas']['CatalogPositionReque
 export type CatalogsDto = components['schemas']['CatalogsDto'];
 export type ChecklistItemDto = components['schemas']['ChecklistItemDto'];
 export type ClientDetailDto = components['schemas']['ClientDetailDto'];
+export type ClientListItemDto = components['schemas']['ClientListItemDto'];
 export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
 export type ContactRequest = components['schemas']['ContactRequest'];
@@ -2165,7 +2178,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ClientListItemDto"][];
+                };
             };
         };
     };
@@ -2573,7 +2588,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ClientListItemDto"][];
+                };
             };
         };
     };

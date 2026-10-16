@@ -38,9 +38,9 @@ export class Session {
       if (user.uid === currentUid) return;
       currentUid = user.uid;
       this.stateSignal.set({ status: 'loading' });
-      void this.load();
+      void this.load(true);
     });
-    this.api.cache.register(['me'], () => void this.load());
+    this.api.cache.register(['me'], () => void this.load(false));
   }
 
   hasGrant(module: PermissionModule): boolean {
@@ -52,9 +52,11 @@ export class Session {
     await this.auth.signOut();
   }
 
-  private async load(): Promise<void> {
+  /** A new sign-in (or app start) opens a session — last access, invitation accepted; later refreshes only read /v1/me. */
+  private async load(start: boolean): Promise<void> {
     try {
-      this.stateSignal.set({ status: 'ready', me: await this.api.get<MeDto>('/v1/me') });
+      const me = start ? await this.api.post<MeDto>('/v1/me/sessions') : await this.api.get<MeDto>('/v1/me');
+      this.stateSignal.set({ status: 'ready', me });
     } catch (e) {
       if (e instanceof ApiError && (e.isForbidden || e.isUnauthorized))
         this.stateSignal.set({ status: 'denied', message: e.message });

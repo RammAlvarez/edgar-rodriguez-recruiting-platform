@@ -1240,7 +1240,17 @@
         "operationId": "ListClients",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientListItemDto"
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -1781,7 +1791,17 @@
         "operationId": "ListPayrollClients",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientListItemDto"
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -2960,6 +2980,66 @@
             "items": {
               "$ref": "#/components/schemas/SiteDto"
             }
+          }
+        }
+      },
+      "ClientListItemDto": {
+        "required": [
+          "id",
+          "shortName",
+          "legalName",
+          "rfc",
+          "usesRecruiting",
+          "usesPayroll",
+          "isActive",
+          "zone",
+          "primaryContact"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "legalName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rfc": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "usesRecruiting": {
+            "type": "boolean"
+          },
+          "usesPayroll": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "zone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "primaryContact": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ContactDto"
+              }
+            ]
           }
         }
       },

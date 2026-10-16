@@ -51,7 +51,11 @@ export const NAVIGATION: readonly NavSection[] = [
   },
   {
     label: 'Administración',
-    items: [{ path: 'usuarios', label: 'Usuarios', icon: 'manage_accounts', roles: ADMIN, grant: 'users' }],
+    items: [
+      { path: 'usuarios', label: 'Usuarios', icon: 'manage_accounts', roles: ADMIN, grant: 'users' },
+      // SPEC §3.4: catalogs are edited by Administradores; no delegated grant covers them.
+      { path: 'catalogos', label: 'Catálogos', icon: 'list_alt', roles: ADMIN },
+    ],
   },
 ];
 
