@@ -125,6 +125,7 @@ v1.MapRecruitingReportEndpoints();
 v1.MapPayrollGroupEndpoints();
 v1.MapEmployeeEndpoints();
 v1.MapScheduleEndpoints();
+v1.MapAttendanceEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 
