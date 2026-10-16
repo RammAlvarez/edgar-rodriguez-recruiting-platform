@@ -26,6 +26,9 @@ public interface IObjectStorage
     Task<PresignedRequest> PresignDownloadAsync(StorageBucket bucket, string key, string? downloadAs, TimeSpan lifetime,
         CancellationToken cancellationToken);
 
+    /// <summary>Writes an object the API generated itself (exports: report and period files, bank layouts — ARCHITECTURE §2).</summary>
+    Task UploadAsync(StorageBucket bucket, string key, byte[] content, string contentType, CancellationToken cancellationToken);
+
     /// <summary>Size and type of an uploaded object, or <c>null</c> when it does not exist.</summary>
     Task<StoredObject?> HeadAsync(StorageBucket bucket, string key, CancellationToken cancellationToken);
 

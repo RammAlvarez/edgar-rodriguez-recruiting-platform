@@ -76,6 +76,20 @@ public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisp
         return new PresignedRequest(await _client.GetPreSignedURLAsync(request), new Dictionary<string, string>(), expires);
     }
 
+    public async Task UploadAsync(StorageBucket bucket, string key, byte[] content, string contentType, CancellationToken cancellationToken)
+    {
+        using var body = new MemoryStream(content, writable: false);
+        await _client.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = Name(bucket),
+            Key = key,
+            InputStream = body,
+            ContentType = contentType,
+            // Unsigned streaming chunks are not accepted by every S3-compatible provider; a buffered body needs none.
+            UseChunkEncoding = false,
+        }, cancellationToken);
+    }
+
     public async Task<StoredObject?> HeadAsync(StorageBucket bucket, string key, CancellationToken cancellationToken)
     {
         try

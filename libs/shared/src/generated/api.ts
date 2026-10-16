@@ -1138,6 +1138,118 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/recruiting-reports/recruiter-performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetRecruiterPerformanceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiting-reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetRecruitingSummaryReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiting-reports/open-openings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetOpenOpeningsReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiting-reports/stage-funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetStageFunnelReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiting-reports/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSourcesReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiting-reports/client-openings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetClientOpeningsReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recruiting-reports/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExportRecruitingReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -1431,11 +1543,41 @@ export type components = {
             leadRecruiterEmail: null | string;
             stageCounts: components["schemas"]["StageCountDto"][];
         };
+        ClientOpeningsReportDto: {
+            filters: components["schemas"]["ReportFiltersDto"];
+            clients: components["schemas"]["ClientOpeningsRowDto"][];
+            total: components["schemas"]["ClientOpeningsRowDto"];
+        };
+        ClientOpeningsRowDto: {
+            /** Format: uuid */
+            clientId: null | string;
+            clientName: string;
+            /** Format: int32 */
+            openings: number | string;
+            /** Format: int32 */
+            headcountRequested: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: decimal */
+            fillRate: Decimal | null;
+            /** Format: int32 */
+            cancelled: number | string;
+            /** Format: decimal */
+            avgDaysToFill: Decimal | null;
+            /** Format: int32 */
+            candidatesPresented: number | string;
+        };
         ClientOptionDto: {
             /** Format: uuid */
             id: string;
             shortName: string;
             isActive: boolean;
+        };
+        ClientSummaryDto: {
+            /** Format: uuid */
+            clientId: string;
+            clientName: string;
+            metrics: components["schemas"]["SummaryMetricsDto"];
         };
         ConfirmDocumentRequest: {
             /** Format: uuid */
@@ -1568,6 +1710,30 @@ export type components = {
             sortOrder: number | string;
             /** @default true */
             isActive: boolean;
+        };
+        FunnelLossDto: {
+            outcome: components["schemas"]["CandidateStage"];
+            /** Format: int32 */
+            count: number | string;
+            reasons: components["schemas"]["FunnelReasonDto"][];
+        };
+        FunnelReasonDto: {
+            reason: string;
+            /** Format: int32 */
+            count: number | string;
+        };
+        FunnelStageDto: {
+            stage: components["schemas"]["CandidateStage"];
+            /** Format: int32 */
+            entered: number | string;
+            /** Format: int32 */
+            advanced: null | number | string;
+            /** Format: int32 */
+            lost: number | string;
+            /** Format: decimal */
+            advanceRate: Decimal | null;
+            /** Format: decimal */
+            avgDaysInStage: Decimal | null;
         };
         /** @enum {unknown} */
         Gender: "male" | "female" | "unspecified";
@@ -1851,6 +2017,45 @@ export type components = {
             status: components["schemas"]["OpeningStatus"];
             reason: null | string;
         };
+        OpenOpeningDto: {
+            /** Format: uuid */
+            openingId: string;
+            openingName: string;
+            clientName: string;
+            positionName: string;
+            priority: components["schemas"]["OpeningPriority"];
+            status: components["schemas"]["OpeningStatus"];
+            /** Format: int32 */
+            requested: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: int32 */
+            daysOpen: number | string;
+            /** Format: int32 */
+            new: number | string;
+            /** Format: int32 */
+            contacted: number | string;
+            /** Format: int32 */
+            interview: number | string;
+            /** Format: int32 */
+            suitable: number | string;
+            /** Format: date-time */
+            lastActivityAt: Date;
+            /** Format: int32 */
+            idleDays: number | string;
+            stale: boolean;
+            /** Format: uuid */
+            leadRecruiterId: null | string;
+            leadRecruiterName: null | string;
+        };
+        OpenOpeningsReportDto: {
+            filters: components["schemas"]["ReportFiltersDto"];
+            /** Format: date */
+            asOf: DateKey;
+            /** Format: int32 */
+            staleAfterDays: number | string;
+            openings: components["schemas"]["OpenOpeningDto"][];
+        };
         /** @enum {unknown} */
         PermissionModule: "recruiting" | "recruiting_reports" | "payroll_prepayroll" | "payroll_attendance" | "payroll_incidents" | "payroll_staff" | "payroll_payment_files" | "payroll_card_requests" | "users";
         PersonDocumentDto: {
@@ -1979,6 +2184,45 @@ export type components = {
             recruiter: components["schemas"]["RecruiterSummaryDto"];
             assignments: components["schemas"]["RecruiterAssignmentDto"][];
         };
+        RecruiterPerformanceGroupDto: {
+            /** Format: uuid */
+            recruiterId: string;
+            recruiterName: string;
+            /** Format: int32 */
+            assigned: number | string;
+            /** Format: int32 */
+            filled: number | string;
+            /** Format: decimal */
+            effectiveness: Decimal | null;
+            /** Format: decimal */
+            avgDaysToFill: Decimal | null;
+            openings: components["schemas"]["RecruiterPerformanceRowDto"][];
+        };
+        RecruiterPerformanceReportDto: {
+            filters: components["schemas"]["ReportFiltersDto"];
+            recruiters: components["schemas"]["RecruiterPerformanceGroupDto"][];
+        };
+        RecruiterPerformanceRowDto: {
+            /** Format: uuid */
+            openingId: string;
+            openingName: string;
+            clientName: string;
+            positionName: string;
+            isLead: boolean;
+            /** Format: date */
+            assignedAt: DateKey;
+            status: components["schemas"]["OpeningStatus"];
+            /** Format: int32 */
+            presented: number | string;
+            /** Format: int32 */
+            suitable: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: decimal */
+            conversion: Decimal | null;
+            /** Format: int32 */
+            daysToFill: null | number | string;
+        };
         RecruiterSummaryDto: {
             /** Format: uuid */
             id: string;
@@ -1996,6 +2240,8 @@ export type components = {
             candidatesHired: number | string;
         };
         /** @enum {unknown} */
+        RecruitingReport: "recruiter_performance" | "summary" | "open_openings" | "stage_funnel" | "sources" | "client_openings";
+        /** @enum {unknown} */
         RegistrationBank: "banorte" | "banregio" | null;
         RejectDocumentRequest: {
             reason: string;
@@ -2004,6 +2250,38 @@ export type components = {
             /** Format: uuid */
             newLeadId: null | string;
         };
+        ReportExportDto: {
+            url: string;
+            fileName: string;
+            /** Format: date-time */
+            expiresAt: Date;
+        };
+        ReportExportRequest: {
+            report: components["schemas"]["RecruitingReport"];
+            format: components["schemas"]["ReportFormat"];
+            /** Format: uuid */
+            clientId: null | string;
+            /** Format: uuid */
+            recruiterId: null | string;
+            /** Format: date */
+            from: DateKey | null;
+            /** Format: date */
+            to: DateKey | null;
+        };
+        ReportFiltersDto: {
+            /** Format: uuid */
+            clientId: null | string;
+            clientName: null | string;
+            /** Format: uuid */
+            recruiterId: null | string;
+            recruiterName: null | string;
+            /** Format: date */
+            from: DateKey;
+            /** Format: date */
+            to: DateKey;
+        };
+        /** @enum {unknown} */
+        ReportFormat: "xlsx" | "pdf";
         SiteDto: {
             /** Format: uuid */
             id: string;
@@ -2032,6 +2310,23 @@ export type components = {
             /** @default true */
             isActive: boolean;
         };
+        SourceRowDto: {
+            source: null | components["schemas"]["CandidateSource"];
+            /** Format: int32 */
+            candidates: number | string;
+            /** Format: int32 */
+            suitable: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: decimal */
+            conversion: Decimal | null;
+            /** Format: decimal */
+            avgDaysToHire: Decimal | null;
+        };
+        SourcesReportDto: {
+            filters: components["schemas"]["ReportFiltersDto"];
+            sources: components["schemas"]["SourceRowDto"][];
+        };
         StaffOptionDto: {
             /** Format: uuid */
             id: string;
@@ -2043,6 +2338,11 @@ export type components = {
             /** Format: int32 */
             count: number | string;
         };
+        StageFunnelReportDto: {
+            filters: components["schemas"]["ReportFiltersDto"];
+            stages: components["schemas"]["FunnelStageDto"][];
+            losses: components["schemas"]["FunnelLossDto"][];
+        };
         StatutoryHolidaysRequest: {
             /** Format: int32 */
             year: number | string;
@@ -2051,6 +2351,40 @@ export type components = {
             /** Format: int32 */
             added: number | string;
             holidays: components["schemas"]["HolidayDto"][];
+        };
+        SummaryMetricsDto: {
+            /** Format: int32 */
+            openings: number | string;
+            /** Format: int32 */
+            open: number | string;
+            /** Format: int32 */
+            inProgress: number | string;
+            /** Format: int32 */
+            filled: number | string;
+            /** Format: int32 */
+            cancelled: number | string;
+            /** Format: int32 */
+            paused: number | string;
+            /** Format: int32 */
+            candidates: number | string;
+            /** Format: int32 */
+            suitable: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: decimal */
+            conversion: Decimal | null;
+            /** Format: decimal */
+            avgDaysToFill: Decimal | null;
+        };
+        SummaryReportDto: {
+            filters: components["schemas"]["ReportFiltersDto"];
+            current: components["schemas"]["SummaryMetricsDto"];
+            /** Format: date */
+            previousFrom: DateKey;
+            /** Format: date */
+            previousTo: DateKey;
+            previous: components["schemas"]["SummaryMetricsDto"];
+            clients: components["schemas"]["ClientSummaryDto"][];
         };
         TimelineEntryDto: {
             kind: components["schemas"]["TimelineKind"];
@@ -2156,7 +2490,10 @@ export type ClientDetailDto = components['schemas']['ClientDetailDto'];
 export type ClientListItemDto = components['schemas']['ClientListItemDto'];
 export type ClientOpeningDetailDto = components['schemas']['ClientOpeningDetailDto'];
 export type ClientOpeningDto = components['schemas']['ClientOpeningDto'];
+export type ClientOpeningsReportDto = components['schemas']['ClientOpeningsReportDto'];
+export type ClientOpeningsRowDto = components['schemas']['ClientOpeningsRowDto'];
 export type ClientOptionDto = components['schemas']['ClientOptionDto'];
+export type ClientSummaryDto = components['schemas']['ClientSummaryDto'];
 export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
 export type ContactRequest = components['schemas']['ContactRequest'];
@@ -2174,6 +2511,9 @@ export type DocumentUrlDto = components['schemas']['DocumentUrlDto'];
 export type DuplicatePersonDto = components['schemas']['DuplicatePersonDto'];
 export type EducationLevelDto = components['schemas']['EducationLevelDto'];
 export type EducationLevelRequest = components['schemas']['EducationLevelRequest'];
+export type FunnelLossDto = components['schemas']['FunnelLossDto'];
+export type FunnelReasonDto = components['schemas']['FunnelReasonDto'];
+export type FunnelStageDto = components['schemas']['FunnelStageDto'];
 export type Gender = components['schemas']['Gender'];
 export type GrantDto = components['schemas']['GrantDto'];
 export type HolidayDto = components['schemas']['HolidayDto'];
@@ -2203,6 +2543,8 @@ export type OpeningRecruiterDto = components['schemas']['OpeningRecruiterDto'];
 export type OpeningRequest = components['schemas']['OpeningRequest'];
 export type OpeningStatus = components['schemas']['OpeningStatus'];
 export type OpeningStatusRequest = components['schemas']['OpeningStatusRequest'];
+export type OpenOpeningDto = components['schemas']['OpenOpeningDto'];
+export type OpenOpeningsReportDto = components['schemas']['OpenOpeningsReportDto'];
 export type PermissionModule = components['schemas']['PermissionModule'];
 export type PersonDocumentDto = components['schemas']['PersonDocumentDto'];
 export type PersonDto = components['schemas']['PersonDto'];
@@ -2213,16 +2555,29 @@ export type PresignUploadResponse = components['schemas']['PresignUploadResponse
 export type ProblemDetails = components['schemas']['ProblemDetails'];
 export type RecruiterAssignmentDto = components['schemas']['RecruiterAssignmentDto'];
 export type RecruiterDetailDto = components['schemas']['RecruiterDetailDto'];
+export type RecruiterPerformanceGroupDto = components['schemas']['RecruiterPerformanceGroupDto'];
+export type RecruiterPerformanceReportDto = components['schemas']['RecruiterPerformanceReportDto'];
+export type RecruiterPerformanceRowDto = components['schemas']['RecruiterPerformanceRowDto'];
 export type RecruiterSummaryDto = components['schemas']['RecruiterSummaryDto'];
+export type RecruitingReport = components['schemas']['RecruitingReport'];
 export type RegistrationBank = components['schemas']['RegistrationBank'];
 export type RejectDocumentRequest = components['schemas']['RejectDocumentRequest'];
 export type RemoveRecruiterRequest = components['schemas']['RemoveRecruiterRequest'];
+export type ReportExportDto = components['schemas']['ReportExportDto'];
+export type ReportExportRequest = components['schemas']['ReportExportRequest'];
+export type ReportFiltersDto = components['schemas']['ReportFiltersDto'];
+export type ReportFormat = components['schemas']['ReportFormat'];
 export type SiteDto = components['schemas']['SiteDto'];
 export type SiteRequest = components['schemas']['SiteRequest'];
+export type SourceRowDto = components['schemas']['SourceRowDto'];
+export type SourcesReportDto = components['schemas']['SourcesReportDto'];
 export type StaffOptionDto = components['schemas']['StaffOptionDto'];
 export type StageCountDto = components['schemas']['StageCountDto'];
+export type StageFunnelReportDto = components['schemas']['StageFunnelReportDto'];
 export type StatutoryHolidaysRequest = components['schemas']['StatutoryHolidaysRequest'];
 export type StatutoryHolidaysResult = components['schemas']['StatutoryHolidaysResult'];
+export type SummaryMetricsDto = components['schemas']['SummaryMetricsDto'];
+export type SummaryReportDto = components['schemas']['SummaryReportDto'];
 export type TimelineEntryDto = components['schemas']['TimelineEntryDto'];
 export type TimelineKind = components['schemas']['TimelineKind'];
 export type UpdateCandidateRequest = components['schemas']['UpdateCandidateRequest'];
@@ -5767,6 +6122,243 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientCommentDto"][];
+                };
+            };
+        };
+    };
+    GetRecruiterPerformanceReport: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                recruiterId?: string;
+                from?: DateKey;
+                to?: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecruiterPerformanceReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetRecruitingSummaryReport: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                recruiterId?: string;
+                from?: DateKey;
+                to?: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetOpenOpeningsReport: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                recruiterId?: string;
+                from?: DateKey;
+                to?: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenOpeningsReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetStageFunnelReport: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                recruiterId?: string;
+                from?: DateKey;
+                to?: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StageFunnelReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetSourcesReport: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                recruiterId?: string;
+                from?: DateKey;
+                to?: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourcesReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetClientOpeningsReport: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                recruiterId?: string;
+                from?: DateKey;
+                to?: DateKey;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOpeningsReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ExportRecruitingReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportExportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };

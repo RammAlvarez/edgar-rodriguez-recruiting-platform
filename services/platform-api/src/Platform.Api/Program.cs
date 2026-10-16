@@ -12,15 +12,18 @@ using Platform.Core.Catalogs;
 using Platform.Core.Clients;
 using Platform.Core.Http;
 using Platform.Core.People;
+using Platform.Core.Reports;
 using Platform.Core.Users;
 using Platform.Infrastructure.Email;
 using Platform.Infrastructure.Persistence;
+using Platform.Infrastructure.Reports;
 using Platform.Infrastructure.Storage;
 using Platform.Recruiting;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
 using Platform.Recruiting.Portal;
 using Platform.Recruiting.Recruiters;
+using Platform.Recruiting.Reports;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -58,6 +61,7 @@ builder.Services.AddScoped<IPersonScope, RecruiterPersonScope>();
 builder.Services.AddPlatformPersistence(settings.DatabaseUrl);
 builder.Services.AddSingleton(settings.S3);
 builder.Services.AddSingleton<IObjectStorage, S3ObjectStorage>();
+builder.Services.AddSingleton<IReportRenderer, ReportRenderer>();
 builder.Services.AddSingleton(settings.Firebase);
 builder.Services.AddSingleton<IAuthProvider, FirebaseAuthProvider>();
 builder.Services.AddSingleton(settings.Links);
@@ -111,6 +115,7 @@ v1.MapCandidateEndpoints();
 v1.MapRecruiterEndpoints();
 v1.MapCandidatePortalEndpoints();
 v1.MapClientPortalEndpoints();
+v1.MapRecruitingReportEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

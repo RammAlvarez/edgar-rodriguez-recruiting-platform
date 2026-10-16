@@ -31,6 +31,16 @@ public sealed class FakeObjectStorage : IObjectStorage
             DateTimeOffset.UtcNow.Add(lifetime)));
     }
 
+    /// <summary>What the API wrote with <see cref="UploadAsync"/> (exports), by bucket and key.</summary>
+    public ConcurrentDictionary<(StorageBucket, string), byte[]> Contents { get; } = new();
+
+    public Task UploadAsync(StorageBucket bucket, string key, byte[] content, string contentType, CancellationToken cancellationToken)
+    {
+        Contents[(bucket, key)] = content;
+        Objects[(bucket, key)] = new StoredObject(content.Length, contentType);
+        return Task.CompletedTask;
+    }
+
     public Task<StoredObject?> HeadAsync(StorageBucket bucket, string key, CancellationToken cancellationToken) =>
         Task.FromResult(Objects.TryGetValue((bucket, key), out var o) ? o : null);
 

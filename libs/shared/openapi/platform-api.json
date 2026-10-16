@@ -4649,6 +4649,430 @@
           }
         }
       }
+    },
+    "/v1/recruiting-reports/recruiter-performance": {
+      "get": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "GetRecruiterPerformanceReport",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recruiterId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecruiterPerformanceReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recruiting-reports/summary": {
+      "get": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "GetRecruitingSummaryReport",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recruiterId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recruiting-reports/open-openings": {
+      "get": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "GetOpenOpeningsReport",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recruiterId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenOpeningsReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recruiting-reports/stage-funnel": {
+      "get": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "GetStageFunnelReport",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recruiterId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageFunnelReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recruiting-reports/sources": {
+      "get": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "GetSourcesReport",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recruiterId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourcesReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recruiting-reports/client-openings": {
+      "get": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "GetClientOpeningsReport",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recruiterId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientOpeningsReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recruiting-reports/exports": {
+      "post": {
+        "tags": [
+          "RecruitingReports"
+        ],
+        "operationId": "ExportRecruitingReport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportExportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5949,6 +6373,110 @@
           }
         }
       },
+      "ClientOpeningsReportDto": {
+        "required": [
+          "filters",
+          "clients",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/ReportFiltersDto"
+          },
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientOpeningsRowDto"
+            }
+          },
+          "total": {
+            "$ref": "#/components/schemas/ClientOpeningsRowDto"
+          }
+        }
+      },
+      "ClientOpeningsRowDto": {
+        "required": [
+          "clientId",
+          "clientName",
+          "openings",
+          "headcountRequested",
+          "hired",
+          "fillRate",
+          "cancelled",
+          "avgDaysToFill",
+          "candidatesPresented"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "openings": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "headcountRequested": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hired": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fillRate": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "cancelled": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "avgDaysToFill": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "candidatesPresented": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ClientOptionDto": {
         "required": [
           "id",
@@ -5966,6 +6494,26 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "ClientSummaryDto": {
+        "required": [
+          "clientId",
+          "clientName",
+          "metrics"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/SummaryMetricsDto"
           }
         }
       },
@@ -6510,6 +7058,110 @@
           "isActive": {
             "type": "boolean",
             "default": true
+          }
+        }
+      },
+      "FunnelLossDto": {
+        "required": [
+          "outcome",
+          "count",
+          "reasons"
+        ],
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/CandidateStage"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FunnelReasonDto"
+            }
+          }
+        }
+      },
+      "FunnelReasonDto": {
+        "required": [
+          "reason",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "FunnelStageDto": {
+        "required": [
+          "stage",
+          "entered",
+          "advanced",
+          "lost",
+          "advanceRate",
+          "avgDaysInStage"
+        ],
+        "type": "object",
+        "properties": {
+          "stage": {
+            "$ref": "#/components/schemas/CandidateStage"
+          },
+          "entered": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "advanced": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lost": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "advanceRate": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "avgDaysInStage": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
           }
         }
       },
@@ -7705,6 +8357,166 @@
           }
         }
       },
+      "OpenOpeningDto": {
+        "required": [
+          "openingId",
+          "openingName",
+          "clientName",
+          "positionName",
+          "priority",
+          "status",
+          "requested",
+          "hired",
+          "daysOpen",
+          "new",
+          "contacted",
+          "interview",
+          "suitable",
+          "lastActivityAt",
+          "idleDays",
+          "stale",
+          "leadRecruiterId",
+          "leadRecruiterName"
+        ],
+        "type": "object",
+        "properties": {
+          "openingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "openingName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/OpeningPriority"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OpeningStatus"
+          },
+          "requested": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hired": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "daysOpen": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "new": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "contacted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "interview": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "suitable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "idleDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "leadRecruiterId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "leadRecruiterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OpenOpeningsReportDto": {
+        "required": [
+          "filters",
+          "asOf",
+          "staleAfterDays",
+          "openings"
+        ],
+        "type": "object",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/ReportFiltersDto"
+          },
+          "asOf": {
+            "type": "string",
+            "format": "date"
+          },
+          "staleAfterDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "openings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpenOpeningDto"
+            }
+          }
+        }
+      },
       "PermissionModule": {
         "enum": [
           "recruiting",
@@ -8313,6 +9125,166 @@
           }
         }
       },
+      "RecruiterPerformanceGroupDto": {
+        "required": [
+          "recruiterId",
+          "recruiterName",
+          "assigned",
+          "filled",
+          "effectiveness",
+          "avgDaysToFill",
+          "openings"
+        ],
+        "type": "object",
+        "properties": {
+          "recruiterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recruiterName": {
+            "type": "string"
+          },
+          "assigned": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "filled": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "effectiveness": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "avgDaysToFill": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "openings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecruiterPerformanceRowDto"
+            }
+          }
+        }
+      },
+      "RecruiterPerformanceReportDto": {
+        "required": [
+          "filters",
+          "recruiters"
+        ],
+        "type": "object",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/ReportFiltersDto"
+          },
+          "recruiters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecruiterPerformanceGroupDto"
+            }
+          }
+        }
+      },
+      "RecruiterPerformanceRowDto": {
+        "required": [
+          "openingId",
+          "openingName",
+          "clientName",
+          "positionName",
+          "isLead",
+          "assignedAt",
+          "status",
+          "presented",
+          "suitable",
+          "hired",
+          "conversion",
+          "daysToFill"
+        ],
+        "type": "object",
+        "properties": {
+          "openingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "openingName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "isLead": {
+            "type": "boolean"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OpeningStatus"
+          },
+          "presented": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "suitable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hired": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "conversion": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "daysToFill": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "RecruiterSummaryDto": {
         "required": [
           "id",
@@ -8380,6 +9352,16 @@
           }
         }
       },
+      "RecruitingReport": {
+        "enum": [
+          "recruiter_performance",
+          "summary",
+          "open_openings",
+          "stage_funnel",
+          "sources",
+          "client_openings"
+        ]
+      },
       "RegistrationBank": {
         "enum": [
           "banorte",
@@ -8412,6 +9394,126 @@
             "format": "uuid"
           }
         }
+      },
+      "ReportExportDto": {
+        "required": [
+          "url",
+          "fileName",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReportExportRequest": {
+        "required": [
+          "report",
+          "format",
+          "clientId",
+          "recruiterId",
+          "from",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "report": {
+            "$ref": "#/components/schemas/RecruitingReport"
+          },
+          "format": {
+            "$ref": "#/components/schemas/ReportFormat"
+          },
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "recruiterId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "ReportFiltersDto": {
+        "required": [
+          "clientId",
+          "clientName",
+          "recruiterId",
+          "recruiterName",
+          "from",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "recruiterId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "recruiterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ReportFormat": {
+        "enum": [
+          "xlsx",
+          "pdf"
+        ]
       },
       "SiteDto": {
         "required": [
@@ -8555,6 +9657,87 @@
           }
         }
       },
+      "SourceRowDto": {
+        "required": [
+          "source",
+          "candidates",
+          "suitable",
+          "hired",
+          "conversion",
+          "avgDaysToHire"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CandidateSource"
+              }
+            ]
+          },
+          "candidates": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "suitable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hired": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "conversion": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "avgDaysToHire": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          }
+        }
+      },
+      "SourcesReportDto": {
+        "required": [
+          "filters",
+          "sources"
+        ],
+        "type": "object",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/ReportFiltersDto"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceRowDto"
+            }
+          }
+        }
+      },
       "StaffOptionDto": {
         "required": [
           "id",
@@ -8595,6 +9778,31 @@
           }
         }
       },
+      "StageFunnelReportDto": {
+        "required": [
+          "filters",
+          "stages",
+          "losses"
+        ],
+        "type": "object",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/ReportFiltersDto"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FunnelStageDto"
+            }
+          },
+          "losses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FunnelLossDto"
+            }
+          }
+        }
+      },
       "StatutoryHolidaysRequest": {
         "required": [
           "year"
@@ -8630,6 +9838,148 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/HolidayDto"
+            }
+          }
+        }
+      },
+      "SummaryMetricsDto": {
+        "required": [
+          "openings",
+          "open",
+          "inProgress",
+          "filled",
+          "cancelled",
+          "paused",
+          "candidates",
+          "suitable",
+          "hired",
+          "conversion",
+          "avgDaysToFill"
+        ],
+        "type": "object",
+        "properties": {
+          "openings": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "open": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "inProgress": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "filled": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "cancelled": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "paused": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "candidates": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "suitable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hired": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "conversion": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "avgDaysToFill": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          }
+        }
+      },
+      "SummaryReportDto": {
+        "required": [
+          "filters",
+          "current",
+          "previousFrom",
+          "previousTo",
+          "previous",
+          "clients"
+        ],
+        "type": "object",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/ReportFiltersDto"
+          },
+          "current": {
+            "$ref": "#/components/schemas/SummaryMetricsDto"
+          },
+          "previousFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "previousTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/SummaryMetricsDto"
+          },
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientSummaryDto"
             }
           }
         }
@@ -8968,6 +10318,9 @@
     },
     {
       "name": "Client portal"
+    },
+    {
+      "name": "RecruitingReports"
     }
   ]
 }

@@ -42,6 +42,21 @@ public sealed class S3ObjectStorageTests : IDisposable
     }
 
     [Fact]
+    public async Task An_export_the_api_writes_is_downloaded_through_a_presigned_get()
+    {
+        var key = $"tests/{Guid.NewGuid()}.xlsx";
+        var bytes = "PK reporte"u8.ToArray();
+        const string type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        await _storage.UploadAsync(StorageBucket.Exports, key, bytes, type, default);
+        Assert.Equal(type, (await _storage.HeadAsync(StorageBucket.Exports, key, default))?.ContentType);
+        var get = await _storage.PresignDownloadAsync(StorageBucket.Exports, key, "Rendimiento por reclutador.xlsx", TimeSpan.FromMinutes(5), default);
+        Assert.Equal(bytes, await (await _browser.GetAsync(get.Url)).Content.ReadAsByteArrayAsync());
+
+        await _storage.DeleteAsync(StorageBucket.Exports, key, default);
+    }
+
+    [Fact]
     public async Task A_put_with_another_content_type_than_the_signed_one_is_refused()
     {
         var put = await _storage.PresignUploadAsync(StorageBucket.Documents, $"tests/{Guid.NewGuid()}.pdf", "application/pdf",
