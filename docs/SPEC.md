@@ -278,7 +278,7 @@ An **employee** is a person working for one of the owner's clients (ECOVIA valid
 | Número de empleado por banco | Banorte uses `2000000020`-style, Banregio `3000000001`; stored per bank "emisora" |
 | Cuentas de pago | one or more accounts with titular, one principal (today in the COMENTARIOS column: "BBVA / 012580015…") — see 5.8 |
 | Overrides | SD bolsillo, SD IMSS, costo por hora, bono — default from the position, editable per employee |
-| Flags | extranjero, pensión alimenticia (% deducted — only the percentage and the fact, no further detail), observaciones |
+| Flags | extranjero, observaciones (pensión alimenticia is not recorded — D16 revised, D50) |
 | Documents | shared vault, template "Empleado" |
 
 Views: list (filters: cliente, puesto, estatus, documentos incompletos) — the row's only quick action is **Solicitar tarjeta**, shown when the employee has no payment account and no pending card request (a pending request shows as a "Tarjeta solicitada · Banorte" pill instead); *Baja* is never a quick action. Detail with tabs *Datos / Cuentas de pago / Documentos / Asistencia / Incidencias / Pagos*.
@@ -318,7 +318,6 @@ Anything that changes pay and is not plain attendance, captured against an emplo
 | Festivo (primera mitad) | earning, 4 h × costo/hora × 3 | VALIDADOR 428.52, SUPERVISOR 585.60 |
 | Bono de días trabajados / puntualidad / productividad | earning, formula | `=400/7*días` |
 | Descuento | deduction, amount + reason (préstamo, uniforme, daño, adelanto) | |
-| Pensión alimenticia | deduction, % of net (applied last) | 39 % |
 | Préstamo (abono) | deduction, scheduled | |
 
 Each incident: date, concept, quantity, unit value, amount (decimal), note, created by, evidence file optional. Incidents are listed in the pre-payroll review with a drill-down.
@@ -336,7 +335,7 @@ Reproduces `PRENOMINA SEM 38` exactly, generalized by **payroll group** (client 
 | VALIDADOR | 428.57 | 278.80 | 35.71 | 450 |
 | SUPERVISOR | 585.71 | 278.80 | 48.80 | 600 |
 
-**Line calculation** (all `decimal(12,2)`; rounding half-up at the line level, never on intermediates):
+**Line calculation** (C# `decimal`, **never rounded**: every item and the line total are kept exact; the only reduction to cents is the **payable amount**, `total_neto_a_pagar = truncate(total_neto, 2)` — truncated, not rounded, e.g. 1,234.5678 → 1,234.56 — which is what the grid's *Total neto a pagar*, the bank file and every payment total use; other columns are displayed truncated to 2 decimals — D42):
 
 ```
 sueldo              = sd_bolsillo × días_laborados
@@ -352,10 +351,11 @@ tiempo_extra_triple = costo_hora × 3 × horas_triples
 festivo_laborado    = sd_bolsillo × festivos_laborados × 2
 bonos               = Σ bonus concepts active in the group (e.g. 400/7 × días)
 descuentos          = Σ deductions (descuento, préstamo)
-neto_antes_pensión  = Σ earnings − descuentos
-pensión_alimenticia = neto_antes_pensión × pensión_pct          (e.g. 39 %, applied on net)
-total_neto          = neto_antes_pensión − pensión_alimenticia
+total_neto          = Σ earnings − descuentos                  (exact)
+total_neto_a_pagar  = truncate(total_neto, 2)                  (the only cut to cents)
 ```
+
+Pensión alimenticia is **not** part of the pre-payroll (D16 revised): SEM 38 row 30 says "PENSION DEL 39%" and pays the full amount.
 
 **Lifecycle — three stages, no manual "Calcular"**
 
@@ -409,7 +409,7 @@ One screen: a **report selector** on the left, filters on top, the report body b
 
 | # | Report | Columns / content | Date control |
 |---|---|---|---|
-| 1 | **Costo de nómina por cliente** | per period and client: empleados pagados, sueldo, séptimo día, prima dominical, horas (incompletas, extra, dobles, triples), festivos, bonos, retroactivos, descuentos, pensión, **total neto**; a week-over-week row with Δ $ and Δ %; drill-down to the period grid | Semana or Rango (multi-week shows one row per week + total) |
+| 1 | **Costo de nómina por cliente** | per period and client: empleados pagados, sueldo, séptimo día, prima dominical, horas (incompletas, extra, dobles, triples), festivos, bonos, retroactivos, descuentos, **total neto**; a week-over-week row with Δ $ and Δ %; drill-down to the period grid | Semana or Rango (multi-week shows one row per week + total) |
 | 2 | **Resumen de pago** | per period: total generado, subido al banco, pendientes, rechazados; breakdown by banco receptor and tipo de pago (traspaso BAZ vs SPEI) with count and amount; list of pending/rejected rows with blocker | Semana |
 | 3 | **Incidencias del período** | every incident: fecha, empleado, concepto, cantidad, importe, motivo, capturó, origen (Asistencia / Incidencia / Ajuste manual), "corresponde a" for retroactivos; subtotal per concept | Semana or Rango |
 | 4 | **Asistencia por empleado** | per employee: días laborados, faltas, faltas automáticas, incapacidad, permisos, horas incompletas, horas extra, festivos laborados; toggle to an employee × day grid per site (P / F / I / D / H…) with locked-without-capture days highlighted; sortable by faltas | Semana or Rango |
@@ -435,7 +435,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | Requirement | Decision |
 |---|---|
 | Responsive | Desktop-first for Admin (tables, Kanban); mobile-first for Asistencia capture, Candidates app and Clients app |
-| Robust accounting | All money as `numeric(12,2)` in PostgreSQL, decimal strings on the wire and C# `decimal` in the engine; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
+| Robust accounting | Typed and payable money as `numeric(12,2)`, computed pre-payroll amounts as exact `numeric` (never rounded; payable = truncated to cents, D42), decimal strings on the wire and C# `decimal` in the engine; no floats anywhere; every pay line traceable to attendance + incidents; closed periods immutable; manual adjustments are incidents with author |
 | Language | es-MX UI, dates `dd/MM/yyyy`, currency `$ 1,234.56 MXN`, time zone America/Monterrey |
 | Security | Firebase Auth behind `AuthProvider`, optional MFA for Admin, roles/grants in the database checked per route, client scoping in every query, encrypted card/CLABE numbers (AES-GCM in the API), presigned URLs for documents (15 min), append-only audit log written in the same transaction, personal-data read log, audited attendance unlocks |
 | Audit | `audit_log` for create/update/delete on people, documents, attendance, incidents, periods, bank batches, users |
@@ -464,7 +464,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 | D13 | Weekly cut-off day is configured **per client** (per payroll group) | answers 2026-10-07 (Q1) |
 | D14 | `FESTIVO PRIMERA MITAD` is a rule: **4 hours × hourly rate × 3** (4 h paid at triple rate). Checks against the sheet: VALIDADOR 35.71 × 12 = 428.52; SUPERVISOR 48.80 × 12 = 585.60 | answers 2026-10-07 (Q2) |
 | D15 | `MONTO DE HORAS INCOMPLETAS` = partial-shift hours paid at the hourly rate (positive earning) | answers 2026-10-07 (Q3) |
-| D16 | Pensión alimenticia is a percentage **of net pay** (applied after all other earnings and deductions) | answers 2026-10-07 (Q5) |
+| D16 | ~~Pensión alimenticia is a percentage of net pay~~ **Revised 2026-10-16 (PLAN D50):** pensión alimenticia is not deducted in the pre-payroll and is not recorded; the golden SEM 38 pays row 30 in full | answers 2026-10-07 (Q5), revised 2026-10-16 |
 | D17 | MAXIMA REPARACION Y LIMPIEZA SA DE CV is the **owner's own company**: one paying account (Banco Azteca) pays workers of all clients; beneficiaries are grouped by client for filtering only | answers 2026-10-07 (Q6) |
 | D18 | `cuentasfrec` (frequent-accounts registration) export is kept | answers 2026-10-07 (Q7) |
 | D19 | Field supervisors capture attendance with **Administrador accounts limited by grants** (`payroll.attendance`, scoped to their client); no fourth role | answers 2026-10-07 (Q8) |
@@ -486,6 +486,7 @@ Passwordless. First visit: the candidate completes the profile the recruiter sta
 
 | # | Question | Impact |
 |---|---|---|
+| Q12 | `FESTIVO PRIMERA MITAD` in SEM 38: the rule (D14, 4 h × costo/hora × 3) gives 428.52 / 585.60, and the sheet types 428.5 / 585.7 on 39 rows, but 249.50 on rows 65, 83, 99, 117 and 178.60 on rows 81, 85, 87. Why did those seven get less (partial holiday shift? manual cap?) | the engine applies D14 to every entitled row; SEM 38 comes out $1,466.02 higher than the sheet until answered |
 | Q4 | Which bonus scheme is paid today? The current `SEM 38` tab declares `BONO DIAS TRABAJADOS` 450 / 600 in the header but no row pays it; the older `Formula` tab pays `BONO PUNTUALIDAD Y ASISTENCIA = 400/7 × días` and `BONO PRODUCTIVIDAD = 360/7 × días`. Options: (a) none, (b) fixed 450/600 under a condition (e.g. 6 días), (c) puntualidad + productividad per day | which concepts are active in the ECOVIA group; demo grid columns |
 
 ## 11. Delivery plan (suggested)

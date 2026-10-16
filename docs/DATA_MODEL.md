@@ -2,7 +2,7 @@
 
 > **Database:** PostgreSQL 18 (any Postgres reachable over TCP — managed or a container) · **ORM:** EF Core 10 (Npgsql) with migrations as the only way to change DDL, owned by `services/platform-api` · **Schema:** one, `platform` (the API owns its migrations); the sections below (`core`, `recruiting`, `payroll`, `bank`, `audit`) are **modules** of that API, not Postgres schemas — see ARCHITECTURE §2
 > **Companion docs:** [SPEC.md](./SPEC.md) · [ARCHITECTURE.md](./ARCHITECTURE.md)
-> **Conventions:** English identifiers, `snake_case` in SQL / `PascalCase` in C# (EF naming convention `UseSnakeCaseNamingConvention`) / `camelCase` in the generated TypeScript. Every table has `id bigint generated always as identity` (internal, never exposed) and `uid uuid not null unique default gen_random_uuid()`; every foreign key references `uid`; the API returns `uid` as `id`. Column lines below written as `… | uuid FK …` mean "uuid referencing that table's `uid`". Business codes (`legacy_code`, `short_name`, `spei_code`) are unique columns. Every table has `created_at / created_by / updated_at / updated_by` stamped by the API; soft delete only where stated (`deleted_at`). Money is always `numeric(12,2)`, rates `numeric(12,4)`, never `float`/`real`; on the wire money is a decimal **string**; on the server it is `decimal` (`Platform.Payroll.Engine`), never `double`. Timestamps are `timestamptz`; business dates are `date` keys (`yyyy-MM-dd`) computed on the server in the payroll group's IANA time zone (`payroll_groups.time_zone`, default `America/Monterrey`), never from the server's UTC clock. Nested value objects (e.g. a bank batch's fixed header snapshot) may be `jsonb` mapped to an owned C# record (and the matching generated TS type); anything queried or joined is rows. Derived data (statuses, counters, totals, prepayroll lines) is server-only and written in the same transaction as the change that causes it; the API ignores it if a client sends it.
+> **Conventions:** English identifiers, `snake_case` in SQL / `PascalCase` in C# (EF naming convention `UseSnakeCaseNamingConvention`) / `camelCase` in the generated TypeScript. Every table has `id bigint generated always as identity` (internal, never exposed) and `uid uuid not null unique default gen_random_uuid()`; every foreign key references `uid`; the API returns `uid` as `id`. Column lines below written as `… | uuid FK …` mean "uuid referencing that table's `uid`". Business codes (`legacy_code`, `short_name`, `spei_code`) are unique columns. Every table has `created_at / created_by / updated_at / updated_by` stamped by the API; soft delete only where stated (`deleted_at`). Typed and payable money is `numeric(12,2)`, rates `numeric(12,4)`; **computed pre-payroll amounts** (`prepayroll_line_items.amount`, `prepayroll_lines.gross_earnings / total_deductions / total_net_exact`) are unconstrained `numeric` holding the engine's exact `decimal` — never rounded; the payable `total_net` is `truncate(total_net_exact, 2)` (PLAN D42); never `float`/`real`; on the wire money is a decimal **string**; on the server it is `decimal` (`Platform.Payroll.Engine`), never `double`. Timestamps are `timestamptz`; business dates are `date` keys (`yyyy-MM-dd`) computed on the server in the payroll group's IANA time zone (`payroll_groups.time_zone`, default `America/Monterrey`), never from the server's UTC clock. Nested value objects (e.g. a bank batch's fixed header snapshot) may be `jsonb` mapped to an owned C# record (and the matching generated TS type); anything queried or joined is rows. Derived data (statuses, counters, totals, prepayroll lines) is server-only and written in the same transaction as the change that causes it; the API ignores it if a client sends it.
 
 ---
 
@@ -96,7 +96,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | `period_status` | `capturing`, `in_review`, `paid` — see §5.10; no "calculated"/"closed": the grid recomputes live and generating the payment file is the close |
 | `attendance_status` | `present`, `partial`, `absent`, `rest_day`, `rest_day_worked`, `holiday`, `holiday_worked`, `sick_leave`, `leave_paid`, `leave_unpaid`, `vacation` |
 | `concept_kind` | `earning`, `deduction` |
-| `concept_calc` | `fixed_amount`, `qty_times_hourly_rate`, `qty_times_hourly_rate_x2`, `qty_times_hourly_rate_x3`, `qty_times_daily_salary_x2`, `percent_of_daily_salary`, `percent_of_net`, `per_day_worked`, `manual` |
+| `concept_calc` | `fixed_amount`, `qty_times_hourly_rate`, `qty_times_hourly_rate_x2`, `qty_times_hourly_rate_x3`, `qty_times_daily_salary_x2`, `percent_of_daily_salary`, `per_day_worked`, `manual` |
 | `batch_status` | `generated`, `uploaded_to_bank`, `completed`, `cancelled` |
 | `payment_row_status` | `ready`, `missing_account`, `invalid_account`, `pending`, `paid`, `rejected` |
 | `card_request_status` | `queued`, `in_batch`, `uploaded`, `received`, `cancelled` |
@@ -498,7 +498,6 @@ Seed (codes → Excel column):
 | `BONUS_PUNCTUALITY` | earning | `per_day_worked` 400/7 | BONO PUNTUALIDAD Y ASISTENCIA |
 | `BONUS_PRODUCTIVITY` | earning | `per_day_worked` 360/7 | BONO PRODUCTIVIDAD |
 | `DEDUCTION` | deduction | `manual` (reason) | DESCUENTO |
-| `ALIMONY` | deduction | `percent_of_net` — computed last, on `Σ earnings − other deductions` | DESCUENTO |
 | `LOAN_INSTALLMENT` | deduction | `fixed_amount` | DESCUENTO |
 | `MANUAL_ADJUSTMENT` | either | `manual` | (column of the adjusted concept) |
 
@@ -515,7 +514,6 @@ Seed (codes → Excel column):
 | terminated_at | date | BAJA — mirrors the `terminated` period |
 | status | employee_status default `active` | maintained from `employee_status_periods` (5.4b) |
 | daily_salary_pocket_override, daily_salary_imss_override, hourly_rate_override, days_worked_bonus_override | numeric NULL | per-employee overrides |
-| alimony_pct | numeric(5,4) NULL | "PENSION DEL 39%" — percentage only |
 | primary_bank_account_id | uuid FK person_bank_accounts | payment account |
 | candidate_id | uuid FK platform.candidates NULL | origin |
 | notes | text | COMENTARIOS |
@@ -640,9 +638,10 @@ Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (
 | partial_hours, overtime_hours, overtime_double_hours, overtime_triple_hours | numeric(6,2) | |
 | worked_sunday | boolean | |
 | daily_salary_pocket, daily_salary_imss, hourly_rate | numeric | snapshot of rates used |
-| gross_earnings | numeric(12,2) | |
-| total_deductions | numeric(12,2) | |
-| total_net | numeric(12,2) | TOTAL NETO A PAGAR |
+| gross_earnings | numeric | exact Σ earning items, never rounded |
+| total_deductions | numeric | exact Σ deduction items |
+| total_net_exact | numeric | `gross_earnings − total_deductions`, exact |
+| total_net | numeric(12,2) | TOTAL NETO A PAGAR = `trunc(total_net_exact, 2)` — truncated, not rounded; the amount paid |
 | bank_id, account_type, account_number_enc, account_last4, holder_name | snapshot | taken from the employee's primary account at `paid`; NULL while live |
 | payment_status | payment_row_status | derived live (`ready` / `missing_account` / `invalid_account`), then tracked (`pending` / `paid` / `rejected`) |
 | comments | text | free text only — no bank data |
@@ -650,9 +649,9 @@ Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (
 
 ### 5.12 `prepayroll_line_items`
 
-`(id, prepayroll_line_id, pay_concept_id, quantity, unit_value, amount numeric(12,2), source enum('attendance','incident','position','manual'), incident_id FK NULL)` — the per-column breakdown; the export pivots these into the Excel columns via `pay_concepts.export_column`.
+`(id, prepayroll_line_id, pay_concept_id, quantity, unit_value, amount numeric (exact, never rounded), source enum('attendance','incident','position','manual'), incident_id FK NULL)` — the per-column breakdown; the export pivots these into the Excel columns via `pay_concepts.export_column`.
 
-Invariant (DB CHECK via trigger): `prepayroll_lines.total_net = Σ items(earning) − Σ items(deduction)` and lines of a `closed`/`paid` period are immutable (row-level trigger raises). Engine order: earnings → fixed/manual deductions → `ALIMONY` as `percent_of_net` on the remaining amount → `total_net`.
+Invariant (DB CHECK via trigger): `prepayroll_lines.total_net_exact = Σ items(earning) − Σ items(deduction)`, `total_net = trunc(total_net_exact, 2)`, and lines of a `paid` period are immutable (row-level trigger raises). Engine order: earnings → deductions → `total_net_exact` → truncate to cents → `total_net`. No pensión alimenticia (SPEC D16 revised).
 
 ---
 
@@ -830,7 +829,7 @@ Input to every decision: `uid` from `IAuthProvider.VerifyAsync`, `role` and `is_
 | `CATALOGOS` tab | zones (manual), banks (seed), sources, priorities, statuses (enums), clients (11 rows), users role recruiter (6 rows) | |
 | `BD_VACANTES` | job_openings | map ESTATUS → enum; RECLUTADOR_LIDER by name |
 | `BD_CANDIDATOS` | people + candidates + candidate_notes (COMENTARIOS → first note) | split CANDIDATO into names (manual review), dedupe by CURP |
-| `PRENOMINA SEM 38` | payroll_group (ECOVIA / VALIDADORES 12 HRS), positions (2), employees (115 rows), person_bank_accounts (parse COMENTARIOS "BANCO / número"), employee status from "BAJA"/"INCAPACIDAD", alimony_pct from "PENSION DEL 39%" | re-run the period in the system and diff against `V121` total |
+| `PRENOMINA SEM 38` | payroll_group (ECOVIA / VALIDADORES 12 HRS), positions (2), employees (115 rows), person_bank_accounts (parse COMENTARIOS "BANCO / número"), employee status from "BAJA"/"INCAPACIDAD"; other COMENTARIOS text (e.g. "PENSION DEL 39%", "EXTRANJERO") kept in `employees.notes`; header rates in row 2 are stale — positions take the rates of the rows; a row whose rates differ from its puesto (rows 94, 104: VALIDADOR at 48.80 / 585.71) imports them as the employee's `*_override` columns | re-run the period in the system and diff per row against the golden test's expected values (PLAN D41) |
 | `Alta_Nomina_Masiva Banorte` | employee_bank_numbers (banorte), person address fields, person_bank_accounts (debit_card Banorte) | 93 rows |
 | `ALTA BANREGIO` | employee_bank_numbers (banregio), birth_state, person_bank_accounts | 6 rows |
 | `Lo HFC MAESTRO` | paying_accounts (1 — MAXIMA REPARACION Y LIMPIEZA); rows matched to people by name → `person_bank_accounts` with `holder_name` = NOMBRE DEL BENEFICIARIO (so third-party holders survive the import); unmatched supplier rows (UALA, FEDEX, Localiza…) are skipped (out of scope, D25) | matched rows flagged `is_frequent_account_registered = true` |

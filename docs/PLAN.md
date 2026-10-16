@@ -1,6 +1,6 @@
 # PLAN — Plataforma de Reclutamiento y Prenómina
 
-> **Status:** v1 draft for approval · **Written:** 2026-10-16 (kickoff)
+> **Status:** v1 — P1–P3 resolved by the owner 2026-10-16; E1–E5 awaiting approval · **Written:** 2026-10-16 (kickoff)
 > **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
 > **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
 
@@ -35,6 +35,9 @@ Totals under each rounding reading (half-up to 2 dp):
 | Excel's unrounded sum, rounded once | 333,189.13 |
 | Each line rounded once (SPEC §5.5 "line level") | 333,188.98 |
 | Each line item rounded once (kickoff, DATA_MODEL §5.12 `numeric(12,2)` items, `total = Σ items`) | 333,188.95 (3 rows differ from line-level by 0.01) |
+| **Chosen (D42):** exact, each row's payable truncated to cents | **333,188.81** |
+
+Recomputing all 115 rows from their inputs with exact `decimal` reproduces every cached Excel row value within 1e-6, which confirms the column formulas above. Rows 94 and 104 are labelled VALIDADOR but carry the SUPERVISOR rates (48.80 / 585.71), which is why they get 585.7.
 
 Environment: Node 24.21, Docker 20.10, Firebase CLI 15.27, Java 25 (emulator) are present. **Only the .NET 8 SDK is installed**; the stack pins .NET 10 LTS in `global.json`. Building needs the .NET 10 SDK installed locally (P4).
 
@@ -70,10 +73,11 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 
 | # | Question | Blocks | Proposed default |
 |---|---|---|---|
-| **P1** | **Rounding level** — a doc–doc contradiction. SPEC §5.5: "rounding half-up at the line level, never on intermediates". Kickoff + DATA_MODEL §5.12: round once per **line item** (items are `numeric(12,2)` and `total_net = Σ items` is a DB invariant). On SEM 38 they give 333,188.98 vs 333,188.95; the Excel prints 333,189.13 because it never rounds. | S1 | **Per line item** (keeps the stored breakdown and the invariant exact; each Excel column the clerk sees is then a rounded number that sums to the total). SPEC §5.5 changes to say "once per line item". Golden test per D41. |
-| **P2** | **FESTIVO PRIMERA MITAD** (new SPEC Q12 for the client). D14 says 4 h × hourly × 3 = 428.52 / 585.60; the sheet types 428.5 / 585.7 (≈ SD bolsillo), gives 585.7 to two VALIDADORES, and 249.5 / 178.6 to seven rows with no rule. | S1 | Engine implements D14. The golden test loads column O **as per-row input** (an imported `HOLIDAY_FIRST_HALF` incident with the sheet's amount) so every other column is still checked against the rule; ask the client what 249.5 / 178.6 and the supervisor amount on VALIDADOR rows mean. |
-| **P3** | **Pensión alimenticia** (new SPEC Q13). Row 30 says `PENSION DEL 39%` but its total has no deduction. Either the Excel is pre-pension (the 39 % is deducted elsewhere) or D16 is not how it works today. | S1 | Golden runs with `alimony_pct = NULL` for row 30 (the Excel is pre-pension); D16 stays and has its own unit test; confirm with the client. |
-| **P4** | **.NET 10 SDK** is not installed (only 8.0.101). | S0 | Install the .NET 10 SDK locally (official installer / Homebrew); `global.json` pins it. |
+| ~~P1~~ | **Resolved → D42.** Rounding level — a doc–doc contradiction. SPEC §5.5: "rounding half-up at the line level, never on intermediates". Kickoff + DATA_MODEL §5.12: round once per **line item** (items are `numeric(12,2)` and `total_net = Σ items` is a DB invariant). On SEM 38 they give 333,188.98 vs 333,188.95; the Excel prints 333,189.13 because it never rounds. | S1 | **Per line item** (keeps the stored breakdown and the invariant exact; each Excel column the clerk sees is then a rounded number that sums to the total). SPEC §5.5 changes to say "once per line item". Golden test per D41. |
+| ~~P2~~ | **Resolved → D43** (SPEC Q12 sent to the client). FESTIVO PRIMERA MITAD. D14 says 4 h × hourly × 3 = 428.52 / 585.60; the sheet types 428.5 / 585.7 (≈ SD bolsillo), gives 585.7 to two VALIDADORES, and 249.5 / 178.6 to seven rows with no rule. | S1 | Engine implements D14. The golden test loads column O **as per-row input** (an imported `HOLIDAY_FIRST_HALF` incident with the sheet's amount) so every other column is still checked against the rule; ask the client what 249.5 / 178.6 and the supervisor amount on VALIDADOR rows mean. |
+| ~~P3~~ | **Resolved → D50.** Pensión alimenticia. Row 30 says `PENSION DEL 39%` but its total has no deduction. Either the Excel is pre-pension (the 39 % is deducted elsewhere) or D16 is not how it works today. | S1 | Golden runs with `alimony_pct = NULL` for row 30 (the Excel is pre-pension); D16 stays and has its own unit test; confirm with the client. |
+| **P4** | **.NET 10 SDK** is not installed (only 8.0.101). The Homebrew cask (10.0.402) needs `sudo`, which the agent cannot type. | S0 | The owner runs `brew install --cask dotnet-sdk`; `global.json` pins 10.0.x. |
+| Q12 | Why do rows 65, 81, 83, 85, 87, 99, 117 of SEM 38 get 249.50 / 178.60 of festivo 1ª mitad instead of 428.52 (SPEC §10)? | nothing (known diff in the golden) | D14 for every entitled row |
 | Q4 | Bonus scheme (SPEC §10) — still open. | S9 demo columns only | All `BONUS_*` concepts inactive for ECOVIA until answered (that is what SEM 38 pays). |
 
 ---
@@ -87,8 +91,8 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | E3 | DATA_MODEL §4.7, §5.13 | Views join on `uid` (`cl.uid = o.client_id`, D37); `open_openings_aging` drops `o.code` (removed by D30) and adds the display name | the views as written do not compile against D37 |
 | E4 | DATA_MODEL §5.12 | "lines of a `closed`/`paid` period" → "lines of a `paid` period" | `closed` is not a `period_status` |
 | E5 | DATA_MODEL §1 | `card_requests`, `employee_bank_numbers` stay in the `payroll` table list; ARCHITECTURE §3 `Platform.Bank` reads "card-request batches, payment batches, Layouts/" | module table and repository tree disagree on card requests |
-| E6 | DATA_MODEL §10 | "`SEM 38` header rates (row 2) are stale; rates come from the rows" | avoid importing 328.57 / 27.38 |
-| E7 | SPEC §5.5 | Rounding sentence per P1; Q12, Q13 added to §10 | P1–P3 |
+| ~~E6~~ applied | DATA_MODEL §10 | "`SEM 38` header rates (row 2) are stale; rates come from the rows" | avoid importing 328.57 / 27.38 |
+| ~~E7~~ applied | SPEC §5.4–5.5, §5.9, §8, D16, §10; DATA_MODEL conventions, §5.3, §5.4, §5.11–5.12, §10; ARCHITECTURE §2 engine row | Never-round + truncate (D42), pensión removed (D50), Q12 | P1–P3 |
 
 ---
 
@@ -97,14 +101,15 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | # | Decision |
 |---|---|
 | D40 | **Precedence for numbers and rules:** SPEC / DATA_MODEL (and their decisions) → the client's Excel files → the prototype. The prototype (`Plataforma.dc.html`, `data.js`) is the reference for screens, flows and copy only; its formulas are not a source (e.g. it computes descanso laborado as `qty × SD`, the sheet and SPEC pay a fixed 500; it counts a festivo as a worked day). |
-| D41 | **Golden test definition:** for each of the 115 rows of `SEM 38`, every money column the engine produces equals the Excel cell's cached value rounded half-up to 2 dp, and the row total equals the sum of those rounded items; the period total equals the sum of the 115 row totals. The test reads the workbook from `examples/` (ClosedXML in the test project), so the fixture is never transcribed by hand. Rows whose inputs depend on P2 / P3 follow the resolution chosen there. *Pending P1–P3.* |
-| D42 | Rounding level — *pending P1*. |
-| D43 | FESTIVO PRIMERA MITAD in the golden — *pending P2*. |
-| D44 | Pensión in the golden — *pending P3*. |
+| D41 | **Golden test definition:** the test reads the workbook from `examples/` (ClosedXML in the test project; never transcribed by hand). Inputs per row: puesto rates from the row (`G`, `I`, `J`), días (`F`), Sunday worked (`M` present), partial hours and overtime hours (the multiplier in `N` / `P`), holiday entitlement (`O` present), descanso laborado (`R`). Expected per row: every column except `O` equals the Excel cached value within 1e-6 (Excel stores doubles; the engine is exact); `O` equals D14 (4 × costo/hora × 3); the exact row total equals Σ items; the payable equals `trunc(exact, 2)`. **Known diffs** (asserted, listed in the test with the sheet's value): 34 rows 428.50 → 428.52, 5 rows 585.70 → 585.60, rows 65, 83, 99, 117 249.50 → 428.52, rows 81, 85, 87 178.60 → 428.52 (Q12). Expected period: exact 334,655.149166…, payable Σ 334,654.83 (the sheet's own inputs give 333,188.81 payable; Excel prints 333,189.13). |
+| D42 | **Never round; truncate to cents only at payment** (owner, 2026-10-16). The engine keeps every item and line total exact (C# `decimal`, stored in unconstrained `numeric`); the payable `total_net = trunc(total_net_exact, 2)`, truncation not rounding (1,234.5678 → 1,234.56); the bank file rows, batch totals, `payroll_periods.total_net` and reports' payable totals are sums of those truncated amounts. Other grid/export columns display exact values truncated to 2 dp (display only, string truncation). User-typed money (rates, incidents, salaries) stays `numeric(12,2)`. Supersedes the kickoff's "AwayFromZero once per line item" and SPEC §5.5's "half-up at the line level". |
+| D43 | **FESTIVO PRIMERA MITAD = D14 for every entitled row** (owner, 2026-10-16: holidays are paid triple, 4 h × costo/hora × 3). The sheet's typed 428.5 / 585.7 are the same rule short by 2 cents / over by 10; 249.50 and 178.60 are listed as known diffs and asked of the client (SPEC Q12). |
+| D44 | *(merged into D50.)* |
 | D45 | **Project dependencies without cycles:** module projects (`Platform.Core`, `.Recruiting`, `.Payroll`, `.Bank`) hold their entities, EF configurations, DTOs, validators, services and endpoint mappings, and use EF Core's `DbContext` through `Set<T>()`; `Platform.Infrastructure` owns `PlatformDbContext` (applies every module's configurations, owns migrations) and registers it as `DbContext`; `Platform.Api` composes everything. `Platform.Payroll.Engine` and `Platform.Bank/Layouts` reference nothing but the BCL. No base classes; shared behaviour (stamps, soft delete, pagination, authorization, storage, audit) is injected. |
 | D46 | **Money on the wire:** a `System.Text.Json` converter writes `decimal` as a string with exactly the column's scale; OpenAPI declares `type: string, format: decimal`; the generated TS type is a branded `Money` string; Zod validates `^-?\d+(\.\d{1,2})?$`; the pipe formats without `Number()` (string arithmetic only for display). |
 | D47 | **Period numbering:** weekly `period_number` = ISO-8601 week of the period's end date (Semana 38 = 11–17 sep 2026, end Thursday 17 sep → ISO week 38); biweekly = 1–24 by end date. Checked against SEM 38; confirm on the next client file. |
 | D48 | **Tests against Postgres:** the docker Postgres on :5433 with a dedicated `platform_test` database migrated once per run and truncated between tests; a fixed `IClock` injected everywhere "today" or lock times matter. |
+| D50 | **No pensión alimenticia** (owner, 2026-10-16; revises SPEC D16): not deducted, not recorded — `employees.alimony_pct`, the `ALIMONY` concept and `concept_calc.percent_of_net` are removed; the import keeps a "PENSION …" comment as plain text in `employees.notes`. The prototype's 39 % pensión and Desglose row are not built. |
 | D49 | **Toolchain:** .NET 10 SDK pinned in `global.json` (`rollForward: latestFeature`), Node 24 LTS (`.nvmrc`), npm workspaces, Angular 22 CLI; rich text with Tiptap in `apps/admin`, server sanitizer `HtmlSanitizer` with the DATA_MODEL §4.4b allowlist. |
 
 ---
