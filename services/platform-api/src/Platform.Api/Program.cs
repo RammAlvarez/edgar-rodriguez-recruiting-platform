@@ -19,6 +19,7 @@ using Platform.Infrastructure.Email;
 using Platform.Infrastructure.Persistence;
 using Platform.Infrastructure.Reports;
 using Platform.Infrastructure.Storage;
+using Platform.Payroll.Groups;
 using Platform.Recruiting;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
@@ -76,6 +77,7 @@ else
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 builder.Services.AddValidatorsFromAssemblyContaining<MeDto>(includeInternalTypes: true);
 builder.Services.AddValidatorsFromAssemblyContaining<OpeningRequest>(includeInternalTypes: true);
+builder.Services.AddValidatorsFromAssemblyContaining<PayrollGroupRequest>(includeInternalTypes: true);
 
 var app = builder.Build();
 
@@ -119,6 +121,7 @@ v1.MapRecruiterEndpoints();
 v1.MapCandidatePortalEndpoints();
 v1.MapClientPortalEndpoints();
 v1.MapRecruitingReportEndpoints();
+v1.MapPayrollGroupEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

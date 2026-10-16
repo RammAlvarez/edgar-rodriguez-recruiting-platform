@@ -38,6 +38,12 @@ public static class PostgresEnums
         Of<CandidateStage>("candidate_stage"),
         Of<InterviewOutcome>("interview_outcome"),
         Of<BankAccountType>("bank_account_type"),
+        Of<Platform.Payroll.Groups.PeriodType>("period_type"),
+        Of<Platform.Payroll.Engine.ConceptKind>("concept_kind"),
+        Of<Platform.Payroll.Groups.ConceptCalc>("concept_calc"),
+        Of<Platform.Payroll.Staff.EmployeeStatus>("employee_status"),
+        Of<Platform.Payroll.Staff.CardRequestStatus>("card_request_status"),
+        Of<Platform.Payroll.Staff.AttendanceStatus>("attendance_status"),
     ];
 
     private static Entry Of<T>(string name) where T : struct, Enum => new(

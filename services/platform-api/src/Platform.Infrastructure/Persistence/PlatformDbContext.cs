@@ -16,6 +16,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     [
         typeof(User).Assembly, // Platform.Core
         typeof(Platform.Recruiting.Openings.JobOpening).Assembly, // Platform.Recruiting
+        typeof(Platform.Payroll.Staff.Employee).Assembly, // Platform.Payroll
     ];
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -23,6 +24,8 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.HasPostgresExtension("citext");
         modelBuilder.HasPostgresExtension("pg_trgm");
+        // Exclusion constraint of employee_status_periods (uuid equality in a GiST index).
+        modelBuilder.HasPostgresExtension("btree_gist");
         foreach (var e in PostgresEnums.All)
             e.Declare(modelBuilder);
         foreach (var assembly in ModuleAssemblies)

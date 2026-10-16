@@ -11,6 +11,9 @@ using Platform.Core.Catalogs;
 using Platform.Core.People;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
+using Platform.Payroll.Engine;
+using Platform.Payroll.Groups;
+using Platform.Payroll.Staff;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
 
@@ -29,21 +32,28 @@ namespace Platform.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "attendance_status", new[] { "present", "partial", "absent", "rest_day", "rest_day_worked", "holiday", "holiday_worked", "sick_leave", "leave_paid", "leave_unpaid", "vacation" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "audit_action", new[] { "insert", "update", "delete", "unlock", "export", "login" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "bank_account_type", new[] { "own_account", "debit_card", "clabe" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "candidate_source", new[] { "facebook", "linkedin", "whatsapp", "referral", "job_board", "other" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "candidate_stage", new[] { "new", "contacted", "interview", "suitable", "not_suitable", "hired", "discarded" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "card_request_status", new[] { "queued", "in_batch", "uploaded", "received", "cancelled" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "concept_calc", new[] { "fixed_amount", "qty_times_hourly_rate", "qty_times_hourly_rate_x2", "qty_times_hourly_rate_x3", "qty_times_daily_salary_x2", "percent_of_daily_salary", "per_day_worked", "manual" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "concept_kind", new[] { "earning", "deduction" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "data_access_kind", new[] { "view_profile", "view_document", "download_document", "decrypt_account" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "document_status", new[] { "pending", "delivered", "validated", "rejected", "expired" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "document_template_scope", new[] { "candidate", "employee" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "employee_status", new[] { "active", "vacation", "sick_leave", "suspended", "terminated" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "gender", new[] { "male", "female", "unspecified" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "interview_outcome", new[] { "pending", "attended", "no_show" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_event_kind", new[] { "created", "edited", "status_changed", "recruiter_assigned", "recruiter_removed", "lead_changed" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_priority", new[] { "high", "medium", "low" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_status", new[] { "open", "in_progress", "filled", "cancelled", "paused" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "period_type", new[] { "weekly", "biweekly" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "permission_module", new[] { "recruiting", "recruiting_reports", "payroll_prepayroll", "payroll_attendance", "payroll_incidents", "payroll_staff", "payroll_payment_files", "payroll_card_requests", "users" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "registration_bank", new[] { "banorte", "banregio" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "user_role", new[] { "administrator", "recruiter", "client" });
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "btree_gist");
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -1602,6 +1612,847 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("user_permissions", "platform");
                 });
 
+            modelBuilder.Entity("Platform.Payroll.Groups.PayConceptRow", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<ConceptCalc>("Calc")
+                        .HasColumnType("platform.concept_calc")
+                        .HasColumnName("calc");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<decimal?>("DefaultAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("default_amount");
+
+                    b.Property<decimal?>("DefaultRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("default_rate");
+
+                    b.Property<string>("ExportColumn")
+                        .HasColumnType("text")
+                        .HasColumnName("export_column");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_system");
+
+                    b.Property<ConceptKind>("Kind")
+                        .HasColumnType("platform.concept_kind")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("NameEs")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name_es");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pay_concepts");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_pay_concepts_uid");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pay_concepts_code");
+
+                    b.ToTable("pay_concepts", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.PayrollGroup", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<TimeOnly>("AttendanceLockTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("attendance_lock_time");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<short>("CutoffWeekday")
+                        .HasColumnType("smallint")
+                        .HasColumnName("cutoff_weekday");
+
+                    b.Property<decimal>("HolidayWorkedMultiplier")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("holiday_worked_multiplier");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<PeriodType>("PeriodType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.period_type")
+                        .HasDefaultValue(PeriodType.Weekly)
+                        .HasColumnName("period_type");
+
+                    b.Property<string>("ScheduleDescription")
+                        .HasColumnType("text")
+                        .HasColumnName("schedule_description");
+
+                    b.Property<short>("SeventhDayDivisor")
+                        .HasColumnType("smallint")
+                        .HasColumnName("seventh_day_divisor");
+
+                    b.Property<decimal>("ShiftHours")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("shift_hours");
+
+                    b.Property<decimal>("SundayPremiumPct")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("numeric(5,4)")
+                        .HasColumnName("sunday_premium_pct");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("time_zone");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payroll_groups");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_payroll_groups_uid");
+
+                    b.HasIndex("ClientId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payroll_groups_client_id_name");
+
+                    b.ToTable("payroll_groups", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_payroll_groups_cutoff", "cutoff_weekday BETWEEN 0 AND 6");
+
+                            t.HasCheckConstraint("ck_payroll_groups_divisor", "seventh_day_divisor BETWEEN 1 AND 7");
+
+                            t.HasCheckConstraint("ck_payroll_groups_holiday", "holiday_worked_multiplier BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_payroll_groups_premium", "sunday_premium_pct BETWEEN 0 AND 1");
+
+                            t.HasCheckConstraint("ck_payroll_groups_shift", "shift_hours > 0 AND shift_hours <= 24");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.PayrollGroupConcept", b =>
+                {
+                    b.Property<Guid>("PayrollGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payroll_group_id");
+
+                    b.Property<Guid>("PayConceptId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pay_concept_id");
+
+                    b.Property<decimal?>("AmountOverride")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount_override");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<decimal?>("RateOverride")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("rate_override");
+
+                    b.HasKey("PayrollGroupId", "PayConceptId")
+                        .HasName("pk_payroll_group_concepts");
+
+                    b.HasIndex("PayConceptId")
+                        .HasDatabaseName("ix_payroll_group_concepts_pay_concept_id");
+
+                    b.ToTable("payroll_group_concepts", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.Position", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("PayrollGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payroll_group_id");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_positions");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_positions_uid");
+
+                    b.HasIndex("PayrollGroupId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_positions_payroll_group_id_name");
+
+                    b.ToTable("positions", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.PositionRate", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("DailySalaryImss")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("daily_salary_imss");
+
+                    b.Property<decimal>("DailySalaryPocket")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("daily_salary_pocket");
+
+                    b.Property<decimal>("DaysWorkedBonus")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("days_worked_bonus");
+
+                    b.Property<decimal>("HourlyRate")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("hourly_rate");
+
+                    b.Property<Guid>("PositionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("position_id");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.HasKey("Id")
+                        .HasName("pk_position_rates");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_position_rates_uid");
+
+                    b.HasIndex("PositionId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_position_rates_current")
+                        .HasFilter("valid_to IS NULL");
+
+                    b.HasIndex("PositionId", "ValidFrom")
+                        .IsUnique()
+                        .HasDatabaseName("ix_position_rates_position_id_valid_from");
+
+                    b.ToTable("position_rates", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_position_rates_amounts", "daily_salary_pocket >= 0 AND daily_salary_imss >= 0 AND hourly_rate >= 0 AND days_worked_bonus >= 0");
+
+                            t.HasCheckConstraint("ck_position_rates_validity", "valid_to IS NULL OR valid_to >= valid_from");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.AttendanceRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid?>("ClientSiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_site_id");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<decimal?>("HoursWorked")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("hours_worked");
+
+                    b.Property<bool>("IsAutoAbsent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_auto_absent");
+
+                    b.Property<bool>("IsLocked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_locked");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("note");
+
+                    b.Property<decimal>("OvertimeHours")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("overtime_hours");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("RecordedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<AttendanceStatus>("Status")
+                        .HasColumnType("platform.attendance_status")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("StatusPeriodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("status_period_id");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateOnly>("WorkDate")
+                        .HasColumnType("date")
+                        .HasColumnName("work_date");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attendance_records");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_attendance_records_uid");
+
+                    b.HasIndex("ClientSiteId")
+                        .HasDatabaseName("ix_attendance_records_client_site_id");
+
+                    b.HasIndex("StatusPeriodId")
+                        .HasDatabaseName("ix_attendance_records_status_period_id");
+
+                    b.HasIndex("WorkDate")
+                        .HasDatabaseName("ix_attendance_records_work_date");
+
+                    b.HasIndex("EmployeeId", "WorkDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_attendance_records_employee_id_work_date");
+
+                    b.ToTable("attendance_records", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_attendance_records_hours", "hours_worked IS NULL OR hours_worked BETWEEN 0 AND 24");
+
+                            t.HasCheckConstraint("ck_attendance_records_overtime", "overtime_hours BETWEEN 0 AND 24");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.CardRequest", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<RegistrationBank>("Bank")
+                        .HasColumnType("platform.registration_bank")
+                        .HasColumnName("bank");
+
+                    b.Property<byte[]>("CardNumberEnc")
+                        .HasColumnType("bytea")
+                        .HasColumnName("card_number_enc");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<DateTimeOffset?>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<Guid?>("RegistrationBatchRowId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("registration_batch_row_id");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<CardRequestStatus>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.card_request_status")
+                        .HasDefaultValue(CardRequestStatus.Queued)
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_card_requests");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_card_requests_uid");
+
+                    b.HasIndex("EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_card_requests_open")
+                        .HasFilter("status IN ('queued', 'in_batch', 'uploaded')");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_card_requests_status");
+
+                    b.ToTable("card_requests", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.Employee", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid?>("CandidateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("candidate_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal?>("DailySalaryImssOverride")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("daily_salary_imss_override");
+
+                    b.Property<decimal?>("DailySalaryPocketOverride")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("daily_salary_pocket_override");
+
+                    b.Property<decimal?>("DaysWorkedBonusOverride")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("days_worked_bonus_override");
+
+                    b.Property<DateOnly>("HiredAt")
+                        .HasColumnType("date")
+                        .HasColumnName("hired_at");
+
+                    b.Property<decimal?>("HourlyRateOverride")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("numeric(12,4)")
+                        .HasColumnName("hourly_rate_override");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("PayrollGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payroll_group_id");
+
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("person_id");
+
+                    b.Property<Guid>("PositionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("position_id");
+
+                    b.Property<string>("Shift")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("shift");
+
+                    b.Property<EmployeeStatus>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.employee_status")
+                        .HasDefaultValue(EmployeeStatus.Active)
+                        .HasColumnName("status");
+
+                    b.Property<DateOnly?>("TerminatedAt")
+                        .HasColumnType("date")
+                        .HasColumnName("terminated_at");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_employees");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_employees_uid");
+
+                    b.HasIndex("CandidateId")
+                        .HasDatabaseName("ix_employees_candidate_id");
+
+                    b.HasIndex("PayrollGroupId")
+                        .HasDatabaseName("ix_employees_payroll_group_id");
+
+                    b.HasIndex("PositionId")
+                        .HasDatabaseName("ix_employees_position_id");
+
+                    b.HasIndex("PersonId", "PayrollGroupId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_employees_active_person_group")
+                        .HasFilter("terminated_at IS NULL");
+
+                    b.ToTable("employees", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_employees_overrides", "COALESCE(daily_salary_pocket_override, 0) >= 0 AND COALESCE(daily_salary_imss_override, 0) >= 0 AND COALESCE(hourly_rate_override, 0) >= 0 AND COALESCE(days_worked_bonus_override, 0) >= 0");
+
+                            t.HasCheckConstraint("ck_employees_terminated", "terminated_at IS NULL OR terminated_at >= hired_at");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.EmployeeStatusPeriod", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<DateTimeOffset?>("EndedEarlyAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_early_at");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Reference")
+                        .HasColumnType("text")
+                        .HasColumnName("reference");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<EmployeeStatus>("Status")
+                        .HasColumnType("platform.employee_status")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_employee_status_periods");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_employee_status_periods_uid");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("ix_employee_status_periods_employee_id");
+
+                    b.ToTable("employee_status_periods", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_employee_status_periods_dates", "end_date IS NULL OR end_date >= start_date");
+
+                            t.HasCheckConstraint("ck_employee_status_periods_end", "(status = 'terminated') = (end_date IS NULL)");
+
+                            t.HasCheckConstraint("ck_employee_status_periods_status", "status <> 'active'");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.WorkSchedule", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("ClientSiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_site_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("end_time");
+
+                    b.Property<string>("JobDescription")
+                        .HasColumnType("text")
+                        .HasColumnName("job_description");
+
+                    b.Property<DateOnly?>("OneOffDate")
+                        .HasColumnType("date")
+                        .HasColumnName("one_off_date");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("start_time");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_to");
+
+                    b.PrimitiveCollection<short[]>("Weekdays")
+                        .IsRequired()
+                        .HasColumnType("smallint[]")
+                        .HasColumnName("weekdays");
+
+                    b.HasKey("Id")
+                        .HasName("pk_work_schedules");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_work_schedules_uid");
+
+                    b.HasIndex("ClientSiteId")
+                        .HasDatabaseName("ix_work_schedules_client_site_id");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("ix_work_schedules_employee_id");
+
+                    b.ToTable("work_schedules", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_work_schedules_kind", "(one_off_date IS NULL AND cardinality(weekdays) > 0) OR (one_off_date IS NOT NULL AND cardinality(weekdays) = 0)");
+
+                            t.HasCheckConstraint("ck_work_schedules_validity", "valid_to IS NULL OR valid_to >= valid_from");
+
+                            t.HasCheckConstraint("ck_work_schedules_weekdays", "weekdays <@ ARRAY[1,2,3,4,5,6,7]::smallint[]");
+                        });
+                });
+
             modelBuilder.Entity("Platform.Recruiting.Candidates.Candidate", b =>
                 {
                     b.Property<long>("Id")
@@ -2490,6 +3341,158 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_user_permissions_users_user_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.PayrollGroup", b =>
+                {
+                    b.HasOne("Platform.Core.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payroll_groups_clients_client_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.PayrollGroupConcept", b =>
+                {
+                    b.HasOne("Platform.Payroll.Groups.PayConceptRow", null)
+                        .WithMany()
+                        .HasForeignKey("PayConceptId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payroll_group_concepts_pay_concepts_pay_concept_id");
+
+                    b.HasOne("Platform.Payroll.Groups.PayrollGroup", null)
+                        .WithMany()
+                        .HasForeignKey("PayrollGroupId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_payroll_group_concepts_payroll_group_payroll_group_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.Position", b =>
+                {
+                    b.HasOne("Platform.Payroll.Groups.PayrollGroup", null)
+                        .WithMany()
+                        .HasForeignKey("PayrollGroupId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_positions_payroll_groups_payroll_group_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Groups.PositionRate", b =>
+                {
+                    b.HasOne("Platform.Payroll.Groups.Position", null)
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_position_rates_positions_position_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.AttendanceRecord", b =>
+                {
+                    b.HasOne("Platform.Core.Clients.ClientSite", null)
+                        .WithMany()
+                        .HasForeignKey("ClientSiteId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_attendance_records_client_sites_client_site_id");
+
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_attendance_records_employee_employee_id");
+
+                    b.HasOne("Platform.Payroll.Staff.EmployeeStatusPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("StatusPeriodId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_attendance_records_employee_status_period_status_period_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.CardRequest", b =>
+                {
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_requests_employee_employee_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.Employee", b =>
+                {
+                    b.HasOne("Platform.Recruiting.Candidates.Candidate", null)
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_employees_candidates_candidate_id");
+
+                    b.HasOne("Platform.Payroll.Groups.PayrollGroup", null)
+                        .WithMany()
+                        .HasForeignKey("PayrollGroupId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_employees_payroll_groups_payroll_group_id");
+
+                    b.HasOne("Platform.Core.People.Person", null)
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_employees_people_person_id");
+
+                    b.HasOne("Platform.Payroll.Groups.Position", null)
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_employees_positions_position_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.EmployeeStatusPeriod", b =>
+                {
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_employee_status_periods_employees_employee_id");
+                });
+
+            modelBuilder.Entity("Platform.Payroll.Staff.WorkSchedule", b =>
+                {
+                    b.HasOne("Platform.Core.Clients.ClientSite", null)
+                        .WithMany()
+                        .HasForeignKey("ClientSiteId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_work_schedules_client_sites_client_site_id");
+
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_work_schedules_employees_employee_id");
                 });
 
             modelBuilder.Entity("Platform.Recruiting.Candidates.Candidate", b =>

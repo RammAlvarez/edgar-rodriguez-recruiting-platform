@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Platform.Core\Platform.Core.csproj" />
     <ProjectReference Include="..\Platform.Payroll.Engine\Platform.Payroll.Engine.csproj" />
+    <ProjectReference Include="..\Platform.Recruiting\Platform.Recruiting.csproj" />
   </ItemGroup>
 
   

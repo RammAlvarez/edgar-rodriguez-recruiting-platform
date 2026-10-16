@@ -43,7 +43,7 @@ public static class TestDatabase
             END $$;
             """;
         await command.ExecuteNonQueryAsync();
-        command.CommandText = ReferenceDataSql.Up;
+        command.CommandText = ReferenceDataSql.Up + PayrollSql.PayConcepts;
         await command.ExecuteNonQueryAsync();
     }
 
