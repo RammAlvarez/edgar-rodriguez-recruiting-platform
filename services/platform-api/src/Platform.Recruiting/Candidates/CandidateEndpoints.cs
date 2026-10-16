@@ -200,6 +200,8 @@ public static class CandidateEndpoints
             return ApiResults.Conflict(CandidateMessages.Converted);
         if (r.Stage == CandidateStage.Hired)
         {
+            if (r.HiredAt < c.CapturedAt)
+                return ApiResults.Validation(new Dictionary<string, string[]> { ["hiredAt"] = [CandidateMessages.HiredBeforeCapture] });
             var hired = await db.Set<Candidate>().CountAsync(x => x.JobOpeningId == opening.Uid && x.IsHired && x.Uid != c.Uid, ct);
             if (hired >= opening.HeadcountRequested)
                 return ApiResults.Conflict(CandidateMessages.HeadcountReached(opening.HeadcountRequested));

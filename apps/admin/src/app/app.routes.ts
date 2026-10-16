@@ -8,6 +8,8 @@ import { ALL_NAV_ITEMS, homePath } from './shell/navigation';
 const SCREENS: Record<string, () => Promise<Type<unknown>>> = {
   vacantes: () => import('./openings/openings-page').then((m) => m.OpeningsPage),
   'mis-vacantes': () => import('./openings/openings-page').then((m) => m.OpeningsPage),
+  candidatos: () => import('./candidates/candidates-page').then((m) => m.CandidatesPage),
+  'mis-candidatos': () => import('./candidates/candidates-page').then((m) => m.CandidatesPage),
   usuarios: () => import('./users/users-page').then((m) => m.UsersPage),
   clientes: () => import('./clients/clients-page').then((m) => m.ClientsPage),
   'clientes-nomina': () => import('./clients/payroll-clients-page').then((m) => m.PayrollClientsPage),
@@ -58,6 +60,19 @@ export const routes: Routes = [
         canActivate: [accessGuard(navItem('mis-vacantes').roles)],
         data: { workspace: true },
         title: 'Vacante',
+      },
+      {
+        path: 'candidatos/:id',
+        loadComponent: () => import('./candidates/candidate-detail').then((m) => m.CandidateDetail),
+        canActivate: [accessGuard(navItem('candidatos').roles, navItem('candidatos').grant)],
+        title: 'Candidato',
+      },
+      {
+        path: 'mis-candidatos/:id',
+        loadComponent: () => import('./candidates/candidate-detail').then((m) => m.CandidateDetail),
+        canActivate: [accessGuard(navItem('mis-candidatos').roles)],
+        data: { workspace: true },
+        title: 'Candidato',
       },
       {
         path: 'clientes-nomina/:id',

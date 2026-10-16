@@ -173,13 +173,15 @@ export class PeopleRepository {
     return this.api.get('/v1/people', { search: text });
   }
 
-  checklist(personId: () => string, templateId: () => string | null) {
+  /** Resolves to undefined while the person is not known yet; call `reload()` once it is. */
+  checklist(personId: () => string | null, templateId: () => string | null) {
     return liveQuery(
-      () =>
-        this.api.get<DocumentChecklistDto>(
-          `/v1/people/${personId()}/documents`,
-          templateId() ? { templateId: templateId()! } : undefined,
-        ),
+      () => {
+        const id = personId();
+        return id
+          ? this.api.get<DocumentChecklistDto | undefined>(`/v1/people/${id}/documents`, templateId() ? { templateId: templateId()! } : undefined)
+          : Promise.resolve(undefined);
+      },
       ['documents', 'people'],
     );
   }

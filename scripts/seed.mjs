@@ -8,7 +8,7 @@
 //       shows), two hires that fill GTS, the paused / cancelled vacantes, and the two sample notes. Skipped once any
 //       vacante exists.
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
-import { candidatos as sampleCandidates, clients as sampleClients, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
+import { addDays, candidatos as sampleCandidates, clients as sampleClients, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
 
 export const LOCAL_OWNER = { email: 'edgar@local.test', password: 'plataforma-local', name: 'Edgar Rodríguez' };
 
@@ -176,11 +176,13 @@ if ((await api(token, 'GET', '/v1/openings')).body.length > 0) {
       source: SOURCE[c.fuente],
       offeredSalary: c.sueldo.toFixed(2),
       comments: null,
-      capturedAt: null,
+      // Captured a few days after the vacante opened, so días de proceso look like the prototype's.
+      capturedAt: addDays(openings[c.vacIndex].abierta, 2 + (i % 6)),
     });
     candidateIds.push(body.id);
     const stage = STAGE[c.etapa];
-    if (stage !== 'new') await api(token, 'POST', `/v1/candidates/${body.id}/stage`, { stage, reason: REASON[stage] ?? null, hiredAt: stage === 'hired' ? '2026-10-01' : null });
+    const hiredAt = addDays(openings[c.vacIndex].abierta, 14 + (i % 6));
+    if (stage !== 'new') await api(token, 'POST', `/v1/candidates/${body.id}/stage`, { stage, reason: REASON[stage] ?? null, hiredAt: stage === 'hired' ? hiredAt : null });
   }
 
   const notes = [

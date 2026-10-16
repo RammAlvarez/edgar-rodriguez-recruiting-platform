@@ -109,6 +109,7 @@ public sealed class CandidateTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal([CandidateMessages.ReasonRequired], (await ErrorsOf(await Move(_admin, id, "not_suitable")))["reason"]);
         Assert.Equal([CandidateMessages.ReasonRequired], (await ErrorsOf(await Move(_admin, id, "discarded", " ")))["reason"]);
         Assert.Equal([CandidateMessages.HiredAtRequired], (await ErrorsOf(await Move(_admin, id, "hired")))["hiredAt"]);
+        Assert.Equal([CandidateMessages.HiredBeforeCapture], (await ErrorsOf(await Move(_admin, id, "hired", hiredAt: "2020-01-01")))["hiredAt"]);
 
         var notSuitable = await BodyOf(await Move(_admin, id, "not_suitable", "No pasó la prueba"));
         Assert.False(notSuitable.GetProperty("candidate").GetProperty("isSuitable").GetBoolean());

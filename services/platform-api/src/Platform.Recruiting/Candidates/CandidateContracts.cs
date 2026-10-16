@@ -94,6 +94,7 @@ public static class CandidateMessages
     public const string HiredAtRequired = "Indica la fecha de ingreso.";
     public const string Converted = "El candidato ya se convirtió en empleado; su contratación no se puede deshacer aquí.";
     public const string SameStage = "El candidato ya está en esa etapa.";
+    public const string HiredBeforeCapture = "La fecha de ingreso no puede ser anterior a la fecha de captura.";
 
     public static string OpeningClosed(OpeningStatus status) => status switch
     {
