@@ -62,7 +62,7 @@ public sealed class OpeningTests(ApiFactory factory) : ApiTest(factory)
         Assert.True(await WithDb(db => db.Set<Client>().Where(c => c.Uid == heb.Uid).Select(c => c.UsesRecruiting).SingleAsync()));
 
         var events = await BodyOf(await admin.GetAsync($"/v1/openings/{o.GetProperty("id").GetGuid()}/events"));
-        Assert.Equal(["lead_changed", "recruiter_assigned", "created"], events.EnumerateArray().Select(e => e.GetProperty("kind").GetString()));
+        Assert.Equal(["lead_changed", "created"], events.EnumerateArray().Select(e => e.GetProperty("kind").GetString()));
     }
 
     [Fact]

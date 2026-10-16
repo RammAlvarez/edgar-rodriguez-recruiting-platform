@@ -44,6 +44,13 @@
         </button>
       </mat-menu>
     </mat-toolbar>
+    @if (covering(); as c) {
+      <div class="cover-banner" role="status">
+        <mat-icon fontSet="material-symbols-outlined">visibility</mat-icon>
+        <span>Viendo como <strong>{{ c.name }}</strong> · estás cubriendo su trabajo; lo que hagas queda registrado a tu nombre.</span>
+        <button matButton type="button" (click)="exitCover()">Salir</button>
+      </div>
+    }
     <main>
       <router-outlet />
     </main>

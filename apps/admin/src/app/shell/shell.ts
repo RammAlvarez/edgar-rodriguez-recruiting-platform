@@ -1,7 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { MatIconButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatDivider } from '@angular/material/divider';
 import { MatIcon } from '@angular/material/icon';
 import { MatListItem, MatListItemIcon, MatListItemTitle, MatNavList } from '@angular/material/list';
@@ -12,6 +12,8 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { RefreshButton, Session } from '@platform/ui';
 import { map } from 'rxjs';
+import { API_CLIENT } from '@platform/ui';
+import { CoverMode } from './cover-mode';
 import { visibleNavigation } from './navigation';
 
 const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', client: 'Cliente' } as const;
@@ -32,6 +34,7 @@ const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', c
     MatListItemIcon,
     MatListItemTitle,
     MatIcon,
+    MatButton,
     MatIconButton,
     MatMenu,
     MatMenuItem,
@@ -55,16 +58,28 @@ export class Shell {
     { initialValue: false },
   );
   readonly me = this.session.me;
+  readonly covering = inject(CoverMode).active;
+  private readonly coverMode = inject(CoverMode);
+  private readonly api = inject(API_CLIENT);
   readonly sections = computed(() => {
     const me = this.me();
-    return me ? visibleNavigation(me) : [];
+    return me ? visibleNavigation(me, !!this.covering()) : [];
   });
   readonly userLabel = computed(() => {
     const me = this.me();
     return me ? `${me.displayName} · ${ROLE_LABELS[me.role]}` : '';
   });
 
+  /** «Salir» of cover mode: back to the recruiter's detail with the full Administrador sidebar. */
+  exitCover(): void {
+    const covered = this.covering();
+    this.coverMode.exit();
+    this.api.cache.refreshAll();
+    void this.router.navigate(covered ? ['/reclutadores', covered.id] : ['/']);
+  }
+
   async signOut(): Promise<void> {
+    this.coverMode.exit();
     await this.session.signOut();
     await this.router.navigateByUrl('/entrar');
   }

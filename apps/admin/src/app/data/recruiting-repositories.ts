@@ -59,6 +59,11 @@ export class OpeningsRepository {
     return liveQuery(() => this.api.get<OpeningCommentDto[]>(`/v1/openings/${id()}/comments`), ['openings']);
   }
 
+  /** A one-off read (dialogs), not a live query. */
+  get(id: string): Promise<OpeningDetailDto> {
+    return this.api.get(`/v1/openings/${id}`);
+  }
+
   save(id: string | null, body: OpeningRequest): Promise<OpeningDetailDto> {
     return id ? this.api.put(`/v1/openings/${id}`, body) : this.api.post('/v1/openings', body);
   }

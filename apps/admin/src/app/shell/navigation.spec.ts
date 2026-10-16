@@ -42,6 +42,13 @@ describe('admin navigation', () => {
     expect(paths(me('administrator', ['recruiting']))).toEqual(['inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'catalogos']);
   });
 
+  it('shows an administrator covering a recruiter exactly the recruiter workspace (SPEC §4.4)', () => {
+    const owner = me('administrator', ['recruiting', 'users']);
+    const covering = visibleNavigation(owner, true).flatMap((s) => s.items.map((i) => i.path));
+    expect(covering).toEqual(['mis-vacantes', 'mis-candidatos']);
+    expect(homePath(owner, true)).toBe('mis-vacantes');
+  });
+
   it('shows a recruiter only their workspace', () => {
     const recruiter = me('recruiter');
     expect(paths(recruiter)).toEqual(['mis-vacantes', 'mis-candidatos']);

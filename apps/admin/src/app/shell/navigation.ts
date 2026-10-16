@@ -61,19 +61,21 @@ export const NAVIGATION: readonly NavSection[] = [
 
 export const ALL_NAV_ITEMS: readonly NavItem[] = NAVIGATION.flatMap((s) => s.items);
 
-export function visibleNavigation(me: MeDto): NavSection[] {
+/** `covering`: an Administrador in «Ver como reclutador» sees exactly the recruiter's sidebar (SPEC §4.4). */
+export function visibleNavigation(me: MeDto, covering = false): NavSection[] {
   return NAVIGATION.map((section) => ({
     label: section.label,
-    items: section.items.filter((item) => isVisible(item, me)),
+    items: section.items.filter((item) => isVisible(item, me, covering)),
   })).filter((section) => section.items.length > 0);
 }
 
-export function isVisible(item: NavItem, me: MeDto): boolean {
+export function isVisible(item: NavItem, me: MeDto, covering = false): boolean {
+  if (covering && me.role === 'administrator') return item.roles.includes('recruiter');
   if (!item.roles.includes(me.role)) return false;
   return !item.grant || me.role !== 'administrator' || me.grants.some((g) => g.module === item.grant);
 }
 
 /** First screen the user may open, or null when the role has nothing in this app (a Cliente user). */
-export function homePath(me: MeDto): string | null {
-  return ALL_NAV_ITEMS.find((item) => isVisible(item, me))?.path ?? null;
+export function homePath(me: MeDto, covering = false): string | null {
+  return ALL_NAV_ITEMS.find((item) => isVisible(item, me, covering))?.path ?? null;
 }

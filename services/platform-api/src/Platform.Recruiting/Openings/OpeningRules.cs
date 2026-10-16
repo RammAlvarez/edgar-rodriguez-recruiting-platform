@@ -105,14 +105,18 @@ public static class OpeningRules
     public static string PositionName(string value) =>
         string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
 
-    /// <summary>Adds the recruiter as apoyo when not assigned yet (Actividad «Asignada a …»). Returns the row.</summary>
-    public static JobOpeningRecruiter Assign(DbContext db, RequestContext ctx, IClock clock, JobOpening o, Guid userId)
+    /// <summary>
+    /// Adds the recruiter as apoyo when not assigned yet (Actividad «Asignada a … como apoyo»). <paramref name="log"/> is false
+    /// when the row is created to make her líder: that entry alone says «como líder».
+    /// </summary>
+    public static JobOpeningRecruiter Assign(DbContext db, RequestContext ctx, IClock clock, JobOpening o, Guid userId, bool log = true)
     {
         if (o.Recruiters.FirstOrDefault(r => r.UserId == userId) is { } existing)
             return existing;
         var row = new JobOpeningRecruiter { JobOpeningId = o.Uid, UserId = userId, AssignedAt = clock.Today() };
         o.Recruiters.Add(row);
-        AddEvent(db, ctx, clock, o, OpeningEventKind.RecruiterAssigned, recruiter: userId);
+        if (log)
+            AddEvent(db, ctx, clock, o, OpeningEventKind.RecruiterAssigned, recruiter: userId);
         return row;
     }
 
@@ -122,7 +126,7 @@ public static class OpeningRules
     /// </summary>
     public static async Task MakeLeadAsync(DbContext db, RequestContext ctx, IClock clock, JobOpening o, Guid userId, CancellationToken ct)
     {
-        var row = Assign(db, ctx, clock, o, userId);
+        var row = Assign(db, ctx, clock, o, userId, log: false);
         if (row.IsLead)
             return;
         if (o.Recruiters.FirstOrDefault(r => r.IsLead) is { } previous)
