@@ -371,6 +371,38 @@ public sealed class PrepayrollTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task The_period_excel_has_the_client_layout_and_the_pdfs_render()
+    {
+        var a = await ArrangeSem38([6, 94, 118]);
+        await _owner.PostAsync($"/v1/payroll/periods/{a.Period}/close-capture", null);
+
+        var excel = await BodyOf(await _owner.PostAsJsonAsync($"/v1/payroll/periods/{a.Period}/exports", new { kind = "excel" }));
+        Assert.Equal("PRENOMINA SEM 38 ECOVIA VALIDADORES 12 HRS.xlsx", excel.GetProperty("fileName").GetString());
+        var (_, key) = Factory.Storage.Downloads.Single(d => d.DownloadAs == excel.GetProperty("fileName").GetString()) is var d ? (d.Bucket, d.Key) : default;
+        using var book = new XLWorkbook(new MemoryStream(Factory.Storage.Contents[(Platform.Core.Abstractions.StorageBucket.Exports, key)]));
+        var sheet = book.Worksheet("SEM 38");
+        var client = Sem38GoldenTests.Sheet();
+        foreach (var letter in "BCDEFGHIJKLMNOPQRSTUVW")
+            Assert.Equal(client.Cell($"{letter}5").GetString().Trim(), sheet.Cell($"{letter}5").GetString());
+        Assert.Equal(("SEMANA N° 38", "11 AL 17 DE SEPTIEMBRE 2026"), (sheet.Cell("C4").GetString(), sheet.Cell("F4").GetString()));
+        Assert.Equal("CARREON MONSIVAIS ROBERTO EDUARDO", sheet.Cell("C6").GetString());
+        Assert.Equal(new DateTime(2023, 9, 15), sheet.Cell("B6").GetDateTime());
+        Assert.Equal(2_999.99, sheet.Cell("V6").GetDouble());
+        // Footers: Σ of what is shown, the payable total under V.
+        var grid = await Grid(a.Period);
+        Assert.Equal((double)Dec(grid.GetProperty("totalNet")), sheet.Cell("V9").GetDouble());
+        Assert.Equal(sheet.Cell("K6").GetDouble() + sheet.Cell("K7").GetDouble() + sheet.Cell("K8").GetDouble(), sheet.Cell("K9").GetDouble(), 6);
+
+        foreach (var kind in new[] { "summary", "receipts" })
+        {
+            var pdf = await BodyOf(await _owner.PostAsJsonAsync($"/v1/payroll/periods/{a.Period}/exports", new { kind }));
+            var file = Factory.Storage.Downloads.Single(x => x.DownloadAs == pdf.GetProperty("fileName").GetString());
+            Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(Factory.Storage.Contents[(file.Bucket, file.Key)][..4]));
+        }
+        Assert.Equal(3, await WithDb(db => db.Set<Platform.Core.Audit.AuditEntry>().CountAsync(e => e.Action == Platform.Core.Audit.AuditAction.Export)));
+    }
+
+    [Fact]
     public async Task Prenomina_needs_its_grant_and_follows_the_client_scope()
     {
         var a = await ArrangeSem38([6]);

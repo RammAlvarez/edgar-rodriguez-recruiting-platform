@@ -11,6 +11,18 @@ internal sealed class EmbeddedFontResolver : IFontResolver
     private const string Regular = "Lato-Regular";
     private const string Bold = "Lato-Bold";
 
+    private static readonly Lock Gate = new();
+
+    /// <summary>Makes it PDFsharp's resolver, once per process (every PDF writer calls this first).</summary>
+    public static void Install()
+    {
+        lock (Gate)
+        {
+            if (GlobalFontSettings.FontResolver is not EmbeddedFontResolver)
+                GlobalFontSettings.FontResolver = new EmbeddedFontResolver();
+        }
+    }
+
     public FontResolverInfo ResolveTypeface(string familyName, bool bold, bool italic) =>
         new(bold ? Bold : Regular, mustSimulateBold: false, mustSimulateItalic: italic);
 

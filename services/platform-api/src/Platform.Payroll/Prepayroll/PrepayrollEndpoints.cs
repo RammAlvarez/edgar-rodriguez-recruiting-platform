@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -5,12 +6,16 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
+using Platform.Core.Audit;
+using Platform.Core.Clients;
 using Platform.Core.Http;
+using Platform.Core.Reports;
 using Platform.Core.Users;
 using Platform.Payroll.Engine;
 using Platform.Payroll.Groups;
 using Platform.Payroll.Periods;
 using Platform.Payroll.Staff;
+using Platform.Recruiting.Reports;
 
 namespace Platform.Payroll.Prepayroll;
 
@@ -161,7 +166,92 @@ public static partial class PrepayrollEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
             .Invalidates(Tag, IncidentEndpoints.Tag).RequireAccess(Access);
 
+        // «Excel», «Resumen PDF», «Recibos»: written from the grid as shown, kept in exports, audited (SPEC §5.5).
+        g.MapPost("/periods/{id:guid}/exports", async (Guid id, PrepayrollExportRequest r, DbContext db, RequestContext ctx, IClock clock,
+                IPrepayrollFiles files, IReportRenderer renderer, IObjectStorage storage, CancellationToken ct) =>
+            {
+                var grid = await PrepayrollQueries.Grid(db, Groups(db, ctx), id, clock.Today(), ct);
+                if (grid is null)
+                    return ApiResults.NotFound(PeriodNotFound);
+                var heading = await Heading(db, grid, ct);
+                var (bytes, extension, name) = r.Kind switch
+                {
+                    PrepayrollExport.Excel => (files.Excel(heading, grid), "xlsx", "PRENOMINA"),
+                    PrepayrollExport.Summary => (renderer.Render(Summary(heading, grid), ReportFormat.Pdf), "pdf", "RESUMEN PRENOMINA"),
+                    _ => (files.Receipts(heading, await PrepayrollQueries.Receipts(db, id, clock.Today(), ct)), "pdf", "RECIBOS"),
+                };
+                var contentType = extension == "xlsx" ? ReportFormat.Xlsx.ContentType() : ReportFormat.Pdf.ContentType();
+                var now = clock.UtcNow;
+                var key = $"prepayroll/{grid.Period.Year}/{grid.Period.Id}/{Guid.CreateVersion7()}.{extension}";
+                await storage.UploadAsync(StorageBucket.Exports, key, bytes, contentType, ct);
+                var shortLabel = heading.PeriodLabel.Replace("SEMANA N° ", "SEM ", StringComparison.Ordinal)
+                    .Replace("QUINCENA N° ", "QNA ", StringComparison.Ordinal);
+                var fileName = $"{name} {shortLabel} {heading.ClientName} {heading.GroupName}.{extension}";
+                var download = await storage.PresignDownloadAsync(StorageBucket.Exports, key, fileName, DownloadLifetime, ct);
+                db.Add(new AuditEntry
+                {
+                    OccurredAt = now,
+                    UserId = ctx.RequiredPrincipal.UserId,
+                    ActingForUserId = ctx.ActingFor?.UserId,
+                    Action = AuditAction.Export,
+                    SchemaName = "platform",
+                    TableName = "prepayroll_lines",
+                    After = JsonSerializer.Serialize(new { kind = r.Kind.ToString(), periodId = id, lines = grid.Rows.Count, totalNet = grid.TotalNet, key }),
+                    RequestId = ctx.RequestId,
+                });
+                await db.SaveChangesAsync(ct);
+                return TypedResults.Ok(new ReportExportDto(download.Url, fileName, download.ExpiresAt));
+            })
+            .WithName("ExportPrepayroll").Produces<ReportExportDto>().ProducesProblem(StatusCodes.Status404NotFound).Invalidates(Tag)
+            .RequireAccess(Access);
+
         return v1;
+    }
+
+    private static readonly TimeSpan DownloadLifetime = TimeSpan.FromMinutes(10);
+
+    private static async Task<PrepayrollHeading> Heading(DbContext db, PrepayrollGridDto grid, CancellationToken ct)
+    {
+        var weekly = await db.Set<PayrollGroup>().Where(g => g.Uid == grid.Period.GroupId).Select(g => g.PeriodType == PeriodType.Weekly).SingleAsync(ct);
+        return new PrepayrollHeading(grid.Period.ClientName, grid.Period.GroupName, grid.ScheduleDescription,
+            PrepayrollLabels.Period(weekly, grid.Period.Number), PrepayrollLabels.Range(grid.Period.StartDate, grid.Period.EndDate));
+    }
+
+    /// <summary>The PDF summary: totals by column (D76), the deposits by state, and one line per person.</summary>
+    private static ReportDocument Summary(PrepayrollHeading heading, PrepayrollGridDto grid)
+    {
+        var status = grid.Period.Status switch
+        {
+            PeriodStatus.Capturing => "En captura",
+            PeriodStatus.InReview => "En revisión",
+            _ => "Pagado",
+        };
+        var totals = grid.Columns.Select((c, i) => new ReportRow([ReportCell.Text(c), ReportCell.Money(grid.Footers[i])]))
+            .Append(new ReportRow([ReportCell.Text("TOTAL NETO A PAGAR"), ReportCell.Money(grid.TotalNet)], Emphasis: true))
+            .ToList();
+        var states = new[] { (PaymentState.Ready, "Con cuenta"), (PaymentState.CardRequested, "Tarjeta en trámite"), (PaymentState.MissingAccount, "Sin cuenta") }
+            .Select(s => (Label: s.Item2, Rows: grid.Rows.Where(r => r.Payment.State == s.Item1).ToList()))
+            .Select(s => new ReportRow([ReportCell.Text(s.Label), ReportCell.Count(s.Rows.Count), ReportCell.Money(s.Rows.Sum(r => r.TotalNet))]))
+            .ToList();
+        var people = grid.Rows.Select(r => new ReportRow(
+            [
+                ReportCell.Text(r.FullName), ReportCell.Text(r.PositionName), ReportCell.Text(r.DaysWorked.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)),
+                ReportCell.Money(r.TotalNet),
+                ReportCell.Text(r.Payment.State switch
+                {
+                    PaymentState.Ready => $"{r.Payment.Bank} ·{r.Payment.Last4}",
+                    PaymentState.CardRequested => "Tarjeta en trámite",
+                    _ => "Sin cuenta",
+                }),
+            ]))
+            .ToList();
+        return new ReportDocument($"Prenómina {heading.PeriodLabel}",
+            $"{heading.ClientName} · {heading.GroupName} · {heading.DateRange} · {status} · {grid.Rows.Count} personas",
+            [
+                new ReportTable("Totales por columna (suma de lo mostrado; lo pagado es el total neto)", ["Columna", "Importe"], totals),
+                new ReportTable("Depósitos", ["Estado", "Personas", "Importe"], states),
+                new ReportTable("Por persona", ["Empleado", "Puesto", "Días", "Total neto", "Depósito"], people),
+            ]);
     }
 
     public static IQueryable<PayrollGroup> Groups(DbContext db, RequestContext ctx) =>

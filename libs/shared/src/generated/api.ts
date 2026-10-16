@@ -1842,6 +1842,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/periods/{id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExportPrepayroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll/incidents": {
         parameters: {
             query?: never;
@@ -3342,6 +3358,11 @@ export type components = {
             /** Format: date */
             validFrom: DateKey | null;
         };
+        /** @enum {unknown} */
+        PrepayrollExport: "excel" | "summary" | "receipts";
+        PrepayrollExportRequest: {
+            kind: components["schemas"]["PrepayrollExport"];
+        };
         PrepayrollGridDto: {
             period: components["schemas"]["PayrollPeriodDto"];
             scheduleDescription: null | string;
@@ -4016,6 +4037,8 @@ export type PositionOptionDto = components['schemas']['PositionOptionDto'];
 export type PositionRateDto = components['schemas']['PositionRateDto'];
 export type PositionRatesRequest = components['schemas']['PositionRatesRequest'];
 export type PositionRequest = components['schemas']['PositionRequest'];
+export type PrepayrollExport = components['schemas']['PrepayrollExport'];
+export type PrepayrollExportRequest = components['schemas']['PrepayrollExportRequest'];
 export type PrepayrollGridDto = components['schemas']['PrepayrollGridDto'];
 export type PrepayrollLineDetailDto = components['schemas']['PrepayrollLineDetailDto'];
 export type PrepayrollRowDto = components['schemas']['PrepayrollRowDto'];
@@ -9666,6 +9689,41 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ExportPrepayroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrepayrollExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportExportDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

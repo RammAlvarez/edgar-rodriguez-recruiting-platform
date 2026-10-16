@@ -67,6 +67,7 @@ builder.Services.AddPlatformPersistence(settings.DatabaseUrl);
 builder.Services.AddSingleton(settings.S3);
 builder.Services.AddSingleton<IObjectStorage, S3ObjectStorage>();
 builder.Services.AddSingleton<IReportRenderer, ReportRenderer>();
+builder.Services.AddSingleton<IPrepayrollFiles, PrepayrollFiles>();
 builder.Services.AddSingleton(settings.Encryption);
 builder.Services.AddSingleton<IFieldCipher, AesGcmFieldCipher>();
 builder.Services.AddScoped<IJob, AttendanceLockJob>();

@@ -101,6 +101,28 @@ public static class PrepayrollQueries
             incidents, x.l.GrossEarnings, x.l.TotalDeductions, x.l.TotalNetExact, x.l.TotalNet, x.l.Comments, x.l.ComputedAt);
     }
 
+    /// <summary>Every line of the period as a receipt, by name; an ajuste manual prints as «Ajuste: SUELDO».</summary>
+    public static async Task<List<Receipt>> Receipts(DbContext db, Guid periodId, DateOnly today, CancellationToken ct)
+    {
+        var lines = await db.Set<PrepayrollLine>().AsNoTracking().Include(l => l.Items).Where(l => l.PayrollPeriodId == periodId)
+            .Join(db.Set<Employee>(), l => l.EmployeeId, e => e.Uid, (l, e) => new { l, e.PersonId })
+            .Join(db.Set<Person>(), x => x.PersonId, p => p.Uid, (x, p) => new { x.l, x.PersonId, p.FullName })
+            .OrderBy(x => x.FullName).ToListAsync(ct);
+        var concepts = await db.Set<PayConceptRow>().AsNoTracking().ToDictionaryAsync(c => c.Uid, ct);
+        var pivot = await Pivot.LoadAsync(db, lines.Select(x => x.l), ct);
+        var payments = await Payments(db, lines.Select(x => (x.l.EmployeeId, x.PersonId, x.FullName)).ToList(), today, ct);
+        return lines.Select(x =>
+            {
+                var items = x.l.Items.OrderBy(i => concepts[i.PayConceptId].SortOrder).ThenBy(i => i.Id)
+                    .Select(i => (Item: new ReceiptItem(i.Source == ItemSource.Manual ? $"Ajuste: {pivot.Column(i)}" : concepts[i.PayConceptId].NameEs,
+                        i.Quantity, PrepayrollLabels.Cents(pivot.Signed(i))), Deduction: concepts[i.PayConceptId].Kind == ConceptKind.Deduction))
+                    .ToList();
+                return new Receipt(x.FullName, x.l.PositionName, x.l.Shift, x.l.DaysWorked, items.Where(i => !i.Deduction).Select(i => i.Item).ToList(),
+                    items.Where(i => i.Deduction).Select(i => i.Item).ToList(), x.l.TotalNet, payments[x.l.EmployeeId], x.l.Comments);
+            })
+            .ToList();
+    }
+
     public static async Task<List<IncidentDto>> Incidents(DbContext db, IQueryable<Incident> q, CancellationToken ct)
     {
         var rows = await q

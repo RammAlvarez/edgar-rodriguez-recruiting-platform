@@ -2,7 +2,6 @@ using ClosedXML.Excel;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
-using PdfSharp.Fonts;
 using Platform.Core.Reports;
 
 namespace Platform.Infrastructure.Reports;
@@ -14,7 +13,7 @@ namespace Platform.Infrastructure.Reports;
 /// </summary>
 public sealed class ReportRenderer : IReportRenderer
 {
-    static ReportRenderer() => GlobalFontSettings.FontResolver = new EmbeddedFontResolver();
+    static ReportRenderer() => EmbeddedFontResolver.Install();
 
     public byte[] Render(ReportDocument document, ReportFormat format) =>
         format == ReportFormat.Xlsx ? Excel(document) : Pdf(document);
@@ -70,6 +69,7 @@ public sealed class ReportRenderer : IReportRenderer
         {
             ReportCellKind.Count => "0",
             ReportCellKind.Average => "0.0",
+            ReportCellKind.Money => "$#,##0.00;-$#,##0.00",
             _ => "0%",
         };
     }

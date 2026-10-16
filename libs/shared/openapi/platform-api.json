@@ -7593,6 +7593,57 @@
         }
       }
     },
+    "/v1/payroll/periods/{id}/exports": {
+      "post": {
+        "tags": [
+          "Prepayroll"
+        ],
+        "operationId": "ExportPrepayroll",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepayrollExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportExportDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/payroll/incidents": {
       "get": {
         "tags": [
@@ -13936,6 +13987,24 @@
               "string"
             ],
             "format": "date"
+          }
+        }
+      },
+      "PrepayrollExport": {
+        "enum": [
+          "excel",
+          "summary",
+          "receipts"
+        ]
+      },
+      "PrepayrollExportRequest": {
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PrepayrollExport"
           }
         }
       },

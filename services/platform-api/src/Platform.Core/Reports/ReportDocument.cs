@@ -7,6 +7,8 @@ public enum ReportCellKind
     Count,
     Average,
     Percent,
+    /// <summary>Pesos, already truncated to cents (PLAN D42): «$2,999.99», «-$100.00».</summary>
+    Money,
 }
 
 /// <summary>
@@ -30,6 +32,12 @@ public sealed record ReportCell(ReportCellKind Kind, string Display, decimal? Va
     {
         var shown = value is { } v ? Math.Truncate(v * 10) / 10 : (decimal?)null;
         return new(ReportCellKind.Average, shown?.ToString("0.0", Format) ?? Empty, shown);
+    }
+
+    public static ReportCell Money(decimal? value)
+    {
+        var shown = value is { } v ? Math.Round(v, 2, MidpointRounding.ToZero) : (decimal?)null;
+        return new(ReportCellKind.Money, shown is { } m ? (m < 0 ? "-" : "") + "$" + Math.Abs(m).ToString("#,##0.00", Format) : Empty, shown);
     }
 
     public static ReportCell Percent(decimal? fraction)
