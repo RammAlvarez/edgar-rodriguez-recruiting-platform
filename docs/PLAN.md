@@ -1,0 +1,117 @@
+# PLAN — Plataforma de Reclutamiento y Prenómina
+
+> **Status:** v1 draft for approval · **Written:** 2026-10-16 (kickoff)
+> **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
+> **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
+
+---
+
+## 1. Findings at kickoff
+
+Read before planning: SPEC, DATA_MODEL, ARCHITECTURE, `PROJECT_KICKOFF_PROMPT.md`, the RASS design-system readme, the prototype's `data.js`, and the golden workbook `examples/PRENOMINA SEM 38 12 HRS ECOVIA VALIDADORES.xlsx` (sheet `SEM 38`, rows 6–120 = 115 employees, total in `V121`).
+
+What the golden workbook actually contains (checked cell by cell with formulas and cached values):
+
+| Column | What the sheet does | Matches the spec? |
+|---|---|---|
+| SUELDO `K` | `=J*F` | yes |
+| SEPTIMO DIA `L` | `=(1/6)*F*J` → repeating decimals (e.g. 214.285, 71.42833…) | yes, but forces a rounding decision (§3, P1) |
+| PRIMA DOMINICAL `M` | `=J*0.25`, 71 rows | yes |
+| HORAS INCOMPLETAS `N` | `=G*hours` (3–11 h), 13 rows | yes (D15) |
+| FESTIVO PRIMERA MITAD `O` | **typed constants**: 428.5 ×34, 585.7 ×5 (2 of them on VALIDADOR rows 94, 104), 249.5 ×4, 178.6 ×3 | **no**: D14 gives 428.52 / 585.60; 249.5 and 178.6 follow no rule (P2) |
+| HORAS EXTRA `P` | `=G*hours`, 8 rows | yes |
+| DESCANSO LABORADO `R` | typed 500, 3 rows | yes (fixed 500); the prototype's `cantidad × SD` is wrong |
+| FESTIVO LABORADO `T` | `=J*H*2`, but `H` is empty in every row → 0 | yes (no one worked the holiday) |
+| DESCUENTO `U` | empty in every row | — |
+| TOTAL `V` | `=SUM(K:U)`, no rounding; `V121 = 333,189.1291666…` | rounding level undefined (P1) |
+| Row 30 comment | `PENSION DEL 39%`, but **no deduction** is applied: V30 = SUM(K:U) | **no**: D16 would deduct 39 % (P3) |
+| Header `V2:W3` | VALIDADORES 328.57 / 27.38, SUPERVISOR 585.71 / 48.80 | rows use 428.57 / 35.71; the header is stale and is not imported |
+| Bonuses | `BONO DIAS TRABAJADOS` 450 / 600 in the header; no row pays any bonus | Q4 stays open; the golden group has every `BONUS_*` concept inactive |
+
+Totals under each rounding reading (half-up to 2 dp):
+
+| Reading | Σ of 115 rows |
+|---|---|
+| Excel's unrounded sum, rounded once | 333,189.13 |
+| Each line rounded once (SPEC §5.5 "line level") | 333,188.98 |
+| Each line item rounded once (kickoff, DATA_MODEL §5.12 `numeric(12,2)` items, `total = Σ items`) | 333,188.95 (3 rows differ from line-level by 0.01) |
+
+Environment: Node 24.21, Docker 20.10, Firebase CLI 15.27, Java 25 (emulator) are present. **Only the .NET 8 SDK is installed**; the stack pins .NET 10 LTS in `global.json`. Building needs the .NET 10 SDK installed locally (P4).
+
+---
+
+## 2. Slice order
+
+Vertical slices: each one has its schema (migration), its routes with permission-matrix filters and server rules, its xUnit tests (one per matrix row and per rule), the seed additions through the API, then its screens and a browser check written up in `docs/tests/`. One commit per finished step. Slices map to SPEC §11 sprints; the two signature flows of ARCHITECTURE §4.1 are the demo gates at the end of S5 (*candidate → Apto, seen in the portal*) and S10 (*… → employee → paid*).
+
+The two pure libraries (payroll engine, bank layouts) come right after the foundation: they carry the numbers the client will check, need no database, and answer P1–P3 against the real files before any payroll screen exists.
+
+| # | Slice | Contents | Done when | SPEC §11 |
+|---|---|---|---|---|
+| **S0** | Foundation | `global.json` (.NET 10), solution with the projects from the kickoff layout; npm workspace with Angular 22 apps `admin`, `candidates`, `clients` and libs `shared`, `api-client`, `ui`; `db/docker-compose.yml` (Postgres 18 :5433, MinIO, scheduler), `db/roles.sql`; `.env.example`; `.gitignore`; EF `PlatformDbContext` (snake_case, schema `platform`), audit stamps helper, `audit_log` + `data_access_log` with append-only trigger, `users`, `user_permissions`; `IAuthProvider` + fake + Firebase adapter (emulator test); `GET /v1/me`; route authorization filter (role, active, grants, client scope, `X-Acting-For`); FluentValidation → 400 field issues, 403 messages; `X-Invalidates`; money-as-string JSON converter; Serilog; `/health`; OpenAPI → `npm run generate:api-types`; `libs/api-client` (auth header, ISO reviver, `ApiError`, cache tags, re-fetch); RASS `mat.theme()` shell in all three apps with sign-in against the emulator and «Actualizar»; `scripts/check-neutrality.sh`; GitHub Actions CI with every gate of the kickoff; `scripts/bootstrap` (first admin); `docs/TEST_PLAN.md`, `docs/tests/README.md` (defect register D-001…) | an admin signs in locally through the emulator and sees their name from `/v1/me`; CI is green | 0 |
+| **S1** | Payroll engine + golden test | `Platform.Payroll.Engine` (pure, `decimal`, `AwayFromZero`): inputs (period, attendance summary, incidents, rates, group concepts), outputs (lines + items in Excel column order); the golden test reads the workbook in `examples/` and compares all 115 rows, every column and the total, per D41 | golden test green under the rules chosen for P1–P3 | (4) |
+| **S2** | Bank layouts | `Platform.Bank.Layouts`: column definitions + validation rules for Banco Azteca pagos masivos, cuentas frecuentes, Banorte Alta Masiva NH, Banregio alta; ClosedXML writers; tests reproduce the headers of the four files in `examples/` and each validation rule (Banorte rules sheet, account lengths, uppercase/accents/Ñ, CURP structure, age, phone, ≤ 2 per address, email ≤ 50) | writer output opens with the same headers/cell layout as the client's files | (5) |
+| **S3** | Core registry | catalogs (zones, positions_catalog, education_levels, benefits, holidays, banks seed, document types/templates), clients + contacts + sites (`uses_*` derived), people (CURP/RFC duplicate detection), person documents (presign PUT/GET, `WHEN_REQUIRED`, sanitized names, `data_access_log`, completeness view), Usuarios (invite, edit panel, grants, deactivate, resend) with Resend `IEmailSender`; admin screens: Usuarios, Clientes (both module entries), catalogs | invite a user, upload and download a document (logged) | 0 |
+| **S4** | Reclutamiento | job openings (display name view, `filled` in the same transaction as the hire, days open), recruiter assignment líder/apoyo, candidates + stage machine with required reasons, stage history, interviews, rich-text notes (Tiptap + server allowlist sanitizer), opening comments model, "Convertir en empleado" stub until S7; admin screens: Vacantes, detail + Kanban, Candidatos, candidate detail, Reclutadores + detail + Asignar vacante, recruiter workspace, cover mode banner (audited `acting_for`) | demo path steps 1–3c of ARCHITECTURE §9 work against the API | 1 |
+| **S5** | Candidates app + Clients app | email-link sign-in per app domain; candidate profile, documents (camera upload), Mi postulación; client portal Mis vacantes, detail with anonymization until Apto, comments thread | **gate 1:** recruiter captures → candidate uploads INE → recruiter validates, moves to Apto → client sees the name | 1–2 |
+| **S6** | Reportes de reclutamiento | the six reports (views of DATA_MODEL §4.7, fixed per §4), selector screen, Excel/PDF export (ClosedXML / QuestPDF to `exports`), behind `recruiting_reports` | owner opens Rendimiento por reclutador with seed data | 2 |
+| **S7** | Personal | payroll groups (IANA zone), positions with rate history, group concepts, employees (alta, convert candidate, cambio de asignación), employee status periods (exclusion constraint, attendance pre-fill), payment accounts (AES-GCM, last4, titular, principal, vigencia), card-request auto-queue, work schedules, Calendario; screens: Clientes (nómina), Personal, employee detail tabs | Alta de empleado and Cambiar estatus work; Personal lists the seed ECOVIA staff | 3 |
+| **S8** | Asistencia + jobs | attendance records, mobile capture screen, unlocks (audited), `services/scheduler`, jobs `attendance-lock`, `period-roll`, `status-roll` (idempotent, zone-aware, tests with a fixed clock) | capture a day from a phone; yesterday is locked; unlock with reason | 3 |
+| **S9** | Incidencias + Prenómina | incidents (retroactivo routing to the next open period), prepayroll lines recomputed by the engine in the same transaction as each attendance / incident / status / account write, period lifecycle Capturando → Revisión, live grid with payment columns, Desglose, Ajuste manual, period Excel (current layout) + PDF + receipts; seed Semana 38 through the API | the seeded Semana 38 grid equals the golden totals (D41) | 4 |
+| **S10** | Archivos de pago + Tarjetas | payment batches (Azteca, cuentas frecuentes, pendientes, rejected → re-include, uploaded → paid, deposit date), freeze at Pagada (trigger), card requests → Banorte/Banregio registration batches with preview + validation, Tarjetas recibidas → primary account | **gate 2:** demo path steps 4–7 end to end; the Azteca file opens in the bank's layout | 5 |
+| **S11** | Reportes de nómina | the six reports (DATA_MODEL §5.13), selector screen, exports | Costo de nómina for ECOVIA over 4 seeded weeks | 6 |
+| **S12** | Notifications, MFA, go-live | bell + email notifications, jobs `document-expiry`, `notifications-digest`; TOTP MFA optional/forced; `scripts/import-excel` (DATA_MODEL §10, with a diff report against `V121`); deploy Dockerfiles, `deploy/docker-compose.same-vm.yml`, `deploy/providers/{gcp,digitalocean}.md`; `docs/HANDOFF.md` with restore drill; hardening pass (performance ≤ 2 s at 500 employees, security review) | import of the five workbooks reproduces SEM 38; a human can deploy from the docs | 6 |
+
+The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each slice: 11 clients and 6 recruiters in S3–S4, the ECOVIA group with VALIDADOR / SUPERVISOR in S7, the Semana 38 scenario from `design-reference/data.js` in S9.
+
+---
+
+## 3. Open questions (block the slice named)
+
+| # | Question | Blocks | Proposed default |
+|---|---|---|---|
+| **P1** | **Rounding level** — a doc–doc contradiction. SPEC §5.5: "rounding half-up at the line level, never on intermediates". Kickoff + DATA_MODEL §5.12: round once per **line item** (items are `numeric(12,2)` and `total_net = Σ items` is a DB invariant). On SEM 38 they give 333,188.98 vs 333,188.95; the Excel prints 333,189.13 because it never rounds. | S1 | **Per line item** (keeps the stored breakdown and the invariant exact; each Excel column the clerk sees is then a rounded number that sums to the total). SPEC §5.5 changes to say "once per line item". Golden test per D41. |
+| **P2** | **FESTIVO PRIMERA MITAD** (new SPEC Q12 for the client). D14 says 4 h × hourly × 3 = 428.52 / 585.60; the sheet types 428.5 / 585.7 (≈ SD bolsillo), gives 585.7 to two VALIDADORES, and 249.5 / 178.6 to seven rows with no rule. | S1 | Engine implements D14. The golden test loads column O **as per-row input** (an imported `HOLIDAY_FIRST_HALF` incident with the sheet's amount) so every other column is still checked against the rule; ask the client what 249.5 / 178.6 and the supervisor amount on VALIDADOR rows mean. |
+| **P3** | **Pensión alimenticia** (new SPEC Q13). Row 30 says `PENSION DEL 39%` but its total has no deduction. Either the Excel is pre-pension (the 39 % is deducted elsewhere) or D16 is not how it works today. | S1 | Golden runs with `alimony_pct = NULL` for row 30 (the Excel is pre-pension); D16 stays and has its own unit test; confirm with the client. |
+| **P4** | **.NET 10 SDK** is not installed (only 8.0.101). | S0 | Install the .NET 10 SDK locally (official installer / Homebrew); `global.json` pins it. |
+| Q4 | Bonus scheme (SPEC §10) — still open. | S9 demo columns only | All `BONUS_*` concepts inactive for ECOVIA until answered (that is what SEM 38 pays). |
+
+---
+
+## 4. Proposed doc changes (applied once approved)
+
+| # | Doc | Change | Why |
+|---|---|---|---|
+| E1 | ARCHITECTURE §2 | Drop `Platform.Audit` and `Platform.Jobs` from the project list: jobs live in `Platform.Api/Jobs/`, the audit helper in `Platform.Infrastructure` (as §3 and the kickoff layout say) | §2 contradicts §3 |
+| E2 | SPEC §2.2, §5.9 | Permission modules written as the enum values (`recruiting_reports`, `payroll_prepayroll`, …) | SPEC uses dots, DATA_MODEL the enum |
+| E3 | DATA_MODEL §4.7, §5.13 | Views join on `uid` (`cl.uid = o.client_id`, D37); `open_openings_aging` drops `o.code` (removed by D30) and adds the display name | the views as written do not compile against D37 |
+| E4 | DATA_MODEL §5.12 | "lines of a `closed`/`paid` period" → "lines of a `paid` period" | `closed` is not a `period_status` |
+| E5 | DATA_MODEL §1 | `card_requests`, `employee_bank_numbers` stay in the `payroll` table list; ARCHITECTURE §3 `Platform.Bank` reads "card-request batches, payment batches, Layouts/" | module table and repository tree disagree on card requests |
+| E6 | DATA_MODEL §10 | "`SEM 38` header rates (row 2) are stale; rates come from the rows" | avoid importing 328.57 / 27.38 |
+| E7 | SPEC §5.5 | Rounding sentence per P1; Q12, Q13 added to §10 | P1–P3 |
+
+---
+
+## 5. Decisions (continuing the log)
+
+| # | Decision |
+|---|---|
+| D40 | **Precedence for numbers and rules:** SPEC / DATA_MODEL (and their decisions) → the client's Excel files → the prototype. The prototype (`Plataforma.dc.html`, `data.js`) is the reference for screens, flows and copy only; its formulas are not a source (e.g. it computes descanso laborado as `qty × SD`, the sheet and SPEC pay a fixed 500; it counts a festivo as a worked day). |
+| D41 | **Golden test definition:** for each of the 115 rows of `SEM 38`, every money column the engine produces equals the Excel cell's cached value rounded half-up to 2 dp, and the row total equals the sum of those rounded items; the period total equals the sum of the 115 row totals. The test reads the workbook from `examples/` (ClosedXML in the test project), so the fixture is never transcribed by hand. Rows whose inputs depend on P2 / P3 follow the resolution chosen there. *Pending P1–P3.* |
+| D42 | Rounding level — *pending P1*. |
+| D43 | FESTIVO PRIMERA MITAD in the golden — *pending P2*. |
+| D44 | Pensión in the golden — *pending P3*. |
+| D45 | **Project dependencies without cycles:** module projects (`Platform.Core`, `.Recruiting`, `.Payroll`, `.Bank`) hold their entities, EF configurations, DTOs, validators, services and endpoint mappings, and use EF Core's `DbContext` through `Set<T>()`; `Platform.Infrastructure` owns `PlatformDbContext` (applies every module's configurations, owns migrations) and registers it as `DbContext`; `Platform.Api` composes everything. `Platform.Payroll.Engine` and `Platform.Bank/Layouts` reference nothing but the BCL. No base classes; shared behaviour (stamps, soft delete, pagination, authorization, storage, audit) is injected. |
+| D46 | **Money on the wire:** a `System.Text.Json` converter writes `decimal` as a string with exactly the column's scale; OpenAPI declares `type: string, format: decimal`; the generated TS type is a branded `Money` string; Zod validates `^-?\d+(\.\d{1,2})?$`; the pipe formats without `Number()` (string arithmetic only for display). |
+| D47 | **Period numbering:** weekly `period_number` = ISO-8601 week of the period's end date (Semana 38 = 11–17 sep 2026, end Thursday 17 sep → ISO week 38); biweekly = 1–24 by end date. Checked against SEM 38; confirm on the next client file. |
+| D48 | **Tests against Postgres:** the docker Postgres on :5433 with a dedicated `platform_test` database migrated once per run and truncated between tests; a fixed `IClock` injected everywhere "today" or lock times matter. |
+| D49 | **Toolchain:** .NET 10 SDK pinned in `global.json` (`rollForward: latestFeature`), Node 24 LTS (`.nvmrc`), npm workspaces, Angular 22 CLI; rich text with Tiptap in `apps/admin`, server sanitizer `HtmlSanitizer` with the DATA_MODEL §4.4b allowlist. |
+
+---
+
+## 6. Docs to be written along the way
+
+- `docs/TEST_PLAN.md` (S0) — browser checks per slice; results in `docs/tests/YYYY-MM-DD-NN-*.md`.
+- `docs/tests/README.md` (S0) — index of runs and the defect register (D-001…).
+- `docs/HANDOFF.md` (S12) — operations, env vars, backups and restore drill, rotation.
+- `deploy/providers/gcp.md`, `deploy/providers/digitalocean.md` (S12).
