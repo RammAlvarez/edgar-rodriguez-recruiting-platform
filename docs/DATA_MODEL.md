@@ -198,6 +198,7 @@ The shared registry. Columns were chosen so every bank layout can be produced wi
 | street, ext_number, neighborhood, postal_code (5), municipality, state | text | |
 | source | candidate_source | how the person first reached us |
 | notes | text | |
+| privacy_notice_accepted_at | timestamptz | when the person accepted the aviso de privacidad in the Candidates app (ARCHITECTURE §6, PLAN D77) |
 | deleted_at | timestamptz | soft delete (LFPDPPP erasure handled by anonymization job) |
 
 Indexes: `(curp)`, `(rfc)`, trigram on `full_name`, `(mobile_phone)`.
@@ -822,7 +823,7 @@ Input to every decision: `uid` from `IAuthProvider.VerifyAsync`, `role` and `is_
 | `recruiter` | `job_openings` where `lead_recruiter_id = :uid OR id IN job_opening_recruiters(:uid)`; candidates of those; `person_documents` of those people; nothing in payroll or bank tables, reports |
 | `administrator` (cover mode) | the API receives header `X-Acting-For: <recruiter user uid>`; data scope = that recruiter's rule below, writes stamped with `acting_for_user_id`, `candidates.recruiter_id` defaults to the recruiter. Only `administrator` may send the header. |
 | `administrator` | everything, minus modules without a grant (`recruiting` covers Inicio, Vacantes, Candidatos, Reclutadores, Clientes and catalog edits — PLAN D69); `client_id`-scoped grants add `payroll_groups.client_id = :client` filters on payroll/bank tables; `payroll_payment_files` is required to generate any `payment_batches` row, `payroll_card_requests` for `registration_batches` |
-| candidate (Candidates app) | own `people` row (via `candidates.person_id` matched by verified email) and own `person_documents` |
+| candidate (Candidates app) | own `people` row (via `candidates.person_id` matched by verified email) and own `person_documents` — upload and view, never validate or reject; no `users` row; exactly one person may match the email (PLAN D77) |
 
 ---
 

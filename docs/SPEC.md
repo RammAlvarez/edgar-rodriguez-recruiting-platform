@@ -427,7 +427,7 @@ Create/invite users, assign role (Administrador / Reclutador / Cliente), link Cl
 
 ## 7. Candidates app
 
-Passwordless. First visit: the candidate completes the profile the recruiter started (name, phone, address, CURP, RFC, NSS, bank account for future payroll), uploads the documents required by the vacante's template (camera on mobile), and sees: estado de mi postulación (stage, in friendly words), documentos pendientes/validados/rechazados (with reason), reclutador de contacto. Nothing else. Spanish only, mobile-first.
+Passwordless. First visit: the aviso de privacidad (PLAN D77, P8); then the candidate completes the profile the recruiter started (name, phone, address, CURP, RFC, NSS, bank account for future payroll — the bank account arrives with payment accounts in S7), uploads the documents required by the vacante's template (camera on mobile), and sees: estado de mi postulación (stage, in friendly words), documentos pendientes/validados/rechazados (with reason), reclutador de contacto. Nothing else. Spanish only, mobile-first.
 
 ---
 

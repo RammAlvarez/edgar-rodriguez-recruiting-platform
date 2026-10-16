@@ -68,12 +68,11 @@ public static partial class CandidateInvitation
 
     public static EmailMessage Build(string to, string firstNames, string opening, string? recruiter, string appUrl)
     {
-        var who = recruiter ?? "Nuestro equipo de reclutamiento";
         var subject = $"Tu postulación: {opening}";
         var text = $"""
             Hola {firstNames}:
 
-            {who} te registró en el proceso de la vacante {opening}.
+            Te registramos en el proceso de la vacante {opening}.{(recruiter is null ? "" : $" Te acompaña {recruiter}.")}
             En «Mi postulación» puedes completar tus datos, subir tus documentos desde el celular y ver cómo va tu proceso.
             Entra con este correo ({to}); te enviaremos un enlace para iniciar sesión, sin contraseña.
 
@@ -82,7 +81,7 @@ public static partial class CandidateInvitation
         static string e(string value) => WebUtility.HtmlEncode(value);
         var html = $"""
             <p>Hola {e(firstNames)}:</p>
-            <p>{e(who)} te registró en el proceso de la vacante <strong>{e(opening)}</strong>.<br>
+            <p>Te registramos en el proceso de la vacante <strong>{e(opening)}</strong>.{(recruiter is null ? "" : $" Te acompaña {e(recruiter)}.")}<br>
             En «Mi postulación» puedes completar tus datos, subir tus documentos desde el celular y ver cómo va tu proceso.</p>
             <p><a href="{e(appUrl)}">Abrir Mi postulación</a></p>
             <p style="color:#555">Entra con este correo ({e(to)}); te enviaremos un enlace para iniciar sesión, sin contraseña.</p>

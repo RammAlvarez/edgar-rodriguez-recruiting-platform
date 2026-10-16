@@ -68,5 +68,17 @@ Data: `npm run seed` (S3 data plus 13 vacantes, 32 candidatos, two notes). Recru
 7. Sign in as monica.soto@local.test: only Mis vacantes / Mis candidatos with her data; typing /reclutadores goes back home.
 8. 390 px: no page-level horizontal scroll on Mis vacantes, the vacante detail, Mis candidatos and the candidate detail.
 
-### S5–S12
+### S5 — Candidates app + Clients app (gate 1)
+Data: `npm run seed` (adds the Cliente user heb@local.test). Email links come from the Auth emulator (`GET :9199/emulator/v1/projects/demo-platform/oobCodes`); open the `continueUrl` with the `oobCode` on the app's own domain. Invitations are written to the API log locally (no `RESEND_API_KEY`). API-level: `DemoPathTests.Gate_1_…`, `CandidatePortalTests`, `ClientPortalTests`.
+1. Admin «Nuevo candidato» on an HEB vacante with an `@local.test` email → the API log shows «Tu postulación: …» with the Candidates app URL.
+2. Candidates app: request a link, open it → aviso de privacidad first; accept → Mi perfil.
+3. Mi perfil: type CURP and celular, Guardar → saved; the admin candidate detail shows them (birth date from the CURP).
+4. Mis documentos: «Subir foto o PDF» on INE (browser → MinIO) → *Entregado*.
+5. Mi postulación: the vacante, tracker on Recibida, the recruiter's contact.
+6. Admin: INE *Entregado* → Validar; «Reenviar invitación» toast; move to Apto.
+7. Clients app as heb@local.test: Mis vacantes cards (no sueldo, Sexo or Edad); the vacante shows the candidate by name with sueldo ofrecido and documentos %, earlier stages as initials.
+8. Post a comment → it appears in the thread, in Comentarios, and in the admin «Comentarios del cliente» tab.
+9. 390 px: no page-level horizontal scroll on every screen of both apps.
+
+### S6–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

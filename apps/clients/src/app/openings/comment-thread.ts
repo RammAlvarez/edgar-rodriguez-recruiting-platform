@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
+import { FormBuilder, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -86,6 +86,8 @@ export class CommentThread {
   private readonly openingId = inject(ActivatedRoute).snapshot.paramMap.get('id')!;
   readonly comments = this.portal.comments(() => this.openingId);
   readonly form = inject(FormBuilder).nonNullable.group({ body: ['', [Validators.required, Validators.pattern(/\S/)]] });
+  /** resetForm() also clears «submitted», so the emptied box is not shown as an error (D-009). */
+  private readonly formDirective = viewChild.required(FormGroupDirective);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -95,7 +97,7 @@ export class CommentThread {
     this.error.set(null);
     try {
       await this.portal.post(this.openingId, this.form.controls.body.value.trim());
-      this.form.reset();
+      this.formDirective().resetForm();
     } catch (e) {
       this.error.set(e instanceof ApiError ? e.message : 'No se pudo enviar. Inténtalo de nuevo.');
     } finally {
