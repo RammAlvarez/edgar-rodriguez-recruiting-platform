@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Platform.Core\Platform.Core.csproj" />
     <ProjectReference Include="..\Platform.Payroll\Platform.Payroll.csproj" />
   </ItemGroup>
