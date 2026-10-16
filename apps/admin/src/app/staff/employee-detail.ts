@@ -13,7 +13,7 @@ import { openSidePanel } from '@platform/ui';
 import { DocumentChecklist, type ChecklistDocument, type ChecklistItem } from '@platform/ui/document-checklist';
 import { DateKeyPipe, MoneyPipe } from '@platform/ui/pipes';
 import type { BankAccountDto, EmployeeDetailDto, RegistrationBank, StatusPeriodDto, WorkScheduleDto } from '../data/api-types';
-import { ACCOUNT_TYPE, EMPLOYEE_STATUS, PERIOD_STATUS_LABEL, REGISTRATION_BANK, weekdaysText } from '../data/payroll-labels';
+import { ACCOUNT_TYPE, EMPLOYEE_STATUS, hourlyText, PERIOD_STATUS_LABEL, REGISTRATION_BANK, weekdaysText } from '../data/payroll-labels';
 import { EmployeesRepository } from '../data/payroll-repositories';
 import { PeopleRepository } from '../data/recruiting-repositories';
 import { CatalogsRepository } from '../data/repositories';
@@ -92,7 +92,7 @@ import { StatusPanel, type StatusPanelData } from './status-panel';
                   <dl>
                     <dt>SD bolsillo</dt><dd>{{ r.dailySalaryPocket | money }}@if (e.dailySalaryPocketOverride) { <span class="own">propia</span> }</dd>
                     <dt>SD IMSS</dt><dd>{{ r.dailySalaryImss | money }}@if (e.dailySalaryImssOverride) { <span class="own">propia</span> }</dd>
-                    <dt>Costo por hora</dt><dd>$ {{ r.hourlyRate }}@if (e.hourlyRateOverride) { <span class="own">propia</span> }</dd>
+                    <dt>Costo por hora</dt><dd>$ {{ hourly(r.hourlyRate) }}@if (e.hourlyRateOverride) { <span class="own">propia</span> }</dd>
                     <dt>Bono días trabajados</dt><dd>{{ r.daysWorkedBonus | money }}@if (e.daysWorkedBonusOverride) { <span class="own">propia</span> }</dd>
                   </dl>
                 } @else {
@@ -304,6 +304,7 @@ export class EmployeeDetail {
   readonly uploading = signal<{ documentTypeId: string; progress: number } | null>(null);
 
   readonly status = EMPLOYEE_STATUS;
+  readonly hourly = hourlyText;
   readonly bank = REGISTRATION_BANK;
   readonly type = ACCOUNT_TYPE;
   readonly cardBanks: RegistrationBank[] = ['banorte', 'banregio'];

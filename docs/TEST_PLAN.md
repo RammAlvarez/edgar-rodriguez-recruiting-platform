@@ -88,5 +88,17 @@ Data: `npm run seed` (13 vacantes, 32 candidatos). Sign in as the owner (edgar@l
 4. Exportar Excel / PDF → a file named «<reporte> <desde> a <hasta>» downloads from the `exports` bucket; it shows the same figures as the screen; `audit_log` has an `export` row.
 5. 390 px: no page-level horizontal scroll on any of the six reports (tables scroll inside their card).
 
-### S7–S12
+### S7 — Personal
+Data: `npm run seed` (3 payroll groups, 5 puestos, 32 employees: two vacations, an incapacidad, a baja, two queued card requests, one expired account). API-level: `BankAccountRuleTests`, `PayrollGroupTests`, `EmployeeTests`, `ScheduleTests`, the candidate account test in `CandidatePortalTests`, `S3ObjectStorageTests` unchanged.
+1. Personal lists the ECOVIA, HFC and HEB staff with puesto, turno, ingreso, status pill (period dates under it) and documents %; «Solicitar tarjeta» only for the employee without an account or request; «Tarjeta solicitada · Banorte» for the queued ones.
+2. «Alta de empleado» with a new person and «Solicitar tarjeta» → the detail opens; Cuentas de pago shows the card request.
+3. «Cambiar estatus» → Vacaciones today … +4 → header pill «Vacaciones · dd/mm – dd/mm»; five locked attendance days; «Reactivar» → Activo, the days are gone.
+4. «Agregar cuenta» with a wrong card digit → the field error; with the right one → «•••• 1237 · Principal», the card banner disappears.
+5. Documentos uses «Empleado — expediente»; Horario: a weekly schedule; Calendario day / week / month shows it, with vacations and incapacidad on the expected people.
+6. Clientes (nómina) → ECOVIA: VALIDADORES 12 H, its puestos and rates, bonuses off.
+7. A Contratado candidate → «Convertir en empleado» pre-fills the hire date and the bank; afterwards the candidate shows «Ver empleado».
+8. Candidates app → Mi perfil → «Cuenta para tu pago» adds a card, shown as «•••• 1237».
+9. 390 px: Personal, employee detail, Calendario, payroll client detail.
+
+### S8–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

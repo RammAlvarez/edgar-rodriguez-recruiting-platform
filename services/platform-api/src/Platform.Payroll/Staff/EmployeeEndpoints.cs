@@ -322,14 +322,19 @@ public static class EmployeeEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, CardRequestsTag).RequireAccess(Access);
 
         // The Prenómina side panel reads this (S9); the alta files that consume it are S10.
-        v1.MapGet("/card-requests", async (string? status, DbContext db, RequestContext ctx, CancellationToken ct) =>
+        v1.MapGet("/card-requests", async (string? status, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
             {
                 if (!WireEnum.TryParse<CardRequestStatus>(status, out var st))
                     return ApiResults.Validation(new Dictionary<string, string[]> { ["status"] = ["Filtro desconocido."] });
                 var employees = PayrollScope.Employees(db, ctx, PermissionModule.PayrollCardRequests);
                 var wanted = st ?? CardRequestStatus.Queued;
+                var today = clock.Today();
                 return TypedResults.Ok(await db.Set<CardRequest>().AsNoTracking()
-                    .Where(r => r.Status == wanted && employees.Any(e => e.Uid == r.EmployeeId)).OrderBy(r => r.RequestedAt)
+                    .Where(r => r.Status == wanted && employees.Any(e => e.Uid == r.EmployeeId))
+                    // Queued but no longer needed: the person got a principal account elsewhere (Candidates app).
+                    .Where(r => wanted != CardRequestStatus.Queued || !employees.Any(e => e.Uid == r.EmployeeId
+                        && db.Set<PersonBankAccount>().Any(a => a.PersonId == e.PersonId && a.IsPrimary && (a.ValidTo == null || a.ValidTo >= today))))
+                    .OrderBy(r => r.RequestedAt)
                     .Select(r => new CardRequestDto(r.Uid, r.EmployeeId, r.Bank, r.Status, r.RequestedAt)).ToListAsync(ct));
             })
             .WithName("ListCardRequests").WithTags("Employees").Produces<List<CardRequestDto>>().ProducesValidationProblem()

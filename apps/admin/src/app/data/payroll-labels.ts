@@ -68,3 +68,16 @@ export const ATTENDANCE: Record<AttendanceStatus, { label: string; tone: '' | 'p
   leave_unpaid: { label: 'Suspensión', tone: 'negative' },
   vacation: { label: 'Vacaciones', tone: '' },
 };
+
+/** COSTO X HRA as typed: at least 2 decimals, up to the 4 stored, no trailing zeros (35.7100 → «35.71», 35.7142 → «35.7142»). */
+export function hourlyText(value: string | number | null | undefined): string {
+  if (value == null || value === '') return '—';
+  const [int, frac = ''] = String(value).split('.');
+  const trimmed = frac.replace(/0+$/, '');
+  return `${int}.${trimmed.padEnd(2, '0')}`;
+}
+
+/** 12.00 → «12», 7.50 → «7.5». */
+export function hoursText(value: string | number): string {
+  return String(Number(value));
+}

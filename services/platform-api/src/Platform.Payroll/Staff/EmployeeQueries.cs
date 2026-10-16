@@ -45,7 +45,8 @@ public static class EmployeeQueries
                 var current = StaffRules.Covering(own, today);
                 return new EmployeeListItemDto(r.e.Uid, r.e.PersonId, r.FullName, r.ClientId, r.Client, r.e.PayrollGroupId, r.Group,
                     r.e.PositionId, r.Position, r.e.Shift, r.e.HiredAt, r.e.TerminatedAt, current?.Status ?? EmployeeStatus.Active,
-                    Dto(current ?? StaffRules.Next(own, today)), r.HasAccount, r.Card, completeness.GetValueOrDefault(r.e.PersonId));
+                    Dto(current ?? StaffRules.Next(own, today)), r.HasAccount, r.HasAccount ? null : r.Card,
+                    completeness.GetValueOrDefault(r.e.PersonId));
             })
             .ToList();
     }
@@ -72,7 +73,9 @@ public static class EmployeeQueries
             e.TerminatedAt, current?.Status ?? EmployeeStatus.Active, Dto(current), Dto(StaffRules.Next(periods, today)),
             e.DailySalaryPocketOverride, e.DailySalaryImssOverride, e.HourlyRateOverride, e.DaysWorkedBonusOverride,
             rates is null ? null : StaffRules.Rates(rates), StaffRules.Effective(e, rates), e.Notes, e.CandidateId,
-            await EmployeeTemplate(db, ct), hasAccount, card);
+            // A request is moot once the person has a principal account, whichever app added it (the Candidates app does not
+            // know about payroll): hidden here, left out of the queue, cancelled by the alta files that skip it (S10).
+            await EmployeeTemplate(db, ct), hasAccount, hasAccount ? null : card);
     }
 
     public static StatusPeriodDto? Dto(EmployeeStatusPeriod? p) =>

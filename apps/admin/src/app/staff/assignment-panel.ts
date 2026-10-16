@@ -12,6 +12,7 @@ import { decimalString } from '@platform/shared';
 import { zodValidator } from '@platform/ui';
 import { z } from 'zod';
 import type { EmployeeDetailDto, EmployeeOptionsDto } from '../data/api-types';
+import { hourlyText } from '../data/payroll-labels';
 import { EmployeesRepository } from '../data/payroll-repositories';
 import { PanelState } from '../clients/panel-base';
 
@@ -86,7 +87,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
             <mat-form-field>
               <mat-label>Costo por hora</mat-label>
               <input matInput formControlName="hourly" inputmode="decimal" autocomplete="off" />
-              <mat-hint>Puesto: $ {{ e.positionRates?.hourlyRate ?? '—' }}</mat-hint>
+              <mat-hint>Puesto: $ {{ hourly(e.positionRates?.hourlyRate) }}</mat-hint>
               <mat-error>{{ s.msg('hourly') }}</mat-error>
             </mat-form-field>
             <mat-form-field>
@@ -128,6 +129,7 @@ export class AssignmentPanel {
   private readonly employees = inject(EmployeesRepository);
   private readonly snack = inject(MatSnackBar);
   readonly e = this.data.employee;
+  readonly hourly = hourlyText;
   private readonly money = (v: unknown) => (v == null ? '' : String(v));
 
   readonly form = inject(FormBuilder).nonNullable.group({

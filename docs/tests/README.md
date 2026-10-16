@@ -8,6 +8,8 @@
 | [2026-10-16-02](2026-10-16-02-s3-core-registry.md) | S3 Core registry | pass; 390 px not run (carried to S4); D-005 found by the API tests |
 | [2026-10-16-03](2026-10-16-03-s4-reclutamiento.md) | S4 Reclutamiento | pass after fixing D-006, D-007, D-008; 390 px checked |
 | [2026-10-16-04](2026-10-16-04-s5-portals.md) | S5 Candidates app + Clients app | gate 1 pass; D-009 fixed; 390 px checked |
+| [2026-10-16-05](2026-10-16-05-s6-reports.md) | S6 Reportes de reclutamiento | pass; 390 px checked |
+| [2026-10-16-06](2026-10-16-06-s7-personal.md) | S7 Personal | pass after fixing D-010; 390 px checked |
 
 ## Defects
 
@@ -22,3 +24,4 @@
 | D-007 | 2026-10-16-03 | A Reclutadora typing an Administrador address (/reclutadores) got *Sin acceso — tu cuenta no tiene acceso a esta aplicación*, a dead end for someone who does use the app. | fixed — admin routes use `staffGuard` (`app.routes.ts`): staff of the other role go home; *Sin acceso* stays for Cliente users |
 | D-008 | 2026-10-16-03 | Making a recruiter líder of a vacante she was not on logged two Actividad entries, «como apoyo» then «como líder». | fixed — the row created for a líder is not logged as an apoyo assignment (`OpeningRules.Assign(log: false)`; `OpeningTests`) |
 | D-009 | 2026-10-16-04 | After sending a comment in the Clients app the emptied box turned red as «required»: `form.reset()` keeps the form directive's *submitted* flag, which Material uses to show errors. | fixed — `FormGroupDirective.resetForm()` (`apps/clients/src/app/openings/comment-thread.ts`) |
+| D-010 | 2026-10-16-06 | «Cerrar sesión» on the shared «Sin acceso» page signed out but stayed on the page, which then said «Tu cuenta no tiene acceso» again instead of offering to sign in with another email. | fixed — navigates to «Entrar» after signing out (`libs/ui/src/status-pages.ts`) |

@@ -498,18 +498,19 @@ A client × scheme, e.g. *ECOVIA — Validadores 12 h*.
 | time_zone | text default 'America/Monterrey' | IANA zone used for "today", lock times and date keys of this group |
 | is_active | boolean | |
 
-### 5.2 `positions` (per group)
+### 5.2 `positions` (per group) and `position_rates`
+
+`positions(id, uid, payroll_group_id, name, is_active)` — VALIDADOR, SUPERVISOR; unique per group. The rates live in their history (PLAN E12), so an employee's `position_id` never moves when they change:
 
 | Column | Type | Notes |
 |---|---|---|
 | id / uid | bigint identity / uuid UNIQUE | internal PK / public id |
-| payroll_group_id | uuid FK | |
-| name | text | VALIDADOR, SUPERVISOR |
+| position_id | uuid FK | |
 | daily_salary_pocket | numeric(12,2) | SD BOLSILLO / "SUELDO REAL" 428.57 |
 | daily_salary_imss | numeric(12,2) | SD IMSS 278.80 |
 | hourly_rate | numeric(12,4) | COSTO X HRA 35.71 |
 | days_worked_bonus | numeric(12,2) | BONO DIAS TRABAJADOS 450 |
-| valid_from / valid_to | date | rate history; a period uses the rates valid at its end date |
+| valid_from / valid_to | date | one open row per puesto; new rates close the previous ones the day before; a period uses the rates valid at its end date |
 
 ### 5.3 `pay_concepts` and `payroll_group_concepts`
 
@@ -556,10 +557,11 @@ Seed (codes → Excel column):
 | terminated_at | date | BAJA — mirrors the `terminated` period |
 | status | employee_status default `active` | maintained from `employee_status_periods` (5.4b) |
 | daily_salary_pocket_override, daily_salary_imss_override, hourly_rate_override, days_worked_bonus_override | numeric NULL | per-employee overrides |
-| primary_bank_account_id | uuid FK person_bank_accounts | payment account |
 | candidate_id | uuid FK platform.candidates NULL | origin |
 | notes | text | COMENTARIOS |
 | UNIQUE | (person_id, payroll_group_id) WHERE terminated_at IS NULL | one active employment per group |
+
+The pay goes to the person's `is_primary` account (§3.7); there is no copy of it on the employee (PLAN E12).
 
 ### 5.4b `employee_status_periods`
 
@@ -575,7 +577,7 @@ Seed (codes → Excel column):
 | created_by | uuid FK users | |
 | ended_early_at | timestamptz | set by "Reactivar" |
 
-Rules: no overlapping periods per employee (exclusion constraint on `daterange`); `employees.status` is maintained by trigger = status of the period covering `current_date`, else `active`; `terminated` sets `employees.terminated_at`. Creating a period upserts `attendance_records` for each date in range with status `vacation` / `sick_leave` / `leave_unpaid` (locked, `recorded_by` = creator); ending it early deletes the remaining ones. The daily `status-roll` job recomputes `employees.status` so expired periods return to `active`.
+Rules: no overlapping periods per employee (exclusion constraint on `daterange`, extension `btree_gist`); `employees.status` is written by the API with every period change = status of the period covering today (group time zone), else `active` (PLAN D82); `terminated` sets `employees.terminated_at`. Creating a period upserts `attendance_records` for each date in range with status `vacation` / `sick_leave` / `leave_unpaid` (locked, `recorded_by` = creator); ending it early deletes the remaining ones. The daily `status-roll` job recomputes `employees.status` so expired periods return to `active`.
 
 ### 5.5 `employee_bank_numbers`
 
@@ -626,6 +628,7 @@ Calendar = `work_schedules` expanded by date ∪ `attendance_records`.
 | recorded_by | uuid FK users | |
 | recorded_at | timestamptz | |
 | note | text | |
+| status_period_id | uuid FK employee_status_periods NULL | the period that wrote the day; ending it early removes only these (PLAN E12) |
 | UNIQUE | (employee_id, work_date) | |
 
 ### 5.8 `attendance_unlocks`
@@ -762,7 +765,7 @@ SELECT e.id AS employee_id, g.client_id,
 FROM platform.employees e
 JOIN platform.people p ON p.uid = e.person_id
 JOIN platform.payroll_groups g ON g.uid = e.payroll_group_id
-LEFT JOIN platform.person_bank_accounts a ON a.uid = e.primary_bank_account_id
+LEFT JOIN platform.person_bank_accounts a ON a.person_id = e.person_id AND a.is_primary
 LEFT JOIN platform.card_requests cr ON cr.employee_id = e.uid AND cr.status NOT IN ('received','cancelled')
 WHERE e.status = 'active';
 ```

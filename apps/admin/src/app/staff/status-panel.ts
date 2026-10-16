@@ -44,9 +44,12 @@ type Choice = Exclude<EmployeeStatus, 'active'> | 'reactivate';
         @if (choice() === 'reactivate') {
           @if (current(); as p) {
             <p>
-              {{ label[p.status] }} termina
-              @if (p.startDate >= today) { <strong>sin empezar</strong>: se cancela. } @else { ayer, <strong>{{ format(yesterday) }}</strong>; regresa hoy como Activo. }
-              Los días de asistencia posteriores se quitan.
+              @if (p.startDate >= today) {
+                {{ label[p.status] }} <strong>se cancela completo</strong>: no hay días tomados antes de hoy.
+              } @else {
+                {{ label[p.status] }} termina ayer, <strong>{{ format(yesterday) }}</strong>; regresa hoy como Activo.
+              }
+              Los días de asistencia que quedaban se quitan.
             </p>
           }
         } @else if (editingCurrent()) {

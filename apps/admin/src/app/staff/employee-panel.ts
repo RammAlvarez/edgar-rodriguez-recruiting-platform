@@ -16,7 +16,7 @@ import { API_CLIENT, zodValidator } from '@platform/ui';
 import { debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs';
 import { z } from 'zod';
 import type { BankAccountType, ConversionDto, EmployeeDetailDto, PersonSummaryDto, RegistrationBank } from '../data/api-types';
-import { ACCOUNT_TYPES, REGISTRATION_BANK } from '../data/payroll-labels';
+import { ACCOUNT_TYPES, hourlyText, REGISTRATION_BANK } from '../data/payroll-labels';
 import { EmployeesRepository } from '../data/payroll-repositories';
 import { PeopleRepository } from '../data/recruiting-repositories';
 import { CatalogsRepository } from '../data/repositories';
@@ -155,7 +155,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
           <mat-error>{{ s.msg('hiredAt') }}</mat-error>
         </mat-form-field>
         @if (selectedPosition()?.rates; as r) {
-          <p class="muted rates">Tarifas del puesto: SD bolsillo $ {{ r.dailySalaryPocket }} · SD IMSS $ {{ r.dailySalaryImss }} · hora $ {{ r.hourlyRate }}</p>
+          <p class="muted rates">Tarifas del puesto: SD bolsillo $ {{ r.dailySalaryPocket }} · SD IMSS $ {{ r.dailySalaryImss }} · hora $ {{ hourly(r.hourlyRate) }}</p>
         }
         @if (data.mode === 'alta') {
           <details class="overrides">
@@ -292,6 +292,7 @@ export class EmployeePanel {
   readonly payMode = signal<'card' | 'account'>('card');
   readonly cardBanks = (Object.keys(REGISTRATION_BANK) as RegistrationBank[]).map((value) => ({ value, label: REGISTRATION_BANK[value] }));
   readonly accountTypes = ACCOUNT_TYPES;
+  readonly hourly = hourlyText;
 
   private readonly fb = inject(FormBuilder);
   readonly search = this.fb.nonNullable.control('');

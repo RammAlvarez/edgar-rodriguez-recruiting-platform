@@ -149,6 +149,39 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task A_principal_account_added_from_the_candidates_app_takes_the_employee_out_of_the_card_queue()
+    {
+        await Arrange();
+        var ana = await WithDb(db => db.AddPerson());
+        var employee = await Hire(ana.Uid);
+        Assert.Single((await BodyOf(await _owner.GetAsync("/v1/card-requests"))).EnumerateArray());
+
+        // The Candidates app's route adds the account through Core and knows nothing of card requests.
+        await WithDb(async db =>
+        {
+            var bank = await db.Set<Platform.Core.Catalogs.Bank>().Where(b => b.SpeiCode == "127").Select(b => b.Uid).SingleAsync();
+            db.Add(new PersonBankAccount
+            {
+                PersonId = ana.Uid,
+                BankId = bank,
+                AccountType = BankAccountType.DebitCard,
+                AccountNumberEnc = [1, 2, 3],
+                AccountLast4 = "1237",
+                HolderName = "PÉREZ LÓPEZ ANA",
+                IsPrimary = true,
+                ValidFrom = _today,
+            });
+            return await db.SaveChangesAsync();
+        });
+
+        Assert.Empty((await BodyOf(await _owner.GetAsync("/v1/card-requests"))).EnumerateArray());
+        var detail = await BodyOf(await _owner.GetAsync($"/v1/employees/{employee}"));
+        Assert.True(detail.GetProperty("hasAccount").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, detail.GetProperty("cardRequest").ValueKind);
+        Assert.Equal(JsonValueKind.Null, (await BodyOf(await _owner.GetAsync("/v1/employees"))).EnumerateArray().Single().GetProperty("cardRequest").ValueKind);
+    }
+
+    [Fact]
     public async Task Vacaciones_fill_attendance_locked_and_reactivar_ends_them_yesterday()
     {
         await Arrange();

@@ -8,7 +8,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { type LiveQuery, openSidePanel } from '@platform/ui';
 import { DateKeyPipe, MoneyPipe } from '@platform/ui/pipes';
 import type { PayrollGroupDetailDto, PayrollGroupListItemDto, PositionDto } from '../data/api-types';
-import { PERIOD_TYPE, WEEKDAYS_FROM_SUNDAY } from '../data/payroll-labels';
+import { hourlyText, hoursText, PERIOD_TYPE, WEEKDAYS_FROM_SUNDAY } from '../data/payroll-labels';
 import { PayrollGroupsRepository } from '../data/payroll-repositories';
 import { GroupConceptsPanel, type GroupConceptsPanelData } from './group-concepts-panel';
 import { PayrollGroupPanel, type PayrollGroupPanelData } from './payroll-group-panel';
@@ -33,7 +33,7 @@ import { PositionPanel, type PositionPanelData } from './position-panel';
             }
           </h2>
           <div class="muted">
-            {{ period(summary()) }} · corte {{ cutoff(summary()) }} · {{ summary().shiftHours }} h por turno · cierre de asistencia
+            {{ period(summary()) }} · corte {{ cutoff(summary()) }} · {{ hours(summary().shiftHours) }} h por turno · cierre de asistencia
             {{ summary().attendanceLockTime.slice(0, 5) }} · {{ summary().activeEmployees }} empleados
           </div>
         </div>
@@ -60,7 +60,7 @@ import { PositionPanel, type PositionPanelData } from './position-panel';
                   @if (p.current; as c) {
                     <td class="num">{{ c.dailySalaryPocket | money }}</td>
                     <td class="num">{{ c.dailySalaryImss | money }}</td>
-                    <td class="num">$ {{ c.hourlyRate }}</td>
+                    <td class="num">$ {{ hourly(c.hourlyRate) }}</td>
                     <td class="num">{{ c.daysWorkedBonus | money }}</td>
                     <td>{{ c.validFrom | dateKey }}</td>
                   } @else {
@@ -85,7 +85,7 @@ import { PositionPanel, type PositionPanelData } from './position-panel';
                       </td>
                       <td class="num">{{ h.dailySalaryPocket | money }}</td>
                       <td class="num">{{ h.dailySalaryImss | money }}</td>
-                      <td class="num">$ {{ h.hourlyRate }}</td>
+                      <td class="num">$ {{ hourly(h.hourlyRate) }}</td>
                       <td class="num">{{ h.daysWorkedBonus | money }}</td>
                       <td colspan="2"></td>
                     </tr>
@@ -185,6 +185,8 @@ export class PayrollGroupCard implements OnInit {
   /** Started in ngOnInit: a live query runs at once and the required input is not bound in the field initializers. */
   detail!: LiveQuery<PayrollGroupDetailDto>;
   readonly history = signal<string | null>(null);
+  readonly hourly = hourlyText;
+  readonly hours = hoursText;
 
   ngOnInit(): void {
     this.detail = runInInjectionContext(this.injector, () => this.repository.detail(() => this.summary().id));
