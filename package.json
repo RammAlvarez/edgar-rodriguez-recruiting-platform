@@ -2,11 +2,24 @@
   "name": "platform",
   "version": "0.0.0",
   "scripts": {
-    "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "build": "ng build admin && ng build candidates && ng build clients && dotnet build services/platform-api -c Release",
+    "api": "node scripts/run.mjs dotnet watch run --project services/platform-api/src/Platform.Api --no-launch-profile",
+    "emulators": "firebase emulators:start --only auth --project demo-platform",
+    "db:up": "node scripts/run.mjs docker compose -f db/docker-compose.yml up -d --build",
+    "db:down": "node scripts/run.mjs docker compose -f db/docker-compose.yml down",
+    "db:migrate": "node scripts/run.mjs dotnet ef database update --project services/platform-api/src/Platform.Infrastructure --startup-project services/platform-api/src/Platform.Infrastructure",
+    "seed": "node scripts/seed.mjs",
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "generate:api-types": "node libs/shared/scripts/generate-api-types.mjs",
+    "lint": "eslint . && dotnet format services/platform-api/Platform.slnx --verify-no-changes",
+    "typecheck": "tsc -p tsconfig.libs.json --noEmit && ng build admin --configuration development && ng build candidates --configuration development && ng build clients --configuration development",
+    "test": "npm run test:libs && npm run test:apps && npm run test:api",
+    "test:libs": "vitest run",
+    "test:apps": "ng test admin --watch=false && ng test candidates --watch=false && ng test clients --watch=false",
+    "test:api": "node scripts/run.mjs dotnet test services/platform-api/Platform.slnx",
+    "check:neutrality": "bash scripts/check-neutrality.sh",
+    "check:migrations": "node scripts/run.mjs dotnet ef migrations has-pending-model-changes --project services/platform-api/src/Platform.Infrastructure --startup-project services/platform-api/src/Platform.Infrastructure"
   },
   "private": true,
   "packageManager": "npm@11.19.0",
@@ -29,6 +42,7 @@
     "@angular/cli": "^22.2.3",
     "@angular/compiler-cli": "^22.2.0",
     "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
     "angular-eslint": "^22.6.0",
     "eslint": "^10.12.0",
     "jsdom": "^30.0.0",
@@ -43,5 +57,6 @@
     "openapi-typescript": {
       "typescript": "$typescript"
     }
-  }
+  },
+  "type": "module"
 }

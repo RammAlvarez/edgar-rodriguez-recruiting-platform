@@ -1,0 +1,51 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav #nav [mode]="compact() ? 'over' : 'side'" [opened]="!compact()" class="sidenav">
+    <mat-nav-list>
+      @for (section of sections(); track $index) {
+        @if (section.label) {
+          <h2 class="section">{{ section.label }}</h2>
+        }
+        @for (item of section.items; track item.path) {
+          <a
+            mat-list-item
+            [routerLink]="item.path"
+            routerLinkActive
+            #active="routerLinkActive"
+            [activated]="active.isActive"
+            (click)="compact() && nav.close()"
+          >
+            <mat-icon matListItemIcon fontSet="material-symbols-outlined" [class.filled]="active.isActive">{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="toolbar">
+      @if (compact()) {
+        <button matIconButton type="button" aria-label="Menú" matTooltip="Menú" (click)="nav.toggle()">
+          <mat-icon fontSet="material-symbols-outlined">menu</mat-icon>
+        </button>
+      }
+      <span class="title">Plataforma de Reclutamiento y Prenómina</span>
+      <span class="spacer"></span>
+      <ui-refresh-button />
+      <button matIconButton type="button" [matMenuTriggerFor]="userMenu" aria-label="Cuenta" matTooltip="Cuenta">
+        <mat-icon fontSet="material-symbols-outlined">account_circle</mat-icon>
+      </button>
+      <mat-menu #userMenu="matMenu" xPosition="before">
+        <div class="user-label">{{ userLabel() }}</div>
+        <mat-divider />
+        <button mat-menu-item type="button" (click)="signOut()">
+          <mat-icon fontSet="material-symbols-outlined">logout</mat-icon>
+          <span>Cerrar sesión</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+    <main>
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

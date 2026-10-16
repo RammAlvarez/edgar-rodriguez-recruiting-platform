@@ -1,0 +1,146 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Platform.Api | v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActingForDto": {
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      },
+      "GrantDto": {
+        "required": [
+          "module",
+          "clientId"
+        ],
+        "type": "object",
+        "properties": {
+          "module": {
+            "$ref": "#/components/schemas/PermissionModule"
+          },
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "MeDto": {
+        "required": [
+          "id",
+          "displayName",
+          "email",
+          "role",
+          "clientId",
+          "mfaRequired",
+          "grants",
+          "actingFor"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "mfaRequired": {
+            "type": "boolean"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantDto"
+            }
+          },
+          "actingFor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActingForDto"
+              }
+            ]
+          }
+        }
+      },
+      "PermissionModule": {
+        "enum": [
+          "recruiting_reports",
+          "payroll_prepayroll",
+          "payroll_attendance",
+          "payroll_incidents",
+          "payroll_staff",
+          "payroll_payment_files",
+          "payroll_card_requests",
+          "users"
+        ]
+      },
+      "UserRole": {
+        "enum": [
+          "administrator",
+          "recruiter",
+          "client"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Users"
+    }
+  ]
+}

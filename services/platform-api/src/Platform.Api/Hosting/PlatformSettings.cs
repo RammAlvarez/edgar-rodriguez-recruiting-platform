@@ -21,7 +21,7 @@ public sealed record PlatformSettings(
         return new PlatformSettings(
             Get("DATABASE_URL", "Host=localhost;Port=5433;Database=platform;Username=platform_api;Password=platform_api"),
             Get("INTERNAL_SECRET", "local-internal-secret-change-me-0123456789"),
-            Get("APP_ORIGINS", "http://localhost:4200,http://localhost:4201,http://localhost:4202")
+            Get("APP_ORIGINS", "http://localhost:4300,http://localhost:4301,http://localhost:4302")
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             new FirebaseSettings(Get("FIREBASE_PROJECT_ID", "demo-platform"), c["FIREBASE_SERVICE_ACCOUNT_JSON"]),
             new S3Settings(

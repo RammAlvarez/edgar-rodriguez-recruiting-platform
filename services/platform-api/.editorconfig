@@ -1,6 +1,16 @@
 root = false
 
 [*.cs]
+indent_style = space
+indent_size = 4
+csharp_new_line_before_open_brace = all
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_sort_system_directives_first = true
+
+[*.{csproj,props,slnx,json}]
+indent_size = 2
+
+[*.cs]
 # Entity names follow the tables in docs/DATA_MODEL.md (user_permissions → UserPermission).
 dotnet_diagnostic.CA1711.severity = none
 # Public types are shared across the module projects and the test project.

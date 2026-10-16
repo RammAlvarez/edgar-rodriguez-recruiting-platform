@@ -1,0 +1,34 @@
+.sign-in {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.card {
+  width: min(400px, 100%);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 16px;
+}
+
+.message {
+  margin: 0 0 8px;
+  font: var(--mat-sys-body-medium);
+}
+
+.error {
+  color: var(--mat-sys-error);
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}

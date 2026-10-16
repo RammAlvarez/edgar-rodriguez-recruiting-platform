@@ -1,0 +1,9 @@
+{
+  "apiUrl": "http://localhost:5080",
+  "auth": {
+    "apiKey": "demo-api-key",
+    "authDomain": "demo-platform.firebaseapp.com",
+    "projectId": "demo-platform",
+    "emulatorUrl": "http://127.0.0.1:9199"
+  }
+}

@@ -1,0 +1,129 @@
+// RASS Angular Material design system (design-reference/_ds/…/readme.md): stock Material 3, prebuilt azure/blue
+// palettes, Roboto, density -1 by default, -2 for data-heavy desktop regions, 0 for mobile-first apps.
+@use '@angular/material' as mat;
+
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('/assets/fonts/Roboto-Variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('/assets/fonts/RobotoMono-Variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('/assets/fonts/MaterialSymbolsOutlined.woff2') format('woff2');
+}
+
+@mixin theme($density: -1) {
+  html {
+    color-scheme: light dark;
+    @include mat.theme(
+      (
+        color: (
+          primary: mat.$azure-palette,
+          tertiary: mat.$blue-palette,
+        ),
+        typography: Roboto,
+        density: $density,
+      )
+    );
+  }
+
+  body {
+    margin: 0;
+    background: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+    font: var(--mat-sys-body-medium);
+    letter-spacing: var(--mat-sys-body-medium-tracking);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  .dense {
+    @include mat.theme((density: -2));
+  }
+
+  .comfortable {
+    @include mat.theme((density: 0));
+  }
+
+  // Material Symbols Outlined: weight 400, FILL 0; FILL 1 only for the selected/active state.
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  .mono {
+    font-family: 'Roboto Mono', monospace;
+  }
+
+  // Page header: headline-small title + primary action on the right; 24px page padding on desktop.
+  .page {
+    box-sizing: border-box;
+    max-width: 1440px;
+    padding: 24px;
+  }
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    h1 {
+      flex: 1;
+      margin: 0;
+      font: var(--mat-sys-headline-small);
+    }
+  }
+  @media (max-width: 599.98px) {
+    .page {
+      padding: 16px;
+    }
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--mat-sys-on-surface-variant);
+    .material-symbols-outlined {
+      font-size: 36px;
+      width: 36px;
+      height: 36px;
+    }
+    p {
+      margin: 0;
+      max-width: 48ch;
+    }
+  }
+}

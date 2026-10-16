@@ -12,7 +12,22 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    "strict": true,
+    "paths": {
+      "@platform/shared": [
+        "./libs/shared/src/index.ts"
+      ],
+      "@platform/api-client": [
+        "./libs/api-client/src/index.ts"
+      ],
+      "@platform/ui": [
+        "./libs/ui/src/index.ts"
+      ],
+      "@platform/ui/*": [
+        "./libs/ui/src/*"
+      ]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

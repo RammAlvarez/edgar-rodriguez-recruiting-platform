@@ -27,9 +27,21 @@
               {
                 "glob": "**/*",
                 "input": "apps/admin/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "libs/ui/assets",
+                "output": "assets"
               }
             ],
-            "styles": ["apps/admin/src/styles.scss"]
+            "styles": [
+              "apps/admin/src/styles.scss"
+            ],
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "libs/ui/styles"
+              ]
+            }
           },
           "configurations": {
             "production": {
@@ -65,7 +77,10 @@
               "buildTarget": "admin:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "port": 4300
+          }
         },
         "test": {
           "builder": "@angular/build:unit-test"
@@ -93,9 +108,21 @@
               {
                 "glob": "**/*",
                 "input": "apps/candidates/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "libs/ui/assets",
+                "output": "assets"
               }
             ],
-            "styles": ["apps/candidates/src/styles.scss"]
+            "styles": [
+              "apps/candidates/src/styles.scss"
+            ],
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "libs/ui/styles"
+              ]
+            }
           },
           "configurations": {
             "production": {
@@ -131,7 +158,10 @@
               "buildTarget": "candidates:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "port": 4301
+          }
         },
         "test": {
           "builder": "@angular/build:unit-test"
@@ -159,9 +189,21 @@
               {
                 "glob": "**/*",
                 "input": "apps/clients/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "libs/ui/assets",
+                "output": "assets"
               }
             ],
-            "styles": ["apps/clients/src/styles.scss"]
+            "styles": [
+              "apps/clients/src/styles.scss"
+            ],
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "libs/ui/styles"
+              ]
+            }
           },
           "configurations": {
             "production": {
@@ -197,7 +239,10 @@
               "buildTarget": "clients:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "port": 4302
+          }
         },
         "test": {
           "builder": "@angular/build:unit-test"

@@ -96,7 +96,7 @@ public sealed class AuditInterceptor(RequestContext request, IClock clock) : Sav
                 continue;
             var column = p.Metadata.GetColumnName();
             var value = original ? p.OriginalValue : p.CurrentValue;
-            values[column] = value is byte[] ? "[encrypted]" : value;
+            values[column] = value is byte[]? "[encrypted]" : value;
         }
         return JsonSerializer.Serialize(values, SnapshotJson);
     }
