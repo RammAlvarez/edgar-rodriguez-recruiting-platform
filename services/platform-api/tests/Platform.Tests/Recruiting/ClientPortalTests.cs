@@ -165,6 +165,23 @@ public sealed class ClientPortalTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task A_comment_written_in_cover_mode_reads_as_the_covered_recruiter_alone()
+    {
+        await Arrange();
+        var edgar = await WithDb(db => db.AddUser(UserRole.Administrator, "Edgar",
+            grants: PermissionModules.All.Select(m => new UserPermission { Module = m })));
+        var covering = Client(edgar.AuthUid, actingFor: _monica.Uid.ToString());
+        var staffView = await BodyOf(await covering.PostAsJsonAsync($"/v1/openings/{_opening}/comments",
+            new { body = "Entrevistas el jueves", visibleToClient = true }));
+        Assert.Equal("Edgar (cubriendo a Mónica Soto)", staffView.GetProperty("author").GetString());
+
+        var thread = (await BodyOf(await _heb.GetAsync($"/v1/client-portal/openings/{_opening}/comments"))).EnumerateArray().Single();
+        Assert.Equal("Mónica Soto", thread.GetProperty("author").GetString());
+        var feed = (await BodyOf(await _heb.GetAsync("/v1/client-portal/comments"))).EnumerateArray().Single();
+        Assert.Equal("Mónica Soto", feed.GetProperty("author").GetString());
+    }
+
+    [Fact]
     public async Task A_client_cannot_reach_staff_document_or_candidate_routes_and_staff_cannot_use_the_portal()
     {
         await Arrange();

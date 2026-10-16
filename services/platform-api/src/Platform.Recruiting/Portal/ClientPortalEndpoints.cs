@@ -219,7 +219,7 @@ public static class ClientPortalEndpoints
         var names = users.ToDictionary(u => u.Key, u => u.Value.DisplayName);
         var openings = await OpeningQueries.DisplayNames(db, rows.Select(c => c.JobOpeningId).Distinct().ToList(), ct);
         return rows.Select(c => new ClientCommentDto(c.Uid, c.JobOpeningId, openings[c.JobOpeningId], c.Body,
-            UserNames.Author(names, c.AuthorUserId, c.ActingForUserId) ?? "", users.GetValueOrDefault(c.AuthorUserId)?.Role == UserRole.Client,
+            UserNames.ClientAuthor(names, c.AuthorUserId, c.ActingForUserId) ?? "", users.GetValueOrDefault(c.AuthorUserId)?.Role == UserRole.Client,
             c.CreatedAt)).ToList();
     }
 }
