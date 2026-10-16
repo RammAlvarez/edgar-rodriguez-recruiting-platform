@@ -1,6 +1,6 @@
 # PLAN — Plataforma de Reclutamiento y Prenómina
 
-> **Status:** v1 — P1–P4 resolved; E1–E7 applied; **S0 done 2026-10-16** (see §2.1); P5 open · **Written:** 2026-10-16 (kickoff)
+> **Status:** v1 — P1–P4 resolved; E1–E7 applied; **S0 done 2026-10-16** (see §2.1); P5, P6 open · **Written:** 2026-10-16 (kickoff)
 > **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
 > **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
 
@@ -84,6 +84,7 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | ~~P3~~ | **Resolved → D50.** Pensión alimenticia. Row 30 says `PENSION DEL 39%` but its total has no deduction. Either the Excel is pre-pension (the 39 % is deducted elsewhere) or D16 is not how it works today. | S1 | Golden runs with `alimony_pct = NULL` for row 30 (the Excel is pre-pension); D16 stays and has its own unit test; confirm with the client. |
 | ~~P4~~ | **Resolved:** the owner installed .NET 10.0.402. **.NET 10 SDK** was not installed (only 8.0.101). The Homebrew cask (10.0.402) needs `sudo`, which the agent cannot type. | S0 | The owner runs `brew install --cask dotnet-sdk`; `global.json` pins 10.0.x. |
 | **P5** | **Supervisor scope.** SPEC §5.3 / D19: a field supervisor is an Administrador with only `payroll_attendance` and "sees nothing else". `permission_module` has no grant for Reclutamiento (Vacantes, Candidatos, Reclutadores, Clientes) nor for Inicio, so under DATA_MODEL §8 that account still sees all of recruiting. Options: (a) add a `recruiting` module (default on for new Administradores, off for supervisors); (b) rule: an Administrador whose grants are only payroll ones sees no recruiting. | S4 (recruiting routes need the rule) | (a): explicit, one more checkbox in Usuarios |
+| **P6** | **Period Excel totals.** With D42 the payable total of SEM 38 is $333,188.81 (Σ of per-row truncated nets) while the clerk's sheet prints $333,189.13 (Excel sums unrounded values). She validates by comparing totals. Should the period Excel show only the payable total, or also the exact column sum beside it? | S9 (export layout) | Show both: «Total exacto» and «Total a pagar» |
 | Q12 | Why do rows 65, 81, 83, 85, 87, 99, 117 of SEM 38 get 249.50 / 178.60 of festivo 1ª mitad instead of 428.52 (SPEC §10)? | nothing (known diff in the golden) | D14 for every entitled row |
 | Q4 | Bonus scheme (SPEC §10) — still open. | S9 demo columns only | All `BONUS_*` concepts inactive for ECOVIA until answered (that is what SEM 38 pays). |
 

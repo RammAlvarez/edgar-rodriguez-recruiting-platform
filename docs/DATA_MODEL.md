@@ -134,7 +134,7 @@ Delegated grants for `administrator` users (SPEC §2.2).
 | user_id | uuid FK users | |
 | module | permission_module | |
 | client_id | uuid FK clients NULL | NULL = all clients |
-| PK | (user_id, module, COALESCE(client_id, '00000000-…')) | unique index on expression |
+| UNIQUE | (user_id, module, client_id) NULLS NOT DISTINCT | PostgreSQL 15+; same effect as the expression index on `COALESCE(client_id, …)`, so one all-clients grant per module |
 
 ### 3.3 `clients`
 
