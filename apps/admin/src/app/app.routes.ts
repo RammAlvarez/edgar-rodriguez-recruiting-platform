@@ -6,7 +6,8 @@ import { ALL_NAV_ITEMS, homePath } from './shell/navigation';
 
 const homeRedirect: CanActivateFn = () => {
   const me = inject(Session).me();
-  return inject(Router).createUrlTree([me ? homePath(me) : '/entrar']);
+  const home = me ? homePath(me) : null;
+  return inject(Router).createUrlTree([home ?? (me ? '/sin-acceso' : '/entrar')]);
 };
 
 export const routes: Routes = [

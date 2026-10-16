@@ -44,4 +44,9 @@ describe('admin navigation', () => {
     expect(paths(recruiter)).toEqual(['mis-vacantes', 'mis-candidatos']);
     expect(homePath(recruiter)).toBe('mis-vacantes');
   });
+
+  it('has no home for a Cliente user, who is sent to "sin acceso" instead of looping', () => {
+    expect(paths(me('client'))).toEqual([]);
+    expect(homePath(me('client'))).toBeNull();
+  });
 });

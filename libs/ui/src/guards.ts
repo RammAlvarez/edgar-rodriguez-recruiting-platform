@@ -34,6 +34,8 @@ export const accessGuard =
     const session = inject(Session);
     const router = inject(Router);
     const me = session.me();
-    const allowed = !!me && roles.includes(me.role) && (!grant || me.role !== 'administrator' || session.hasGrant(grant));
+    // A role outside the app (e.g. a Cliente in the admin app) gets the "sin acceso" page; redirecting to "/" would loop.
+    if (!me || !roles.includes(me.role)) return router.createUrlTree(['/sin-acceso']);
+    const allowed = !grant || me.role !== 'administrator' || session.hasGrant(grant);
     return allowed || router.createUrlTree(['/']);
   };

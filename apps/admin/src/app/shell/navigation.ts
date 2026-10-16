@@ -69,7 +69,7 @@ export function isVisible(item: NavItem, me: MeDto): boolean {
   return !item.grant || me.role !== 'administrator' || me.grants.some((g) => g.module === item.grant);
 }
 
-/** First screen the user may open (a supervisor with only Asistencia lands on Asistencia). */
-export function homePath(me: MeDto): string {
-  return ALL_NAV_ITEMS.find((item) => isVisible(item, me))?.path ?? 'inicio';
+/** First screen the user may open, or null when the role has nothing in this app (a Cliente user). */
+export function homePath(me: MeDto): string | null {
+  return ALL_NAV_ITEMS.find((item) => isVisible(item, me))?.path ?? null;
 }
