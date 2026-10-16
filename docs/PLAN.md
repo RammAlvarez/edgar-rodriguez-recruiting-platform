@@ -1,6 +1,6 @@
 # PLAN — Plataforma de Reclutamiento y Prenómina
 
-> **Status:** v1 — P1–P3 resolved by the owner 2026-10-16; E1–E3, E5 applied with S0 unless the owner objects; D51 to confirm before S1 · **Written:** 2026-10-16 (kickoff)
+> **Status:** v1 — P1–P3 resolved by the owner 2026-10-16; E1–E3, E5 applied with S0 unless the owner objects; D51 confirmed · **Written:** 2026-10-16 (kickoff)
 > **Companion docs:** [SPEC.md](./SPEC.md) (D1–D32, Q4) · [DATA_MODEL.md](./DATA_MODEL.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) (D33–D39) · this file continues the decision log at **D40**.
 > **Rule:** the four docs are authoritative. When code needs to diverge, the doc change is proposed here (§4) or in the PR first; nothing diverges silently.
 
@@ -111,7 +111,7 @@ The seed (`npm run seed`, refuses a non-local `DATABASE_URL`) grows with each sl
 | D48 | **Tests against Postgres:** the docker Postgres on :5433 with a dedicated `platform_test` database migrated once per run and truncated between tests; a fixed `IClock` injected everywhere "today" or lock times matter. |
 | D49 | **Toolchain:** .NET 10 SDK pinned in `global.json` (`rollForward: latestFeature`), Node 24 LTS (`.nvmrc`), npm workspaces, Angular 22 CLI; rich text with Tiptap in `apps/admin`, server sanitizer `HtmlSanitizer` with the DATA_MODEL §4.4b allowlist. |
 | D50 | **No pensión alimenticia** (owner, 2026-10-16; revises SPEC D16): not deducted, not recorded — `employees.alimony_pct`, the `ALIMONY` concept and `concept_calc.percent_of_net` are removed; the import keeps a "PENSION …" comment as plain text in `employees.notes`. The prototype's 39 % pensión and Desglose row are not built. |
-| D51 | **Festivo 1ª mitad entitlement** *(proposed, confirm before S1)*: an employee is entitled for each date in the period that is in `holidays` and whose attendance record has status `holiday` (the day is a festivo, not worked); `holiday_worked` pays FESTIVO LABORADO instead. In SEM 38, 46 of 115 rows were entitled, so it is not automatic for everyone. The golden fixture reads entitlement from column `O` being filled. |
+| D51 | **Festivo 1ª mitad entitlement** (confirmed by the owner 2026-10-16): an employee is entitled for each date in the period that is in `holidays` and whose attendance record has status `holiday` (the day is a festivo, not worked); `holiday_worked` pays FESTIVO LABORADO instead. In SEM 38, 46 of 115 rows were entitled, so it is not automatic for everyone. The golden fixture reads entitlement from column `O` being filled. |
 
 ---
 
