@@ -100,6 +100,10 @@ public static class PersonText
 
     public static string? OptionalName(string? value) => value.Clean() is { } v ? Name(v) : null;
 
+    /// <summary>A stored uppercase name as a greeting shows it: "JUAN CARLOS PÉREZ" → "Juan Carlos Pérez".</summary>
+    public static string Display(string value) =>
+        System.Globalization.CultureInfo.GetCultureInfo("es-MX").TextInfo.ToTitleCase(value.Trim().ToLowerInvariant());
+
     /// <summary>CURP / RFC: trimmed, uppercase, no inner spaces; empty → null.</summary>
     public static string? Id(string? value) => value.Clean()?.Replace(" ", "", StringComparison.Ordinal).ToUpperInvariant();
 }

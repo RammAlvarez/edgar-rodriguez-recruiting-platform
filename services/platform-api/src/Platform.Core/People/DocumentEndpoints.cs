@@ -15,7 +15,7 @@ namespace Platform.Core.People;
 /// The document vault (SPEC §3.2, ARCHITECTURE §4 "Files"): presigned PUT with a key decided here → the browser uploads →
 /// confirm records the metadata after checking the object; downloads are presigned GETs of 15 minutes, logged in
 /// <c>data_access_log</c>. Administradores and Reclutadores, each person checked through <see cref="IPersonScope"/> (PLAN D73);
-/// the candidate's own scope arrives with the Candidates app (S5).
+/// a candidate reads, uploads and views only their own documents and never validates or rejects (PLAN D77).
 /// </summary>
 public static class DocumentEndpoints
 {
@@ -24,6 +24,9 @@ public static class DocumentEndpoints
     public const string NotFound = "El documento no existe.";
 
     private static readonly AccessRule Staff = AccessRule.ForRoles(UserRole.Administrator, UserRole.Recruiter);
+
+    /// <summary>Staff, or the candidate on their own person (checked by <see cref="IPersonScope"/>).</summary>
+    private static readonly AccessRule StaffOrCandidate = Staff with { AllowsCandidate = true };
 
     public static IEndpointRouteBuilder MapDocumentEndpoints(this IEndpointRouteBuilder v1)
     {
@@ -41,7 +44,7 @@ public static class DocumentEndpoints
             })
             .WithName("PresignDocumentUpload").WithTags("Documents").Validate<PresignUploadRequest>()
             .Produces<PresignUploadResponse>().ProducesProblem(StatusCodes.Status404NotFound)
-            .RequireAccess(Staff).Invalidates(Tag);
+            .RequireAccess(StaffOrCandidate).Invalidates(Tag);
 
         var people = v1.MapGroup("/people/{personId:guid}/documents").WithTags("Documents");
 
@@ -50,11 +53,11 @@ public static class DocumentEndpoints
                     ? TypedResults.Ok(list)
                     : ApiResults.NotFound(PeopleEndpoints.NotFound))
             .WithName("GetDocumentChecklist").Produces<DocumentChecklistDto>().ProducesProblem(StatusCodes.Status404NotFound)
-            .RequireAccess(Staff);
+            .RequireAccess(StaffOrCandidate);
 
         people.MapPost("", Confirm)
             .WithName("ConfirmDocumentUpload").Validate<ConfirmDocumentRequest>().Produces<PersonDocumentDto>()
-            .ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Staff).Invalidates(Tag, PeopleEndpoints.Tag);
+            .ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(StaffOrCandidate).Invalidates(Tag, PeopleEndpoints.Tag);
 
         var docs = v1.MapGroup("/documents/{id:guid}").WithTags("Documents");
 
@@ -95,7 +98,8 @@ public static class DocumentEndpoints
                 await log.RecordAsync(doc.PersonId, attachment ? DataAccessKind.DownloadDocument : DataAccessKind.ViewDocument, doc.Uid, ct);
                 return TypedResults.Ok(new DocumentUrlDto(url.Url, url.ExpiresAt));
             })
-            .WithName("GetDocumentUrl").Produces<DocumentUrlDto>().ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Staff);
+            .WithName("GetDocumentUrl").Produces<DocumentUrlDto>().ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAccess(StaffOrCandidate);
 
         return v1;
     }

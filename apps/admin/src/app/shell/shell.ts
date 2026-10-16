@@ -16,7 +16,7 @@ import { API_CLIENT } from '@platform/ui';
 import { CoverMode } from './cover-mode';
 import { visibleNavigation } from './navigation';
 
-const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', client: 'Cliente' } as const;
+const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', client: 'Cliente', candidate: 'Candidato' } as const;
 
 /** Desktop-first shell: fixed sidenav ≥ 960px, modal below (design system "Layout"). */
 @Component({

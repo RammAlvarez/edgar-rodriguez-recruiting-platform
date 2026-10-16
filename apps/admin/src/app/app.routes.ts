@@ -1,6 +1,6 @@
 import { inject, type Type } from '@angular/core';
 import { type CanActivateFn, Router, type Routes } from '@angular/router';
-import type { PermissionModule, UserRole } from '@platform/shared';
+import type { MeRole, PermissionModule } from '@platform/shared';
 import { accessGuard, signedInGuard, signedOutGuard } from '@platform/ui/guards';
 import { Session } from '@platform/ui/session';
 import { CoverMode } from './shell/cover-mode';
@@ -29,13 +29,13 @@ const homeRedirect: CanActivateFn = () => {
 
 /**
  * A screen of the other staff role (a Reclutador typing /vacantes) goes back home instead of «Sin acceso», which is for
- * people this app does not serve at all (a Cliente user).
+ * people this app does not serve at all (a Cliente user or a candidate).
  */
 const staffGuard =
-  (roles: readonly UserRole[], grant?: PermissionModule): CanActivateFn =>
+  (roles: readonly MeRole[], grant?: PermissionModule): CanActivateFn =>
   (route, state) => {
     const me = inject(Session).me();
-    if (me && me.role !== 'client' && !roles.includes(me.role)) return inject(Router).createUrlTree(['/']);
+    if (me && (me.role === 'administrator' || me.role === 'recruiter') && !roles.includes(me.role)) return inject(Router).createUrlTree(['/']);
     return accessGuard(roles, grant)(route, state);
   };
 

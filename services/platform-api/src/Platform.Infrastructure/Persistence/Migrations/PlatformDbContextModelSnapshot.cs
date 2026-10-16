@@ -1109,6 +1109,10 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("postal_code");
 
+                    b.Property<DateTimeOffset?>("PrivacyNoticeAcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("privacy_notice_accepted_at");
+
                     b.Property<string>("Rfc")
                         .HasColumnType("text")
                         .HasColumnName("rfc");

@@ -29,6 +29,12 @@ public sealed record Principal(
     }
 }
 
+/// <summary>
+/// A candidate signed in to the Candidates app (SPEC §2.1, DATA_MODEL §8): no <c>users</c> row; the provider's verified email
+/// matched one person who has at least one application (PLAN D77).
+/// </summary>
+public sealed record CandidatePrincipal(Guid PersonId, string DisplayName, string Email);
+
 /// <summary>The recruiter an Administrador is covering for ("Ver como reclutador", SPEC §4.4).</summary>
 public sealed record ActingFor(Guid UserId, string DisplayName);
 
@@ -37,6 +43,7 @@ public sealed class RequestContext
 {
     public string RequestId { get; set; } = "";
     public Principal? Principal { get; set; }
+    public CandidatePrincipal? Candidate { get; set; }
     public ActingFor? ActingFor { get; set; }
 
     public Principal RequiredPrincipal =>

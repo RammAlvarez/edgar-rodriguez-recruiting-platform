@@ -19,6 +19,7 @@ using Platform.Infrastructure.Storage;
 using Platform.Recruiting;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
+using Platform.Recruiting.Portal;
 using Platform.Recruiting.Recruiters;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -108,6 +109,8 @@ v1.MapUserEndpoints();
 v1.MapOpeningEndpoints();
 v1.MapCandidateEndpoints();
 v1.MapRecruiterEndpoints();
+v1.MapCandidatePortalEndpoints();
+v1.MapClientPortalEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

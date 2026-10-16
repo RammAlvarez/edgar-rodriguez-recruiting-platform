@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { type CanActivateFn, Router } from '@angular/router';
-import type { PermissionModule, UserRole } from '@platform/shared';
+import type { MeRole, PermissionModule } from '@platform/shared';
 import { filter, map, take } from 'rxjs';
 import { Session, type SessionState } from './session';
 
@@ -29,7 +29,7 @@ export const signedOutGuard: CanActivateFn = () => {
 
 /** UI-side mirror of a permission-matrix row; the API enforces the same rule. */
 export const accessGuard =
-  (roles: readonly UserRole[], grant?: PermissionModule): CanActivateFn =>
+  (roles: readonly MeRole[], grant?: PermissionModule): CanActivateFn =>
   () => {
     const session = inject(Session);
     const router = inject(Router);

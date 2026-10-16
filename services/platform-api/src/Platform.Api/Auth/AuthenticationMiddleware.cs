@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Platform.Core.Access;
 using Platform.Core.Http;
+using Platform.Core.People;
 using Platform.Core.Users;
+using Platform.Recruiting.Candidates;
 using Serilog.Context;
 
 namespace Platform.Api.Auth;
@@ -9,7 +11,8 @@ namespace Platform.Api.Auth;
 /// <summary>
 /// For <c>/v1</c>: bearer token → <see cref="IAuthProvider.VerifyAsync"/> → uid → <c>users</c> row (role, active, grants)
 /// → <see cref="RequestContext"/>. Cover mode (<c>X-Acting-For</c>) is accepted only for Administradores (DATA_MODEL §8).
-/// Requests without a token continue without a principal; the route's access filter answers 401.
+/// A token with no users row is a candidate when its <em>verified</em> email belongs to exactly one person with an
+/// application (PLAN D77). Requests without a token continue without a principal; the route's access filter answers 401.
 /// </summary>
 public sealed class AuthenticationMiddleware(RequestDelegate next)
 {
@@ -39,7 +42,14 @@ public sealed class AuthenticationMiddleware(RequestDelegate next)
                 .SingleOrDefaultAsync(u => u.AuthUid == identity.Uid, http.RequestAborted);
             if (user is null)
             {
-                await ApiResults.Forbidden(AccessMessages.NoAccount).ExecuteAsync(http);
+                var problem = await ResolveCandidateAsync(ctx, identity, db, http.RequestAborted);
+                if (problem is not null)
+                {
+                    await problem.ExecuteAsync(http);
+                    return;
+                }
+                using (LogContext.PushProperty("personId", ctx.Candidate!.PersonId))
+                    await next(http);
                 return;
             }
             if (!user.IsActive)
@@ -78,5 +88,23 @@ public sealed class AuthenticationMiddleware(RequestDelegate next)
         {
             await next(http);
         }
+    }
+
+    private static async Task<IResult?> ResolveCandidateAsync(RequestContext ctx, VerifiedIdentity identity, DbContext db,
+        CancellationToken ct)
+    {
+        if (!identity.EmailVerified || identity.Email is not { Length: > 0 } email)
+            return ApiResults.Forbidden(AccessMessages.NoAccount);
+        var address = email.Trim().ToLowerInvariant();
+        var people = await db.Set<Person>().AsNoTracking()
+            .Where(p => p.Email == address && p.DeletedAt == null && db.Set<Candidate>().Any(c => c.PersonId == p.Uid))
+            .Select(p => new { p.Uid, p.FirstNames, p.LastNamePaternal }).Take(2).ToListAsync(ct);
+        if (people.Count == 0)
+            return ApiResults.Forbidden(AccessMessages.NoAccount);
+        if (people.Count > 1)
+            return ApiResults.Forbidden(AccessMessages.CandidateEmailShared);
+        var p = people[0];
+        ctx.Candidate = new CandidatePrincipal(p.Uid, PersonText.Display($"{p.FirstNames} {p.LastNamePaternal}"), address);
+        return null;
     }
 }

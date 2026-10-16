@@ -946,6 +946,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/candidates/{id}/invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResendCandidateInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/recruiters": {
         parameters: {
             query?: never;
@@ -994,6 +1010,134 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/candidate-portal/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCandidateProfile"];
+        put: operations["UpdateCandidateProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidate-portal/privacy-notice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AcceptPrivacyNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidate-portal/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListCandidateApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidate-portal/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCandidateDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/client-portal/openings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListClientOpenings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/client-portal/openings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetClientOpening"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/client-portal/openings/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListClientOpeningComments"];
+        put?: never;
+        post: operations["PostClientOpeningComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/client-portal/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListClientComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -1003,6 +1147,10 @@ export type components = {
             id: string;
             displayName: string;
         };
+        /** @enum {unknown} */
+        ApplicationOutcome: "in_process" | "selected" | "hired" | "closed";
+        /** @enum {unknown} */
+        ApplicationStep: "received" | "contacted" | "interview" | "result";
         /** @enum {unknown} */
         AssignmentRole: "lead" | "support";
         AssignOpeningsRequest: {
@@ -1043,6 +1191,23 @@ export type components = {
             /** @default true */
             isActive: boolean;
         };
+        CandidateApplicationDto: {
+            /** Format: uuid */
+            id: string;
+            openingName: string;
+            step: components["schemas"]["ApplicationStep"];
+            outcome: components["schemas"]["ApplicationOutcome"];
+            /** Format: date */
+            capturedAt: DateKey;
+            /** Format: date */
+            hiredAt: DateKey | null;
+            recruiterName: null | string;
+            recruiterPhone: null | string;
+            recruiterEmail: null | string;
+            /** Format: date-time */
+            nextInterviewAt: Date | null;
+            nextInterviewLocation: null | string;
+        };
         CandidateDetailDto: {
             /** Format: uuid */
             id: string;
@@ -1075,6 +1240,10 @@ export type components = {
             discardReason: null | string;
             canConvertToEmployee: boolean;
         };
+        CandidateInvitationResultDto: {
+            sent: boolean;
+            email: string;
+        };
         CandidateListItemDto: {
             /** Format: uuid */
             id: string;
@@ -1101,6 +1270,49 @@ export type components = {
             daysInProcess: number | string;
             /** Format: decimal */
             offeredSalary: Decimal | null;
+        };
+        CandidateProfileDto: {
+            /** Format: uuid */
+            id: string;
+            firstNames: string;
+            lastNamePaternal: string;
+            lastNameMaternal: null | string;
+            /** Format: date */
+            birthDate: DateKey | null;
+            birthState: null | string;
+            gender: components["schemas"]["Gender"];
+            curp: null | string;
+            rfc: null | string;
+            nss: null | string;
+            mobilePhone: null | string;
+            email: null | string;
+            street: null | string;
+            extNumber: null | string;
+            neighborhood: null | string;
+            postalCode: null | string;
+            municipality: null | string;
+            state: null | string;
+            /** Format: date-time */
+            privacyNoticeAcceptedAt: Date | null;
+        };
+        CandidateProfileRequest: {
+            firstNames: string;
+            lastNamePaternal: string;
+            lastNameMaternal: null | string;
+            /** Format: date */
+            birthDate: DateKey | null;
+            birthState: null | string;
+            gender: null | components["schemas"]["Gender"];
+            curp: null | string;
+            rfc: null | string;
+            nss: null | string;
+            mobilePhone: null | string;
+            street: null | string;
+            extNumber: null | string;
+            neighborhood: null | string;
+            postalCode: null | string;
+            municipality: null | string;
+            state: null | string;
         };
         /** @enum {unknown} */
         CandidateSource: "facebook" | "linkedin" | "whatsapp" | "referral" | "job_board" | "other" | null;
@@ -1137,6 +1349,37 @@ export type components = {
             isRequired: boolean;
             current: null | components["schemas"]["PersonDocumentDto"];
         };
+        ClientCandidateDto: {
+            /** Format: uuid */
+            id: string;
+            isIdentified: boolean;
+            name: string;
+            source: null | components["schemas"]["CandidateSource"];
+            stage: components["schemas"]["CandidateStage"];
+            /** Format: date */
+            capturedAt: DateKey;
+            /** Format: decimal */
+            offeredSalary: Decimal | null;
+            /** Format: date-time */
+            interviewAt: Date | null;
+            /** Format: decimal */
+            documentsCompleteness: Decimal | null;
+        };
+        ClientCommentDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            openingId: string;
+            openingName: string;
+            body: string;
+            author: string;
+            fromClient: boolean;
+            /** Format: date-time */
+            createdAt: Date;
+        };
+        ClientCommentRequest: {
+            body: string;
+        };
         ClientDetailDto: {
             /** Format: uuid */
             id: string;
@@ -1161,6 +1404,32 @@ export type components = {
             isActive: boolean;
             zone: null | string;
             primaryContact: null | components["schemas"]["ContactDto"];
+        };
+        ClientOpeningDetailDto: {
+            opening: components["schemas"]["ClientOpeningDto"];
+            candidates: components["schemas"]["ClientCandidateDto"][];
+        };
+        ClientOpeningDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            positionName: string;
+            zoneName: null | string;
+            status: components["schemas"]["OpeningStatus"];
+            /** Format: int32 */
+            headcountRequested: number | string;
+            /** Format: int32 */
+            hired: number | string;
+            /** Format: date */
+            requestedAt: DateKey;
+            /** Format: date */
+            filledAt: DateKey | null;
+            /** Format: int32 */
+            daysOpen: number | string;
+            leadRecruiterName: null | string;
+            leadRecruiterPhone: null | string;
+            leadRecruiterEmail: null | string;
+            stageCounts: components["schemas"]["StageCountDto"][];
         };
         ClientOptionDto: {
             /** Format: uuid */
@@ -1374,13 +1643,17 @@ export type components = {
             id: string;
             displayName: string;
             email: string;
-            role: components["schemas"]["UserRole"];
+            role: components["schemas"]["MeRole"];
             /** Format: uuid */
             clientId: null | string;
             mfaRequired: boolean;
             grants: components["schemas"]["GrantDto"][];
             actingFor: null | components["schemas"]["ActingForDto"];
+            /** Format: uuid */
+            personId: null | string;
         };
+        /** @enum {unknown} */
+        MeRole: "administrator" | "recruiter" | "client" | "candidate";
         MoveStageRequest: {
             stage: components["schemas"]["CandidateStage"];
             reason: null | string;
@@ -1855,6 +2128,8 @@ export type components = {
     pathItems: never;
 };
 export type ActingForDto = components['schemas']['ActingForDto'];
+export type ApplicationOutcome = components['schemas']['ApplicationOutcome'];
+export type ApplicationStep = components['schemas']['ApplicationStep'];
 export type AssignmentRole = components['schemas']['AssignmentRole'];
 export type AssignOpeningsRequest = components['schemas']['AssignOpeningsRequest'];
 export type AssignRecruitersRequest = components['schemas']['AssignRecruitersRequest'];
@@ -1862,16 +2137,25 @@ export type BankDto = components['schemas']['BankDto'];
 export type BankRequest = components['schemas']['BankRequest'];
 export type BenefitDto = components['schemas']['BenefitDto'];
 export type BenefitRequest = components['schemas']['BenefitRequest'];
+export type CandidateApplicationDto = components['schemas']['CandidateApplicationDto'];
 export type CandidateDetailDto = components['schemas']['CandidateDetailDto'];
+export type CandidateInvitationResultDto = components['schemas']['CandidateInvitationResultDto'];
 export type CandidateListItemDto = components['schemas']['CandidateListItemDto'];
+export type CandidateProfileDto = components['schemas']['CandidateProfileDto'];
+export type CandidateProfileRequest = components['schemas']['CandidateProfileRequest'];
 export type CandidateSource = components['schemas']['CandidateSource'];
 export type CandidateStage = components['schemas']['CandidateStage'];
 export type CatalogPositionDto = components['schemas']['CatalogPositionDto'];
 export type CatalogPositionRequest = components['schemas']['CatalogPositionRequest'];
 export type CatalogsDto = components['schemas']['CatalogsDto'];
 export type ChecklistItemDto = components['schemas']['ChecklistItemDto'];
+export type ClientCandidateDto = components['schemas']['ClientCandidateDto'];
+export type ClientCommentDto = components['schemas']['ClientCommentDto'];
+export type ClientCommentRequest = components['schemas']['ClientCommentRequest'];
 export type ClientDetailDto = components['schemas']['ClientDetailDto'];
 export type ClientListItemDto = components['schemas']['ClientListItemDto'];
+export type ClientOpeningDetailDto = components['schemas']['ClientOpeningDetailDto'];
+export type ClientOpeningDto = components['schemas']['ClientOpeningDto'];
 export type ClientOptionDto = components['schemas']['ClientOptionDto'];
 export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
@@ -1901,6 +2185,7 @@ export type InterviewRequest = components['schemas']['InterviewRequest'];
 export type InviteResultDto = components['schemas']['InviteResultDto'];
 export type InviteUserRequest = components['schemas']['InviteUserRequest'];
 export type MeDto = components['schemas']['MeDto'];
+export type MeRole = components['schemas']['MeRole'];
 export type MoveStageRequest = components['schemas']['MoveStageRequest'];
 export type MoveStageResultDto = components['schemas']['MoveStageResultDto'];
 export type NewContactFields = components['schemas']['NewContactFields'];
@@ -5065,6 +5350,46 @@ export interface operations {
             };
         };
     };
+    ResendCandidateInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateInvitationResultDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListRecruiters: {
         parameters: {
             query?: never;
@@ -5165,6 +5490,283 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCandidateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateProfileDto"];
+                };
+            };
+        };
+    };
+    UpdateCandidateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateProfileDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AcceptPrivacyNotice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateProfileDto"];
+                };
+            };
+        };
+    };
+    ListCandidateApplications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateApplicationDto"][];
+                };
+            };
+        };
+    };
+    GetCandidateDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentChecklistDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListClientOpenings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOpeningDto"][];
+                };
+            };
+        };
+    };
+    GetClientOpening: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOpeningDetailDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListClientOpeningComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientCommentDto"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PostClientOpeningComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientCommentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListClientComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientCommentDto"][];
                 };
             };
         };

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Audit;
@@ -53,6 +54,7 @@ public static class CandidateEndpoints
 
         CandidateNotes.Map(g);
         CandidateInterviews.Map(g);
+        CandidateInvitation.Map(g);
         return v1;
     }
 
@@ -118,7 +120,7 @@ public static class CandidateEndpoints
     }
 
     private static async Task<IResult> Create(CreateCandidateRequest r, DbContext db, RequestContext ctx, IClock clock,
-        CancellationToken ct)
+        IEmailSender email, AppLinks links, ILoggerFactory logs, CancellationToken ct)
     {
         if (await RecruitingScope.Openings(db, ctx).SingleOrDefaultAsync(o => o.Uid == r.JobOpeningId, ct) is not { } opening)
             return ApiResults.NotFound(RecruitingScope.OpeningNotFound);
@@ -171,6 +173,8 @@ public static class CandidateEndpoints
         await OpeningRules.RecomputeAsync(db, opening, ctx, clock, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+        // SPEC §4.3 Nuevo: the invitation to the Candidates app, after the commit (D77).
+        await CandidateInvitation.SendAsync(db, email, links, logs, candidate.Uid, ct);
         return TypedResults.Ok(await Detail(db, ctx, candidate.Uid, clock, ct));
     }
 

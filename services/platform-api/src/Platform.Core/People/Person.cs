@@ -60,6 +60,8 @@ public sealed class Person : IStamped, ISoftDeletable
     public string? State { get; set; }
     public CandidateSource? Source { get; set; }
     public string? Notes { get; set; }
+    /// <summary>When the person accepted the aviso de privacidad in the Candidates app (ARCHITECTURE §6, PLAN D77).</summary>
+    public DateTimeOffset? PrivacyNoticeAcceptedAt { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }

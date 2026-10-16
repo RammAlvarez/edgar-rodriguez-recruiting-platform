@@ -5,12 +5,17 @@ using Platform.Core.Http;
 
 namespace Platform.Core.Access;
 
-/// <summary>Enforces the route's <see cref="AccessRule"/>. 401 without a principal, 403 with the user-facing message.</summary>
+/// <summary>
+/// Enforces the route's <see cref="AccessRule"/>. 401 without a principal, 403 with the user-facing message; a candidate passes
+/// only routes that allow candidates (their data scope is checked by the route).
+/// </summary>
 public sealed class AccessEndpointFilter(AccessRule rule) : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var ctx = context.HttpContext.RequestServices.GetRequiredService<RequestContext>();
+        if (ctx.Candidate is not null)
+            return rule.AllowsCandidate ? await next(context) : ApiResults.Forbidden(AccessMessages.RoleNotAllowed);
         if (ctx.Principal is not { } principal)
             return ApiResults.Unauthorized(AccessMessages.NotSignedIn);
         if (!rule.Roles.Contains(principal.Role))

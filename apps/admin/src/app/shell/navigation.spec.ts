@@ -1,8 +1,8 @@
-import type { MeDto, PermissionModule, UserRole } from '@platform/shared';
+import type { MeDto, MeRole, PermissionModule } from '@platform/shared';
 import { describe, expect, it } from 'vitest';
 import { homePath, visibleNavigation } from './navigation';
 
-const me = (role: UserRole, grants: PermissionModule[] = []): MeDto => ({
+const me = (role: MeRole, grants: PermissionModule[] = []): MeDto => ({
   id: '00000000-0000-0000-0000-000000000001',
   displayName: 'Prueba',
   email: 'p@example.test',
@@ -11,6 +11,7 @@ const me = (role: UserRole, grants: PermissionModule[] = []): MeDto => ({
   mfaRequired: false,
   grants: grants.map((module) => ({ module, clientId: null })),
   actingFor: null,
+  personId: null,
 });
 
 const paths = (m: MeDto) => visibleNavigation(m).flatMap((s) => s.items.map((i) => i.path));
@@ -58,5 +59,6 @@ describe('admin navigation', () => {
   it('has no home for a Cliente user, who is sent to "sin acceso" instead of looping', () => {
     expect(paths(me('client'))).toEqual([]);
     expect(homePath(me('client'))).toBeNull();
+    expect(homePath(me('candidate'))).toBeNull();
   });
 });

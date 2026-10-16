@@ -7,8 +7,8 @@ using Platform.Tests.Support;
 namespace Platform.Tests.Recruiting;
 
 /// <summary>
-/// The "Done when" of S4 (PLAN §2): demo path steps 1–3c of ARCHITECTURE §9 against the API. Step 3's last half — the client
-/// seeing the candidate by name in the portal — is S5's gate; here it stops at Apto.
+/// The "Done when" of S4 (PLAN §2): demo path steps 1–3c of ARCHITECTURE §9 against the API; and S5's gate 1 (ARCHITECTURE
+/// §4.1 steps 1–3): recruiter captures → candidate uploads INE → recruiter validates, moves to Apto → client sees the name.
 /// </summary>
 public sealed class DemoPathTests(ApiFactory factory) : ApiTest(factory)
 {
@@ -82,5 +82,59 @@ public sealed class DemoPathTests(ApiFactory factory) : ApiTest(factory)
         var entry = (await BodyOf(await covering.GetAsync($"/v1/candidates/{hers.GetProperty("id").GetGuid()}/history"))).EnumerateArray().First();
         Assert.Equal("interview", entry.GetProperty("toStage").GetString());
         Assert.Equal("Edgar (cubriendo a Mónica Soto)", entry.GetProperty("author").GetString());
+    }
+
+    [Fact]
+    public async Task Gate_1_candidate_to_apto_seen_in_the_portal()
+    {
+        var heb = await WithDb(db => db.AddClient("HEB"));
+        var monica = await WithDb(db => db.AddUser(UserRole.Recruiter, "Mónica Soto"));
+        var owner = await AsOwner();
+        var vacanteId = (await BodyOf(await owner.PostAsJsonAsync("/v1/openings", OpeningTests.NewOpening(heb.Uid, monica.Uid))))
+            .GetProperty("id").GetGuid();
+        var laura = await WithDb(db => db.AddUser(UserRole.Client, "Laura (HEB)", clientId: heb.Uid));
+        var portal = Client(laura.AuthUid);
+
+        // 1. The recruiter captures the candidate with an email → the invitation to the Candidates app goes out.
+        var recruiter = Client(monica.AuthUid);
+        var email = $"rosa-{Guid.NewGuid():N}@example.test";
+        var captured = await BodyOf(await recruiter.PostAsJsonAsync("/v1/candidates", CandidateTests.NewCandidate(vacanteId,
+            new { firstNames = "Rosa", lastNamePaternal = "Leal", lastNameMaternal = "Garza", isForeign = false, email })));
+        var candidateId = captured.GetProperty("id").GetGuid();
+        var personId = captured.GetProperty("person").GetProperty("id").GetGuid();
+        Assert.Single(Factory.Email.To(email));
+        var masked = Assert.Single((await BodyOf(await portal.GetAsync($"/v1/client-portal/openings/{vacanteId}")))
+            .GetProperty("candidates").EnumerateArray());
+        Assert.Equal("R. L.", masked.GetProperty("name").GetString());
+
+        // 2. The candidate signs in with that email and uploads her INE from the Candidates app.
+        var candidate = AsEmail(email);
+        Assert.Equal("candidate", (await BodyOf(await candidate.PostAsync("/v1/me/sessions", null))).GetProperty("role").GetString());
+        var ine = (await BodyOf(await candidate.GetAsync("/v1/candidate-portal/documents"))).GetProperty("items").EnumerateArray()
+            .Single(i => i.GetProperty("code").GetString() == "INE").GetProperty("documentTypeId").GetGuid();
+        var presign = await BodyOf(await candidate.PostAsJsonAsync("/v1/files/presign-upload",
+            new { personId, documentTypeId = ine, fileName = "ine-frente.jpg", contentType = "image/jpeg", sizeBytes = 350_000 }));
+        var key = presign.GetProperty("storageKey").GetString()!;
+        Factory.Storage.Put(key, 350_000, "image/jpeg");
+        var doc = await BodyOf(await candidate.PostAsJsonAsync($"/v1/people/{personId}/documents",
+            new { documentTypeId = ine, storageKey = key, originalFilename = "ine-frente.jpg", issuedAt = (string?)null, expiresAt = "2031-12-31" }));
+        Assert.Equal("delivered", doc.GetProperty("status").GetString());
+
+        // 3. The recruiter sees it delivered, validates it and moves the candidate to Apto → the client sees her name.
+        var checklist = await BodyOf(await recruiter.GetAsync($"/v1/people/{personId}/documents"));
+        var current = checklist.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("code").GetString() == "INE").GetProperty("current");
+        Assert.Equal("delivered", current.GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.OK, (await recruiter.PostAsync($"/v1/documents/{current.GetProperty("id").GetGuid()}/validate", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await recruiter.PostAsJsonAsync($"/v1/candidates/{candidateId}/stage", new { stage = "suitable" })).StatusCode);
+
+        var seen = Assert.Single((await BodyOf(await portal.GetAsync($"/v1/client-portal/openings/{vacanteId}")))
+            .GetProperty("candidates").EnumerateArray());
+        Assert.True(seen.GetProperty("isIdentified").GetBoolean());
+        Assert.Equal("LEAL GARZA ROSA", seen.GetProperty("name").GetString());
+        Assert.NotEqual("0.00", seen.GetProperty("documentsCompleteness").GetString());
+        var mine = Assert.Single((await BodyOf(await candidate.GetAsync("/v1/candidate-portal/applications"))).EnumerateArray());
+        Assert.Equal("selected", mine.GetProperty("outcome").GetString());
+        Assert.Equal("validated", (await BodyOf(await candidate.GetAsync("/v1/candidate-portal/documents"))).GetProperty("items")
+            .EnumerateArray().Single(i => i.GetProperty("code").GetString() == "INE").GetProperty("current").GetProperty("status").GetString());
     }
 }

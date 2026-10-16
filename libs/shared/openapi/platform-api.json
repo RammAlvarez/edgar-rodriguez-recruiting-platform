@@ -4133,6 +4133,57 @@
         }
       }
     },
+    "/v1/candidates/{id}/invitation": {
+      "post": {
+        "tags": [
+          "Candidates"
+        ],
+        "operationId": "ResendCandidateInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateInvitationResultDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recruiters": {
       "get": {
         "tags": [
@@ -4267,6 +4318,337 @@
           }
         }
       }
+    },
+    "/v1/candidate-portal/profile": {
+      "get": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "GetCandidateProfile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateProfileDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "UpdateCandidateProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateProfileDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidate-portal/privacy-notice": {
+      "post": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "AcceptPrivacyNotice",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateProfileDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidate-portal/applications": {
+      "get": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "ListCandidateApplications",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidateApplicationDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidate-portal/documents": {
+      "get": {
+        "tags": [
+          "Candidate portal"
+        ],
+        "operationId": "GetCandidateDocuments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentChecklistDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/client-portal/openings": {
+      "get": {
+        "tags": [
+          "Client portal"
+        ],
+        "operationId": "ListClientOpenings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientOpeningDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/client-portal/openings/{id}": {
+      "get": {
+        "tags": [
+          "Client portal"
+        ],
+        "operationId": "GetClientOpening",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientOpeningDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/client-portal/openings/{id}/comments": {
+      "get": {
+        "tags": [
+          "Client portal"
+        ],
+        "operationId": "ListClientOpeningComments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientCommentDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Client portal"
+        ],
+        "operationId": "PostClientOpeningComment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientCommentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientCommentDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/client-portal/comments": {
+      "get": {
+        "tags": [
+          "Client portal"
+        ],
+        "operationId": "ListClientComments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientCommentDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4286,6 +4668,22 @@
             "type": "string"
           }
         }
+      },
+      "ApplicationOutcome": {
+        "enum": [
+          "in_process",
+          "selected",
+          "hired",
+          "closed"
+        ]
+      },
+      "ApplicationStep": {
+        "enum": [
+          "received",
+          "contacted",
+          "interview",
+          "result"
+        ]
       },
       "AssignmentRole": {
         "enum": [
@@ -4447,6 +4845,79 @@
           }
         }
       },
+      "CandidateApplicationDto": {
+        "required": [
+          "id",
+          "openingName",
+          "step",
+          "outcome",
+          "capturedAt",
+          "hiredAt",
+          "recruiterName",
+          "recruiterPhone",
+          "recruiterEmail",
+          "nextInterviewAt",
+          "nextInterviewLocation"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "openingName": {
+            "type": "string"
+          },
+          "step": {
+            "$ref": "#/components/schemas/ApplicationStep"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ApplicationOutcome"
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "hiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "recruiterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "recruiterPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "recruiterEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextInterviewAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextInterviewLocation": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CandidateDetailDto": {
         "required": [
           "id",
@@ -4583,6 +5054,21 @@
           }
         }
       },
+      "CandidateInvitationResultDto": {
+        "required": [
+          "sent",
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "sent": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
       "CandidateListItemDto": {
         "required": [
           "id",
@@ -4693,6 +5179,255 @@
               "string"
             ],
             "format": "decimal"
+          }
+        }
+      },
+      "CandidateProfileDto": {
+        "required": [
+          "id",
+          "firstNames",
+          "lastNamePaternal",
+          "lastNameMaternal",
+          "birthDate",
+          "birthState",
+          "gender",
+          "curp",
+          "rfc",
+          "nss",
+          "mobilePhone",
+          "email",
+          "street",
+          "extNumber",
+          "neighborhood",
+          "postalCode",
+          "municipality",
+          "state",
+          "privacyNoticeAcceptedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstNames": {
+            "type": "string"
+          },
+          "lastNamePaternal": {
+            "type": "string"
+          },
+          "lastNameMaternal": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "birthDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "birthState": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "curp": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rfc": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nss": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobilePhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "street": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "extNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "neighborhood": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "postalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "municipality": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "privacyNoticeAcceptedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "CandidateProfileRequest": {
+        "required": [
+          "firstNames",
+          "lastNamePaternal",
+          "lastNameMaternal",
+          "birthDate",
+          "birthState",
+          "gender",
+          "curp",
+          "rfc",
+          "nss",
+          "mobilePhone",
+          "street",
+          "extNumber",
+          "neighborhood",
+          "postalCode",
+          "municipality",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "firstNames": {
+            "type": "string"
+          },
+          "lastNamePaternal": {
+            "type": "string"
+          },
+          "lastNameMaternal": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "birthDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "birthState": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gender": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Gender"
+              }
+            ]
+          },
+          "curp": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rfc": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nss": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobilePhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "street": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "extNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "neighborhood": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "postalCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "municipality": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -4859,6 +5594,121 @@
           }
         }
       },
+      "ClientCandidateDto": {
+        "required": [
+          "id",
+          "isIdentified",
+          "name",
+          "source",
+          "stage",
+          "capturedAt",
+          "offeredSalary",
+          "interviewAt",
+          "documentsCompleteness"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isIdentified": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CandidateSource"
+              }
+            ]
+          },
+          "stage": {
+            "$ref": "#/components/schemas/CandidateStage"
+          },
+          "capturedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "offeredSalary": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          },
+          "interviewAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "documentsCompleteness": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          }
+        }
+      },
+      "ClientCommentDto": {
+        "required": [
+          "id",
+          "openingId",
+          "openingName",
+          "body",
+          "author",
+          "fromClient",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "openingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "openingName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "fromClient": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ClientCommentRequest": {
+        "required": [
+          "body"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        }
+      },
       "ClientDetailDto": {
         "required": [
           "id",
@@ -4979,6 +5829,123 @@
                 "$ref": "#/components/schemas/ContactDto"
               }
             ]
+          }
+        }
+      },
+      "ClientOpeningDetailDto": {
+        "required": [
+          "opening",
+          "candidates"
+        ],
+        "type": "object",
+        "properties": {
+          "opening": {
+            "$ref": "#/components/schemas/ClientOpeningDto"
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientCandidateDto"
+            }
+          }
+        }
+      },
+      "ClientOpeningDto": {
+        "required": [
+          "id",
+          "displayName",
+          "positionName",
+          "zoneName",
+          "status",
+          "headcountRequested",
+          "hired",
+          "requestedAt",
+          "filledAt",
+          "daysOpen",
+          "leadRecruiterName",
+          "leadRecruiterPhone",
+          "leadRecruiterEmail",
+          "stageCounts"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "zoneName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/OpeningStatus"
+          },
+          "headcountRequested": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hired": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "filledAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "daysOpen": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "leadRecruiterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "leadRecruiterPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "leadRecruiterEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stageCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StageCountDto"
+            }
           }
         }
       },
@@ -5828,7 +6795,8 @@
           "clientId",
           "mfaRequired",
           "grants",
-          "actingFor"
+          "actingFor",
+          "personId"
         ],
         "type": "object",
         "properties": {
@@ -5843,7 +6811,7 @@
             "type": "string"
           },
           "role": {
-            "$ref": "#/components/schemas/UserRole"
+            "$ref": "#/components/schemas/MeRole"
           },
           "clientId": {
             "type": [
@@ -5870,8 +6838,23 @@
                 "$ref": "#/components/schemas/ActingForDto"
               }
             ]
+          },
+          "personId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
+      },
+      "MeRole": {
+        "enum": [
+          "administrator",
+          "recruiter",
+          "client",
+          "candidate"
+        ]
       },
       "MoveStageRequest": {
         "required": [
@@ -7979,6 +8962,12 @@
     },
     {
       "name": "Candidates"
+    },
+    {
+      "name": "Candidate portal"
+    },
+    {
+      "name": "Client portal"
     }
   ]
 }

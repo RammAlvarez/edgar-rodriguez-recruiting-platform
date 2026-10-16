@@ -1,11 +1,11 @@
-import type { MeDto, PermissionModule, UserRole } from '@platform/shared';
+import type { MeDto, MeRole, PermissionModule } from '@platform/shared';
 
 /** Sidebar of the prototype (design-reference/Plataforma.dc.html), filtered by role and delegated grants. */
 export interface NavItem {
   readonly path: string;
   readonly label: string;
   readonly icon: string;
-  readonly roles: readonly UserRole[];
+  readonly roles: readonly MeRole[];
   /** Administradores need this grant; other roles ignore it. */
   readonly grant?: PermissionModule;
 }
@@ -15,8 +15,8 @@ export interface NavSection {
   readonly items: readonly NavItem[];
 }
 
-const ADMIN: readonly UserRole[] = ['administrator'];
-const RECRUITER: readonly UserRole[] = ['recruiter'];
+const ADMIN: readonly MeRole[] = ['administrator'];
+const RECRUITER: readonly MeRole[] = ['recruiter'];
 
 export const NAVIGATION: readonly NavSection[] = [
   { label: null, items: [{ path: 'inicio', label: 'Inicio', icon: 'dashboard', roles: ADMIN, grant: 'recruiting' }] },

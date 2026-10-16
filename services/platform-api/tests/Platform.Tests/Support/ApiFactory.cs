@@ -102,6 +102,17 @@ public abstract class ApiTest(ApiFactory factory) : IAsyncLifetime
         return (user, Client(user.AuthUid));
     }
 
+    /// <summary>
+    /// A signed-in client for someone whose provider account has <paramref name="email"/> and no users row: a candidate when a
+    /// person with an application has that email (PLAN D77).
+    /// </summary>
+    protected HttpClient AsEmail(string email, bool verified = true)
+    {
+        var uid = $"email-{Guid.NewGuid():N}";
+        Factory.Auth.Emails[uid] = (email, verified);
+        return Client(uid);
+    }
+
     /// <summary>An Administrador holding every grant (the owner).</summary>
     protected Task<HttpClient> AsOwner() => As(UserRole.Administrator, [.. PermissionModules.All]);
 
