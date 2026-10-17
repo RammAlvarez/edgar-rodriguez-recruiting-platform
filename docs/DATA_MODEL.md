@@ -581,7 +581,7 @@ Rules: no overlapping periods per employee (exclusion constraint on `daterange`,
 
 ### 5.5 `employee_bank_numbers`
 
-`(employee_id, bank registration_bank, employee_number text, PK(employee_id, bank))` — Banorte `2000000020`, Banregio `3000000001`; generated from a per-bank sequence when added to a registration batch.
+`(employee_id, bank registration_bank, employee_number text, PK(employee_id, bank), UNIQUE(bank, employee_number))` — Banorte `2000000020`, Banregio `3000000001`; taken from the bank's sequence (§9) the first time the employee goes into a registration batch, and reused after (S10).
 
 ### 5.5b `card_requests` ("Tarjetas por solicitar")
 
@@ -592,7 +592,7 @@ Rules: no overlapping periods per employee (exclusion constraint on `daterange`,
 | bank | registration_bank | banorte / banregio — chosen at alta (default from the vacante's `payment_bank_ids`) |
 | status | card_request_status default `queued` | |
 | registration_batch_row_id | uuid FK NULL | set when included in an alta file |
-| card_number_enc | bytea NULL | typed at *Tarjetas recibidas*; also creates the `person_bank_accounts` row and makes it primary |
+| card_number_enc | bytea NULL | typed at *Tarjeta recibida* (the alta files carry no card number, PLAN D85); also creates the `person_bank_accounts` row and makes it primary |
 | requested_at, received_at | timestamptz | |
 
 Created automatically when an employee is created without a primary bank account (or by "Solicitar tarjeta" on the employee). The Prenómina side panel reads `status = queued`.
@@ -689,8 +689,8 @@ Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (
 | total_deductions | numeric(18,6) | Σ deduction items |
 | total_net_exact | numeric(18,6) | `gross_earnings − total_deductions` |
 | total_net | numeric(12,2) | TOTAL NETO A PAGAR = `trunc(total_net_exact, 2)` — truncated, not rounded; the amount paid |
-| bank_id, account_type, account_number_enc, account_last4, holder_name | snapshot | taken from the employee's primary account at `paid` (S10); S9 shows them live from the person's primary account |
-| payment_status | payment_row_status | S10; S9 derives the state live: ready / tarjeta en trámite / sin cuenta (an invalid number cannot be captured, D82) |
+| bank_id, account_type, account_number_enc, account_last4, holder_name | snapshot | copied from the person's primary account when the line goes into a payment file (S10); null before — the grid shows the live account while the period is open |
+| payment_status | payment_row_status NULL | set when the period is paid: `pending` in a file not yet uploaded, `paid`, `rejected`, or `missing_account` / `invalid_account` for a line not in a file yet; null for a line with nothing to pay (net ≤ 0). While open the state is derived live (PLAN D86) |
 | comments | text | free text only — no bank data |
 | UNIQUE | (payroll_period_id, employee_id) | |
 
@@ -698,7 +698,7 @@ Lifecycle: `capturing` → `in_review` (automatic at last-day lock) → `paid` (
 
 `(id, prepayroll_line_id, pay_concept_id, quantity, unit_value, amount numeric(18,6) (calculated exactly, stored truncated to 6 decimals, never rounded), source enum('attendance','incident','position','manual'), incident_id FK NULL)` — the per-column breakdown; the export pivots these into the Excel columns via `pay_concepts.export_column`.
 
-Invariant: `prepayroll_lines.total_net_exact = Σ items(earning) − Σ items(deduction)` — kept by the API, which writes the items and the totals together from the engine's result; CHECKs `total_net_exact = gross_earnings − total_deductions` and `total_net = trunc(total_net_exact, 2)`; lines, items and incidents of a `paid` period are immutable (row-level trigger raises) — PLAN E13. Engine order: earnings → deductions → `total_net_exact` → truncate to cents → `total_net`. No pensión alimenticia (SPEC D16 revised).
+Invariant: `prepayroll_lines.total_net_exact = Σ items(earning) − Σ items(deduction)` — kept by the API, which writes the items and the totals together from the engine's result; CHECKs `total_net_exact = gross_earnings − total_deductions` and `total_net = trunc(total_net_exact, 2)`; lines, items and incidents of a `paid` period are immutable (row-level trigger raises) — PLAN E13 —, except a line's account snapshot and `payment_status`, which its payment files still write (E14). Engine order: earnings → deductions → `total_net_exact` → truncate to cents → `total_net`. No pensión alimenticia (SPEC D16 revised).
 
 ---
 
@@ -784,6 +784,7 @@ Fixed header of the Azteca massive-payment file. One row: the owner's company **
 | name | text | "Cuenta Azteca — MAXIMA" |
 | bank_id | uuid FK | Banco Azteca |
 | charge_account_number_enc | bytea | NO. DE CUENTA CARGO |
+| charge_account_last4 | text | the only part of the number any screen shows |
 | holder_name | text ≤ 40 | MAXIMA REPARACION Y LIMPIEZA SA DE CV |
 | holder_rfc | text | |
 | default_charge_legend | text ≤ 30 | "PAGO" |
@@ -797,37 +798,39 @@ Every payee is an employee's `platform.person_bank_accounts` row; a third-party 
 ### 6.3 `payment_batches` / `payment_batch_rows`
 
 ```
-payment_batches(id, paying_account_id FK, kind payment_batch_kind,
+payment_batches(id, uid, paying_account_id FK, kind payment_batch_kind,
                 payroll_period_id FK NULL,          -- period_payment / pending_payment
                 generated_by, generated_at, status batch_status,
-                row_count int, total_amount numeric(14,2) NULL, storage_path text,
-                frequent_accounts_storage_path text NULL)   -- companion cuentas frecuentes file, when needed
-payment_batch_rows(id, payment_batch_id FK, line_no int,
+                row_count int, total_amount numeric(14,2),     -- CHECK row_count > 0 AND total_amount > 0: what THIS file pays
+                storage_path text, layout_version text,
+                frequent_accounts_storage_path text NULL,      -- companion cuentas frecuentes file, when needed
+                frequent_accounts_count int, uploaded_at, uploaded_by, stamps)
+payment_batch_rows(id, uid, payment_batch_id FK, line_no int, UNIQUE(payment_batch_id, line_no),
                    prepayroll_line_id FK NOT NULL,
+                   person_bank_account_id FK,         -- the account paid; the upload registers it as cuenta frecuente
                    display_name,                      -- holder_name of the primary account (NOMBRE DEL BENEFICIARIO)
-                   receiving_bank_code, account_type, account_number_enc,
+                   receiving_bank_code, account_type, account_number_enc, account_last4,
                    payment_type payment_type,         -- 3 = BAZ when receiving bank is Azteca, else 1 = SPEI (derived)
-                   amount numeric(12,2) CHECK > 0, charge_legend, credit_legend, concept text,
-                   status payment_row_status default 'pending')
+                   amount numeric(12,2) CHECK > 0 AND = trunc(amount, 2), charge_legend, credit_legend,
+                   registers_frequent_account bool,   -- the account went into this batch's cuentas frecuentes file
+                   status payment_row_status default 'pending', rejection_reason text NULL, stamps)
 ```
 
-Generating a `period_payment` batch: validates all lines, writes one row per `ready` line, sets those lines' `payment_status = pending`, moves the period to `paid`, freezes the lines. Lines not `ready` stay `missing_account` / `invalid_account` and are picked up later by a `pending_payment` batch for the same period. Marking the batch `uploaded_to_bank` sets rows to `paid`; a row can be flipped to `rejected` and re-included in a later `pending_payment` batch.
+Generating a `period_payment` batch (PLAN D86): every line with an amount > 0 and a current principal account gets a row (one `decrypt_account` row in `data_access_log` per person); a row the layout refuses stays out as `invalid_account`; the rows' lines get the account snapshot and `payment_status = pending`, the others `missing_account` (null when nothing is due); the period moves to `paid` with `total_net` = Σ every line. Lines left `missing_account` / `invalid_account` / `rejected` are paid by a later `pending_payment` batch once they have an account. Marking a batch `uploaded_to_bank` sets its rows and lines to `paid` and its `registers_frequent_account` accounts to `is_frequent_account_registered`; a paid row can then be flipped to `rejected` (with a reason) and is re-included by the next `pending_payment` batch as a new row. The `frequent_accounts` kind is not used: the cuentas frecuentes file is the batch's companion (E14).
 
 ### 6.4 `registration_batches` / `registration_batch_rows` (alta masiva files from the card-request queue)
 
 ```
-registration_batches(id, bank registration_bank, generated_by, generated_at, status batch_status,
-                     row_count, storage_path,
-                     -- Banorte fixed values for the batch
-                     occupation_code text default '09-TECNICOS', product_code text default '705-Nómina Banorte 2',
-                     card_type text default 'GENÉRICA', gross_monthly_salary numeric(12,2) default 100000.00,
-                     branch_to_send text NULL)
-registration_batch_rows(id, registration_batch_id FK, card_request_id FK, employee_id FK, employee_number text,
-                        validation_errors jsonb,             -- bank-rule violations found at generation
-                        line_no int)
+registration_batches(id, uid, bank registration_bank, generated_by, generated_at, status batch_status,
+                     row_count CHECK > 0, storage_path, layout_version, uploaded_at, uploaded_by, stamps,
+                     -- Banorte values for the batch (null for Banregio)
+                     occupation_code text, product_code text, card_type text,   -- 'NOMINATIVA' (PLAN D85)
+                     gross_monthly_salary numeric(12,2), branch_to_send text)    -- the 5-digit sucursal, required for NOMINATIVA
+registration_batch_rows(id, uid, registration_batch_id FK, line_no int, card_request_id FK UNIQUE, employee_id FK,
+                        employee_number text, stamps)
 ```
 
-On batch status → `completed` the user types each card number on its `card_requests` row (`received`); that creates the `person_bank_accounts` row (debit_card at that bank, primary) and the next period pays into it.
+A file with any broken bank rule is refused (the preview lists each person's issues), so no `validation_errors` are stored (E14). On generation the requests go `queued → in_batch`; queued requests whose person has a principal account by then are cancelled. «Subido al banco» → `uploaded`. At *Tarjeta recibida* the user types the card's number on its `card_requests` row (`received`); that creates the `person_bank_accounts` row (debit_card at that bank, primary) and the next unpaid period pays into it; the batch is `completed` once every request is received or cancelled.
 
 ## 7. Module `audit`
 
