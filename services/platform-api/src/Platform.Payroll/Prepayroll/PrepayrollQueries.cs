@@ -178,12 +178,18 @@ public static class PrepayrollQueries
         {
             var l = w.Line;
             string? Third(string? holder) => holder is null || SameName(holder, w.FullName) ? null : holder;
+            var live = accounts.GetValueOrDefault(w.PersonId);
+            if (l.TotalNet <= 0)
+                return new LinePaymentDto(PaymentState.NothingDue, null, null, null, null);
+            // Paid and still unpaid for want of an account: an account now makes it Lista for the pending-payments file.
+            if (paid && l.PaymentStatus is PaymentRowStatus.MissingAccount or PaymentRowStatus.InvalidAccount && live is not null)
+                return new LinePaymentDto(PaymentState.Ready, banks[live.BankId], live.AccountLast4, live.AccountType, Third(live.HolderName));
             if (paid && l.BankId is { } bank)
                 return new LinePaymentDto(State(l.PaymentStatus, false), banks[bank], l.AccountLast4, l.AccountType, Third(l.HolderName));
             if (paid)
                 return new LinePaymentDto(State(l.PaymentStatus, cards.Contains(l.EmployeeId)), null, null, null, null);
-            return accounts.TryGetValue(w.PersonId, out var a)
-                ? new LinePaymentDto(PaymentState.Ready, banks[a.BankId], a.AccountLast4, a.AccountType, Third(a.HolderName))
+            return live is not null
+                ? new LinePaymentDto(PaymentState.Ready, banks[live.BankId], live.AccountLast4, live.AccountType, Third(live.HolderName))
                 : new LinePaymentDto(cards.Contains(l.EmployeeId) ? PaymentState.CardRequested : PaymentState.MissingAccount, null, null, null, null);
         });
     }

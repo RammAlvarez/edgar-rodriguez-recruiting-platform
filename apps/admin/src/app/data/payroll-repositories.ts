@@ -23,6 +23,16 @@ import type {
   EmployeeOptionsDto,
   EmployeePickDto,
   EmployeeRequest,
+  GeneratedPaymentFilesDto,
+  GeneratedRegistrationDto,
+  PayingAccountDto,
+  PayingAccountRequest,
+  PaymentBatchDto,
+  PaymentFile,
+  PeriodPaymentsDto,
+  RegistrationBatchDto,
+  RegistrationBatchRequest,
+  RegistrationPreviewDto,
   GroupConceptRequest,
   PayrollGroupDetailDto,
   PayrollGroupListItemDto,
@@ -288,3 +298,74 @@ export class IncidentsRepository {
   }
 }
 
+/**
+ * Archivos de pago (grant payroll_payment_files): a period's payment panel, «Generar archivos de pago», downloads, «Subido al
+ * banco», rechazos, the deposit date and the cuenta de cargo.
+ */
+@Injectable({ providedIn: 'root' })
+export class PaymentsRepository {
+  private readonly api = inject(API_CLIENT);
+
+  panel(periodId: () => string) {
+    return liveQuery(() => this.api.get<PeriodPaymentsDto>(`/v1/payroll/periods/${periodId()}/payments`), ['payments', 'prepayroll']);
+  }
+
+  generate(periodId: string): Promise<GeneratedPaymentFilesDto> {
+    return this.api.post(`/v1/payroll/periods/${periodId}/payment-files`, {});
+  }
+
+  download(batchId: string, file: PaymentFile): Promise<ReportExportDto> {
+    return this.api.post(`/v1/payroll/payment-batches/${batchId}/download`, { file });
+  }
+
+  uploaded(batchId: string): Promise<PaymentBatchDto> {
+    return this.api.post(`/v1/payroll/payment-batches/${batchId}/uploaded`, {});
+  }
+
+  reject(rowId: string, reason: string): Promise<PaymentBatchDto> {
+    return this.api.post(`/v1/payroll/payment-batch-rows/${rowId}/reject`, { reason });
+  }
+
+  setDepositDate(periodId: string, date: string | null): Promise<void> {
+    return this.api.put(`/v1/payroll/periods/${periodId}/deposit-date`, { date });
+  }
+
+  /** Undefined until the owner types it (the API answers 204). */
+  payingAccount() {
+    return liveQuery(() => this.api.get<PayingAccountDto | undefined>('/v1/payroll/paying-account'), ['payments']);
+  }
+
+  setPayingAccount(body: PayingAccountRequest): Promise<PayingAccountDto> {
+    return this.api.put('/v1/payroll/paying-account', body);
+  }
+}
+
+/** Alta masiva files from the card queue (grant payroll_card_requests) and «Tarjeta recibida». */
+@Injectable({ providedIn: 'root' })
+export class CardBatchesRepository {
+  private readonly api = inject(API_CLIENT);
+
+  preview(bank: RegistrationBank, branchToSend: string | null): Promise<RegistrationPreviewDto> {
+    return this.api.get('/v1/card-batches/preview', branchToSend ? { bank, branchToSend } : { bank });
+  }
+
+  generate(body: RegistrationBatchRequest): Promise<GeneratedRegistrationDto> {
+    return this.api.post('/v1/card-batches', body);
+  }
+
+  list() {
+    return liveQuery(() => this.api.get<RegistrationBatchDto[]>('/v1/card-batches'), ['card-batches']);
+  }
+
+  download(batchId: string): Promise<ReportExportDto> {
+    return this.api.post(`/v1/card-batches/${batchId}/download`, {});
+  }
+
+  uploaded(batchId: string): Promise<RegistrationBatchDto> {
+    return this.api.post(`/v1/card-batches/${batchId}/uploaded`, {});
+  }
+
+  receive(requestId: string, cardNumber: string): Promise<BankAccountDto> {
+    return this.api.post(`/v1/card-requests/${requestId}/received`, { cardNumber });
+  }
+}

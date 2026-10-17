@@ -73,9 +73,14 @@ public static class PaymentFiles
         : x.Account is null ? (x.CardRequested ? LinePaymentState.CardRequested : LinePaymentState.MissingAccount)
         : LinePaymentState.Ready;
 
-    /// <summary>Before payment the live state; after, the one its files left it in.</summary>
+    /// <summary>
+    /// Before payment the live state; after, the one its files left it in — except a line left without an account that has
+    /// one now, which is Lista for the pending-payments file.
+    /// </summary>
     public static LinePaymentState State(Line x, PeriodStatus status) => status != PeriodStatus.Paid
         ? LiveState(x)
+        : x.Entity.PaymentStatus is PaymentRowStatus.MissingAccount or PaymentRowStatus.InvalidAccount && LiveState(x) == LinePaymentState.Ready
+            ? LinePaymentState.Ready
         : x.Entity.PaymentStatus switch
         {
             null => LinePaymentState.NothingDue,

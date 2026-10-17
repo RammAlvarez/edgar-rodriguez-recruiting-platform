@@ -221,8 +221,11 @@ public sealed class PaymentFilesTests(ApiFactory factory) : ApiTest(factory)
         await AddAccount(w.Employees["ANA"], "012", "debit_card", "5555555555554444");
         await AddAccount(w.Employees["DORA"], "012", "clabe", Clabe);
         var panel = await Panel(w.Period);
-        Assert.Equal(("rejected", "missing_account", 2), (Line(panel, "ANA").GetProperty("state").GetString(),
+        Assert.Equal(("rejected", "ready", 2), (Line(panel, "ANA").GetProperty("state").GetString(),
             Line(panel, "DORA").GetProperty("state").GetString(), panel.GetProperty("payable").GetInt32()));
+        var grid = await BodyOf(await _owner.GetAsync($"/v1/payroll/periods/{w.Period}"));
+        var dora = grid.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("employeeId").GetGuid() == w.Employees["DORA"]).GetProperty("payment");
+        Assert.Equal(("ready", "0015"), (dora.GetProperty("state").GetString(), dora.GetProperty("last4").GetString()));
         var pending = await BodyOf(await _owner.PostAsync($"/v1/payroll/periods/{w.Period}/payment-files", null));
         var second = pending.GetProperty("batch");
         Assert.Equal(("pending_payment", 2, 2), (second.GetProperty("kind").GetString(), second.GetProperty("rowCount").GetInt32(),

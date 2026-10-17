@@ -9,19 +9,20 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
 import { formatDateKey } from '@platform/shared';
-import { confirm, openSidePanel } from '@platform/ui';
+import { confirm, openSidePanel, Session } from '@platform/ui';
 import type { PayrollPeriodDto, PrepayrollExport, PrepayrollRowDto } from '../data/api-types';
 import { money, PAYMENT_STATE, PERIOD_STATUS, periodLabel } from '../data/payroll-labels';
 import { PrepayrollRepository } from '../data/payroll-repositories';
 import { CardQueuePanel } from './card-queue-panel';
 import { LinePanel, type LinePanelData } from './line-panel';
+import { PaymentPanel, type PaymentPanelData } from './payment-panel';
 
 const ACCOUNT_TYPE_SHORT = { own_account: 'Cuenta', debit_card: 'Tarjeta', clabe: 'CLABE' } as const;
 
 /**
  * Nómina → Prenómina (SPEC §5.5): a period's grid in the client's Excel layout (SEM 38: B–W), the payment columns beside it,
  * the column footers (Σ of what is shown — for display, D76), a row's desglose, the editable cell (ajuste manual with a reason),
- * «Cerrar captura» and the files: the Excel, the PDF summary and the receipts.
+ * «Cerrar captura», the files (the Excel, the PDF summary and the receipts), «Pagar» (the bank files, S10) and «Tarjetas».
  */
 @Component({
   selector: 'app-prepayroll-page',
@@ -33,9 +34,11 @@ const ACCOUNT_TYPE_SHORT = { own_account: 'Cuenta', debit_card: 'Tarjeta', clabe
         <h1>Prenómina</h1>
         <div class="actions">
           <a matButton routerLink="/incidencias" [queryParams]="{ period: periodId() }"><mat-icon fontSet="material-symbols-outlined">edit_note</mat-icon>Incidencias</a>
-          <button matButton type="button" (click)="cards()">
-            <mat-icon fontSet="material-symbols-outlined">credit_card</mat-icon>Tarjetas por solicitar@if (queue.value()?.length) { · {{ queue.value()!.length }} }
-          </button>
+          @if (canCards()) {
+            <button matButton type="button" (click)="cards()">
+              <mat-icon fontSet="material-symbols-outlined">credit_card</mat-icon>Tarjetas@if (queue.value()?.length) { · {{ queue.value()!.length }} por solicitar }
+            </button>
+          }
         </div>
       </header>
 
@@ -58,6 +61,11 @@ const ACCOUNT_TYPE_SHORT = { own_account: 'Cuenta', debit_card: 'Tarjeta', clabe
           @if (g.period.status === 'capturing') {
             <button matButton="outlined" type="button" (click)="closeCapture()" [disabled]="busy()">
               <mat-icon fontSet="material-symbols-outlined">lock</mat-icon>Cerrar captura
+            </button>
+          }
+          @if (canPay() && g.period.status !== 'capturing') {
+            <button matButton="filled" type="button" (click)="pay()">
+              <mat-icon fontSet="material-symbols-outlined">account_balance</mat-icon>{{ g.period.status === 'paid' ? 'Pagos' : 'Pagar' }}
             </button>
           }
           <button matButton="outlined" type="button" (click)="export('excel')" [disabled]="busy()"><mat-icon fontSet="material-symbols-outlined">table_view</mat-icon>Excel</button>
@@ -85,6 +93,9 @@ const ACCOUNT_TYPE_SHORT = { own_account: 'Cuenta', debit_card: 'Tarjeta', clabe
         </div>
         @if (g.period.status === 'in_review') {
           <p class="banner"><mat-icon fontSet="material-symbols-outlined">rule</mat-icon>En revisión: los cambios de asistencia e incidencias se marcan como «durante revisión».</p>
+        }
+        @if (g.period.status === 'paid') {
+          <p class="banner"><mat-icon fontSet="material-symbols-outlined">lock</mat-icon>Pagado: la prenómina ya no cambia; una corrección es un retroactivo en el siguiente período.</p>
         }
         <div class="grid-scroll" role="region" aria-label="Prenómina" tabindex="0">
           <table class="grid">
@@ -299,6 +310,9 @@ export class PrepayrollPage {
   readonly periodId = signal<string | null>(this.params.get('period'));
   readonly grid = this.repo.grid(() => this.periodId());
   readonly queue = this.repo.cardQueue();
+  private readonly me = inject(Session).me;
+  readonly canPay = computed(() => this.me()?.grants.some((g) => g.module === 'payroll_payment_files') ?? false);
+  readonly canCards = computed(() => this.me()?.grants.some((g) => g.module === 'payroll_card_requests') ?? false);
   readonly busy = signal(false);
 
   /** Periods by client · group, newest first. */
@@ -353,6 +367,12 @@ export class PrepayrollPage {
     openSidePanel<LinePanel, LinePanelData>(this.dialog, LinePanel, {
       lineId: r.lineId, columns: g.columns, column, editable: g.editable, current: column ? this.amounts(r)[g.columns.indexOf(column)] : null,
     });
+  }
+
+  pay(): void {
+    const g = this.grid.value();
+    if (!g) return;
+    openSidePanel<PaymentPanel, PaymentPanelData>(this.dialog, PaymentPanel, { periodId: g.period.id, label: periodLabel(g.period, g.period.weekly) });
   }
 
   cards(): void {

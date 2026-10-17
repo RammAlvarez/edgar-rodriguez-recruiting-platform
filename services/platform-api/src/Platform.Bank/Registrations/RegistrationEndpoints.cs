@@ -354,9 +354,10 @@ public static class RegistrationEndpoints
 
     private static async Task<ReportExportDto> Link(IObjectStorage storage, RegistrationBatch batch, CancellationToken ct)
     {
-        var name = batch.Bank == RegistrationBank.Banorte
-            ? $"ALTA MASIVA BANORTE {batch.GeneratedAt:yyyy-MM-dd}.xlsx"
-            : $"ALTA BANREGIO {batch.GeneratedAt:yyyy-MM-dd}.xlsx";
+        // The date as the owner's day in Monterrey, not UTC's.
+        var day = TimeZoneInfo.ConvertTime(batch.GeneratedAt, TimeZoneInfo.FindSystemTimeZoneById(ClockExtensions.DefaultTimeZone))
+            .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var name = batch.Bank == RegistrationBank.Banorte ? $"ALTA MASIVA BANORTE {day}.xlsx" : $"ALTA BANREGIO {day}.xlsx";
         var download = await storage.PresignDownloadAsync(StorageBucket.Exports, batch.StoragePath, name, DownloadLifetime, ct);
         return new ReportExportDto(download.Url, name, download.ExpiresAt);
     }
