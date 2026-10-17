@@ -29,7 +29,8 @@ public static class Prepayrolls
     {
         await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         await db.SaveChangesAsync(ct);
-        foreach (var (employeeId, from, to) in scope.Distinct())
+        // One order for every writer, so two requests that lock several lines never wait on each other in a cycle.
+        foreach (var (employeeId, from, to) in scope.Distinct().OrderBy(x => x.EmployeeId))
         {
             var groupId = await db.Set<Employee>().Where(e => e.Uid == employeeId).Select(e => e.PayrollGroupId).SingleAsync(ct);
             var periods = await db.Set<PayrollPeriod>()
@@ -49,7 +50,7 @@ public static class Prepayrolls
     {
         await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         await db.SaveChangesAsync(ct);
-        foreach (var (periodId, employeeId) in lines.Distinct())
+        foreach (var (periodId, employeeId) in lines.Distinct().OrderBy(x => x.PeriodId).ThenBy(x => x.EmployeeId))
             await RecomputeAsync(db, periodId, employeeId, now, ct);
         await db.SaveChangesAsync(ct);
         if (transaction is not null)
@@ -69,7 +70,7 @@ public static class Prepayrolls
             .Where(p => Open.Contains(p.Status) && (p.PayrollGroupId == groupId
                 || db.Set<PrepayrollLine>().Any(l => l.PayrollPeriodId == p.Uid && l.EmployeeId == employeeId)))
             .Select(p => p.Uid).ToListAsync(ct);
-        foreach (var period in periods)
+        foreach (var period in periods.Order())
             await RecomputeAsync(db, period, employeeId, now, ct);
         await db.SaveChangesAsync(ct);
         if (transaction is not null)
@@ -94,28 +95,94 @@ public static class Prepayrolls
             .Where(e => e.PayrollGroupId == period.PayrollGroupId && e.HiredAt <= period.EndDate
                 && (e.TerminatedAt == null || e.TerminatedAt > period.StartDate))
             .Select(e => e.Uid).ToListAsync(ct);
-        var existing = await db.Set<PrepayrollLine>().Where(l => l.PayrollPeriodId == period.Uid).Select(l => l.EmployeeId).ToListAsync(ct);
-        var created = 0;
-        foreach (var employee in employees)
+        var existing = (await db.Set<PrepayrollLine>().Where(l => l.PayrollPeriodId == period.Uid).Select(l => l.EmployeeId).ToListAsync(ct))
+            .ToHashSet();
+        // Sorted here, not in SQL: .NET orders Guids differently from Postgres, and every writer must use the same order.
+        var todo = employees.Where(e => recomputeAll || !existing.Contains(e)).Order().ToList();
+        var shared = await PeriodContext.LoadAsync(db, period, ct);
+        if (todo.Count > 1 && db.Database.CurrentTransaction is not null)
         {
-            if (!existing.Contains(employee))
-                created++;
-            else if (!recomputeAll)
-                continue;
-            await RecomputeAsync(db, period.Uid, employee, now, ct);
+            // Every line's lock in one statement, in the same order single writers use; then the period's data in a few queries.
+            var keys = todo.Select(e => LockKey(period.Uid, e)).ToList();
+            var first = keys.Select(k => k.Item1).ToArray();
+            var second = keys.Select(k => k.Item2).ToArray();
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(a, b) FROM unnest({first}::int[], {second}::int[]) WITH ORDINALITY AS t(a, b, n) ORDER BY n", ct);
+            shared.Batch = new Preloaded(
+                await db.Set<Employee>().AsNoTracking().Where(e => todo.Contains(e.Uid)).ToDictionaryAsync(e => e.Uid, ct),
+                (await db.Set<AttendanceRecord>().AsNoTracking()
+                    .Where(a => todo.Contains(a.EmployeeId) && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate).ToListAsync(ct))
+                    .ToLookup(a => a.EmployeeId),
+                (await db.Set<Incident>().AsNoTracking().Where(i => i.PayrollPeriodId == period.Uid && todo.Contains(i.EmployeeId)).ToListAsync(ct))
+                    .ToLookup(i => i.EmployeeId),
+                await db.Set<PrepayrollLine>().Include(l => l.Items).Where(l => l.PayrollPeriodId == period.Uid && todo.Contains(l.EmployeeId))
+                    .ToDictionaryAsync(l => l.EmployeeId, ct));
         }
-        return created;
+        foreach (var employee in todo)
+            await RecomputeAsync(db, period.Uid, employee, now, ct, shared);
+        return todo.Count(e => !existing.Contains(e));
     }
 
     /// <summary>Computes one employee's line in one period and replaces its items (or removes it if they did not work there).</summary>
-    public static async Task RecomputeAsync(DbContext db, Guid periodId, Guid employeeId, DateTimeOffset now, CancellationToken ct)
+    /// <summary>
+    /// What every line of one period shares — the period, its group, holidays, concepts and the puestos' rates — loaded once
+    /// when a whole period is recomputed (Cerrar captura, period-roll; 500 lines in S12's load run).
+    /// </summary>
+    public sealed class PeriodContext
     {
-        var period = await db.Set<PayrollPeriod>().AsNoTracking().SingleAsync(p => p.Uid == periodId, ct);
+        public required PayrollPeriod Period { get; init; }
+        public required PayrollGroup Group { get; init; }
+        public required HashSet<DateOnly> Holidays { get; init; }
+        public required Dictionary<Guid, PayConceptRow> Concepts { get; init; }
+        public required Dictionary<string, PayrollGroupConcept> GroupConcepts { get; init; }
+        public Dictionary<Guid, (Position Position, PositionRate? Rates)> Positions { get; } = [];
+
+        /// <summary>
+        /// Set by <see cref="EnsureLinesAsync"/> after it locked every line of the period: each employee, their days, incidencias
+        /// and (tracked) line, so a whole-period recompute reads them in a handful of queries instead of five per line.
+        /// </summary>
+        public Preloaded? Batch { get; set; }
+
+        public static async Task<PeriodContext> LoadAsync(DbContext db, PayrollPeriod period, CancellationToken ct)
+        {
+            var concepts = await db.Set<PayConceptRow>().AsNoTracking().ToDictionaryAsync(c => c.Uid, ct);
+            return new PeriodContext
+            {
+                Period = period,
+                Group = await db.Set<PayrollGroup>().AsNoTracking().SingleAsync(g => g.Uid == period.PayrollGroupId, ct),
+                Holidays = (await db.Set<Holiday>().Where(h => h.Date >= period.StartDate && h.Date <= period.EndDate).Select(h => h.Date)
+                    .ToListAsync(ct)).ToHashSet(),
+                Concepts = concepts,
+                GroupConcepts = await db.Set<PayrollGroupConcept>().AsNoTracking().Where(c => c.PayrollGroupId == period.PayrollGroupId)
+                    .ToDictionaryAsync(c => concepts[c.PayConceptId].Code, ct),
+            };
+        }
+    }
+
+    public sealed record Preloaded(Dictionary<Guid, Employee> Employees, ILookup<Guid, AttendanceRecord> Days, ILookup<Guid, Incident> Incidents,
+        Dictionary<Guid, PrepayrollLine> Lines);
+
+    public static async Task RecomputeAsync(DbContext db, Guid periodId, Guid employeeId, DateTimeOffset now, CancellationToken ct,
+        PeriodContext? shared = null)
+    {
+        var period = shared?.Period ?? await db.Set<PayrollPeriod>().AsNoTracking().SingleAsync(p => p.Uid == periodId, ct);
         if (!Open.Contains(period.Status))
             return;
-        var employee = await db.Set<Employee>().AsNoTracking().SingleAsync(e => e.Uid == employeeId, ct);
-        var line = await db.Set<PrepayrollLine>().Include(l => l.Items)
-            .SingleOrDefaultAsync(l => l.PayrollPeriodId == periodId && l.EmployeeId == employeeId, ct);
+        // Two writes for the same person and period (a capture and an incidencia at once) recompute one line: the second waits
+        // for the first to commit, then reads what it wrote. Held until the caller's transaction ends.
+        var batch = shared?.Batch;
+        if (batch is null && db.Database.CurrentTransaction is not null)
+        {
+            var (a, b) = LockKey(periodId, employeeId);
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({a}, {b})", ct);
+        }
+        var employee = batch is not null
+            ? batch.Employees[employeeId]
+            : await db.Set<Employee>().AsNoTracking().SingleAsync(e => e.Uid == employeeId, ct);
+        var line = batch is not null
+            ? batch.Lines.GetValueOrDefault(employeeId)
+            : await db.Set<PrepayrollLine>().Include(l => l.Items)
+                .SingleOrDefaultAsync(l => l.PayrollPeriodId == periodId && l.EmployeeId == employeeId, ct);
         var employed = employee.PayrollGroupId == period.PayrollGroupId && employee.HiredAt <= period.EndDate
             && (employee.TerminatedAt is not { } t || t > period.StartDate);
         if (!employed)
@@ -125,20 +192,26 @@ public static class Prepayrolls
             return;
         }
 
-        var group = await db.Set<PayrollGroup>().AsNoTracking().SingleAsync(g => g.Uid == period.PayrollGroupId, ct);
-        var position = await db.Set<Position>().AsNoTracking().SingleAsync(p => p.Uid == employee.PositionId, ct);
-        var positionRates = await StaffRules.PositionRatesOn(db, employee.PositionId, period.EndDate, ct);
+        var context = shared ?? await PeriodContext.LoadAsync(db, period, ct);
+        var group = context.Group;
+        if (!context.Positions.TryGetValue(employee.PositionId, out var cached))
+            context.Positions[employee.PositionId] = cached = (
+                await db.Set<Position>().AsNoTracking().SingleAsync(p => p.Uid == employee.PositionId, ct),
+                await StaffRules.PositionRatesOn(db, employee.PositionId, period.EndDate, ct));
+        var (position, positionRates) = cached;
         var rates = StaffRules.Effective(employee, positionRates);
-        var days = await db.Set<AttendanceRecord>().AsNoTracking()
-            .Where(a => a.EmployeeId == employeeId && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate).ToListAsync(ct);
-        var holidays = (await db.Set<Holiday>().Where(h => h.Date >= period.StartDate && h.Date <= period.EndDate).Select(h => h.Date)
-            .ToListAsync(ct)).ToHashSet();
-        var concepts = await db.Set<PayConceptRow>().AsNoTracking().ToDictionaryAsync(c => c.Uid, ct);
+        var days = batch is not null
+            ? batch.Days[employeeId].ToList()
+            : await db.Set<AttendanceRecord>().AsNoTracking()
+                .Where(a => a.EmployeeId == employeeId && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate).ToListAsync(ct);
+        var holidays = context.Holidays;
+        var concepts = context.Concepts;
         var codes = concepts.Values.ToDictionary(c => c.Code, c => c.Uid);
-        var groupConcepts = await db.Set<PayrollGroupConcept>().AsNoTracking().Where(c => c.PayrollGroupId == group.Uid)
-            .ToDictionaryAsync(c => concepts[c.PayConceptId].Code, ct);
-        var incidents = await db.Set<Incident>().AsNoTracking()
-            .Where(i => i.PayrollPeriodId == periodId && i.EmployeeId == employeeId).ToListAsync(ct);
+        var groupConcepts = context.GroupConcepts;
+        var incidents = batch is not null
+            ? batch.Incidents[employeeId].ToList()
+            : await db.Set<Incident>().AsNoTracking()
+                .Where(i => i.PayrollPeriodId == periodId && i.EmployeeId == employeeId).ToListAsync(ct);
 
         var summary = AttendanceSummaries.Summarize(days, holidays);
         var restDayAmount = groupConcepts.GetValueOrDefault(PayConcept.RestDayWorked.Info().Code)?.AmountOverride
@@ -237,6 +310,17 @@ public static class Prepayrolls
                 $"/prenomina?period={period.Uid}"), now, ct);
         await db.SaveChangesAsync(ct);
         return created;
+    }
+
+    /// <summary>The advisory-lock key of a line: two 32-bit halves of a hash of (period, employee).</summary>
+    private static (int, int) LockKey(Guid periodId, Guid employeeId)
+    {
+        Span<byte> bytes = stackalloc byte[32];
+        periodId.TryWriteBytes(bytes[..16]);
+        employeeId.TryWriteBytes(bytes[16..]);
+        Span<byte> hash = stackalloc byte[32];
+        System.Security.Cryptography.SHA256.HashData(bytes, hash);
+        return (BitConverter.ToInt32(hash[..4]), BitConverter.ToInt32(hash[4..8]));
     }
 
     public static PayConcept Concept(string code) => PayConcepts.All.Single(c => c.Code == code).Concept;
