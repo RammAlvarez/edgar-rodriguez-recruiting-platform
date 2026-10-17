@@ -13,6 +13,7 @@
 | [2026-10-16-07](2026-10-16-07-s8-asistencia.md) | S8 Asistencia + jobs | pass; capture driven in a 390 px frame |
 | [2026-10-16-08](2026-10-16-08-s9-prenomina.md) | S9 Incidencias + Prenómina | pass after fixing D-011, D-012; screens on the S8 data; the seeded Semana 38 gate met on a fresh database |
 | [2026-10-16-09](2026-10-16-09-s10-pagos.md) | S10 Archivos de pago + Tarjetas | gate 2 pass; four display fixes in the run; 390 px checked |
+| [2026-10-16-10](2026-10-16-10-s11-reportes-nomina.md) | S11 Reportes de nómina | gate pass (fresh database and browser); two fixes in the run; 390 px checked |
 
 ## Defects
 

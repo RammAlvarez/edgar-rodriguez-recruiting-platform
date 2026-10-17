@@ -704,7 +704,7 @@ Invariant: `prepayroll_lines.total_net_exact = Σ items(earning) − Σ items(de
 
 ### 5.13 Reporting views (SPEC §5.9)
 
-All six reports are plain SQL views/functions over the tables above; no extra storage, no materialization at this scale.
+**As built (S11, PLAN E15):** the six reports are computed in the API from the same queries the screens use — report 1 from each period's prenómina grid, so it equals the grid (D76) — and the views below were not created; they remain the sketch of what each report reads. No extra storage, no materialization at this scale.
 
 ```sql
 -- 1 Costo de nómina por cliente: one row per period × client × concept

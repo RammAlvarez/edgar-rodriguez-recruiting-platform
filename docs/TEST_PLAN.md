@@ -125,5 +125,13 @@ Data: `npm run seed` on a fresh database (S10 block: the paying account MAXIMA R
 6. Asistencia / unlock on a date of Semana 38 is refused («El período ya se pagó»).
 7. 390 px: the payment panel and the Tarjetas panel have no page-wide horizontal scroll.
 
-### S11–S12
-Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.
+### S11 — Reportes de nómina
+Data: `npm run seed` on a fresh database (S11 block: Semanas 39–41 of ECOVIA from the SEM 38 pattern, closed to Revisión; 39 paid and uploaded, 40 with its file generated; the seed fails unless Costo de nómina for ECOVIA over 38–41 has four rows, each equal to its prenómina grid, and Semana 38 at the golden total). API-level: `PayrollReportTests` (Costo = the grid's footers and total with Δ and the default Semana, the export's cells; Resumen de pago against the files; Incidencias priced from the line and subtotalled; Asistencia with automatic faltas and the day grid; Rotación and Tarjetas y cuentas; grant and client scope).
+1. Reportes de nómina opens on Costo de nómina with the last paid Semana.
+2. Cliente ECOVIA, Rango 11/09/2026 – 08/10/2026 → Semanas 38–41 and a total row; Semana 38 $334,654.83; Δ $ and Δ % from the second row; a row opens that period's Prenómina with the same total.
+3. Resumen de pago, Incidencias, Asistencia (with «Por día»), Rotación (default the year so far), Tarjetas y cuentas each show their tables.
+4. Exportar Excel and PDF of step 2: the Excel has the title, the filters line and the same rows and total.
+5. 390 px: every report without page-wide horizontal scroll (tables scroll inside their card).
+
+### S12
+Written when the slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.
