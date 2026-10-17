@@ -26,6 +26,10 @@ import type {
   GeneratedPaymentFilesDto,
   GeneratedRegistrationDto,
   PayingAccountDto,
+  PayrollReport,
+  PayrollReportDto,
+  PayrollReportOptionsDto,
+  ReportFormat,
   PayingAccountRequest,
   PaymentBatchDto,
   PaymentFile,
@@ -367,5 +371,40 @@ export class CardBatchesRepository {
 
   receive(requestId: string, cardNumber: string): Promise<BankAccountDto> {
     return this.api.post(`/v1/card-requests/${requestId}/received`, { cardNumber });
+  }
+}
+
+/** What the Reportes de nómina screen asks for: the report, Cliente (`null` = Todos) and a period or a range (PLAN D87). */
+export interface PayrollReportQuery {
+  readonly report: PayrollReport;
+  readonly clientId: string | null;
+  readonly periodId: string | null;
+  readonly from: string | null;
+  readonly to: string | null;
+}
+
+/** Reportes de nómina (grant payroll_prepayroll): the pickers, a report and its export. */
+@Injectable({ providedIn: 'root' })
+export class PayrollReportsRepository {
+  private readonly api = inject(API_CLIENT);
+
+  options() {
+    return liveQuery(() => this.api.get<PayrollReportOptionsDto>('/v1/payroll-reports/options'), ['prepayroll', 'payroll-reports']);
+  }
+
+  report(query: () => PayrollReportQuery) {
+    return liveQuery(() => {
+      const q = query();
+      const params: Record<string, string> = {};
+      if (q.clientId) params['clientId'] = q.clientId;
+      if (q.periodId) params['periodId'] = q.periodId;
+      if (q.from) params['from'] = q.from;
+      if (q.to) params['to'] = q.to;
+      return this.api.get<PayrollReportDto>(`/v1/payroll-reports/${q.report}`, params);
+    }, ['prepayroll', 'payments', 'incidents', 'employees', 'attendance', 'card-requests']);
+  }
+
+  export(q: PayrollReportQuery, format: ReportFormat): Promise<ReportExportDto> {
+    return this.api.post('/v1/payroll-reports/exports', { ...q, format });
   }
 }
