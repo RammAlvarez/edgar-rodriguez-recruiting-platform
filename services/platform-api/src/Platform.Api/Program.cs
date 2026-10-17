@@ -8,6 +8,7 @@ using Platform.Api.Internal;
 using Platform.Api.Jobs;
 using Platform.Bank.Payments;
 using Platform.Bank.Registrations;
+using Platform.Bank.Reports;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Audit;
@@ -138,6 +139,7 @@ v1.MapPrepayrollEndpoints();
 v1.MapIncidentEndpoints();
 v1.MapPaymentEndpoints();
 v1.MapRegistrationEndpoints();
+v1.MapPayrollReportEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

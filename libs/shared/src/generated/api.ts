@@ -2114,6 +2114,54 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll-reports/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPayrollReportOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll-reports/{report}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPayrollReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll-reports/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExportPayrollReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -3562,6 +3610,73 @@ export type components = {
             /** Format: decimal */
             totalNet: Decimal;
         };
+        /** @enum {unknown} */
+        PayrollReport: "cost" | "payments" | "incidents" | "attendance" | "turnover" | "accounts";
+        PayrollReportClientDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        PayrollReportDto: {
+            report: components["schemas"]["PayrollReport"];
+            title: string;
+            filters: components["schemas"]["PayrollReportFiltersDto"];
+            tables: components["schemas"]["PayrollReportTableDto"][];
+            note: null | string;
+        };
+        PayrollReportExportRequest: {
+            report: components["schemas"]["PayrollReport"];
+            format: components["schemas"]["ReportFormat"];
+            /** Format: uuid */
+            clientId: null | string;
+            /** Format: uuid */
+            periodId: null | string;
+            /** Format: date */
+            from: DateKey | null;
+            /** Format: date */
+            to: DateKey | null;
+        };
+        PayrollReportFiltersDto: {
+            /** Format: uuid */
+            clientId: null | string;
+            clientName: null | string;
+            /** Format: uuid */
+            periodId: null | string;
+            periodLabel: null | string;
+            /** Format: date */
+            from: DateKey | null;
+            /** Format: date */
+            to: DateKey | null;
+            description: string;
+        };
+        PayrollReportOptionsDto: {
+            clients: components["schemas"]["PayrollReportClientDto"][];
+            periods: components["schemas"]["PayrollReportPeriodDto"][];
+        };
+        PayrollReportPeriodDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            clientId: string;
+            label: string;
+            status: components["schemas"]["PeriodStatus"];
+            /** Format: date */
+            startDate: DateKey;
+            /** Format: date */
+            endDate: DateKey;
+        };
+        PayrollReportRowDto: {
+            cells: components["schemas"]["ReportCell"][];
+            /** @default false */
+            emphasis: boolean;
+            /** Format: uuid */
+            periodId?: null | string;
+        };
+        PayrollReportTableDto: {
+            heading: null | string;
+            columns: string[];
+            rows: components["schemas"]["PayrollReportRowDto"][];
+        };
         PeriodPaymentsDto: {
             /** Format: uuid */
             periodId: string;
@@ -3995,6 +4110,14 @@ export type components = {
             /** Format: uuid */
             newLeadId: null | string;
         };
+        ReportCell: {
+            kind: components["schemas"]["ReportCellKind"];
+            display: string;
+            /** Format: decimal */
+            value: Decimal | null;
+        };
+        /** @enum {unknown} */
+        ReportCellKind: "text" | "count" | "average" | "percent" | "money";
         ReportExportDto: {
             url: string;
             fileName: string;
@@ -4470,6 +4593,15 @@ export type PayrollGroupDetailDto = components['schemas']['PayrollGroupDetailDto
 export type PayrollGroupListItemDto = components['schemas']['PayrollGroupListItemDto'];
 export type PayrollGroupRequest = components['schemas']['PayrollGroupRequest'];
 export type PayrollPeriodDto = components['schemas']['PayrollPeriodDto'];
+export type PayrollReport = components['schemas']['PayrollReport'];
+export type PayrollReportClientDto = components['schemas']['PayrollReportClientDto'];
+export type PayrollReportDto = components['schemas']['PayrollReportDto'];
+export type PayrollReportExportRequest = components['schemas']['PayrollReportExportRequest'];
+export type PayrollReportFiltersDto = components['schemas']['PayrollReportFiltersDto'];
+export type PayrollReportOptionsDto = components['schemas']['PayrollReportOptionsDto'];
+export type PayrollReportPeriodDto = components['schemas']['PayrollReportPeriodDto'];
+export type PayrollReportRowDto = components['schemas']['PayrollReportRowDto'];
+export type PayrollReportTableDto = components['schemas']['PayrollReportTableDto'];
 export type PeriodPaymentsDto = components['schemas']['PeriodPaymentsDto'];
 export type PeriodStatus = components['schemas']['PeriodStatus'];
 export type PeriodType = components['schemas']['PeriodType'];
@@ -4510,6 +4642,8 @@ export type RehireRequest = components['schemas']['RehireRequest'];
 export type RejectDocumentRequest = components['schemas']['RejectDocumentRequest'];
 export type RejectPaymentRowRequest = components['schemas']['RejectPaymentRowRequest'];
 export type RemoveRecruiterRequest = components['schemas']['RemoveRecruiterRequest'];
+export type ReportCell = components['schemas']['ReportCell'];
+export type ReportCellKind = components['schemas']['ReportCellKind'];
 export type ReportExportDto = components['schemas']['ReportExportDto'];
 export type ReportExportRequest = components['schemas']['ReportExportRequest'];
 export type ReportFiltersDto = components['schemas']['ReportFiltersDto'];
@@ -10946,6 +11080,104 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPayrollReportOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollReportOptionsDto"];
+                };
+            };
+        };
+    };
+    GetPayrollReport: {
+        parameters: {
+            query?: {
+                clientId?: string;
+                periodId?: string;
+                from?: DateKey;
+                to?: DateKey;
+            };
+            header?: never;
+            path: {
+                report: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ExportPayrollReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollReportExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportExportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };

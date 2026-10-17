@@ -8624,6 +8624,148 @@
           }
         }
       }
+    },
+    "/v1/payroll-reports/options": {
+      "get": {
+        "tags": [
+          "PayrollReports"
+        ],
+        "operationId": "GetPayrollReportOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollReportOptionsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll-reports/{report}": {
+      "get": {
+        "tags": [
+          "PayrollReports"
+        ],
+        "operationId": "GetPayrollReport",
+        "parameters": [
+          {
+            "name": "report",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollReportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll-reports/exports": {
+      "post": {
+        "tags": [
+          "PayrollReports"
+        ],
+        "operationId": "ExportPayrollReport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayrollReportExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportExportDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -14607,6 +14749,278 @@
           }
         }
       },
+      "PayrollReport": {
+        "enum": [
+          "cost",
+          "payments",
+          "incidents",
+          "attendance",
+          "turnover",
+          "accounts"
+        ]
+      },
+      "PayrollReportClientDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PayrollReportDto": {
+        "required": [
+          "report",
+          "title",
+          "filters",
+          "tables",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "report": {
+            "$ref": "#/components/schemas/PayrollReport"
+          },
+          "title": {
+            "type": "string"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/PayrollReportFiltersDto"
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayrollReportTableDto"
+            }
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PayrollReportExportRequest": {
+        "required": [
+          "report",
+          "format",
+          "clientId",
+          "periodId",
+          "from",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "report": {
+            "$ref": "#/components/schemas/PayrollReport"
+          },
+          "format": {
+            "$ref": "#/components/schemas/ReportFormat"
+          },
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "periodId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "PayrollReportFiltersDto": {
+        "required": [
+          "clientId",
+          "clientName",
+          "periodId",
+          "periodLabel",
+          "from",
+          "to",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "clientName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "periodId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "periodLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "PayrollReportOptionsDto": {
+        "required": [
+          "clients",
+          "periods"
+        ],
+        "type": "object",
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayrollReportClientDto"
+            }
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayrollReportPeriodDto"
+            }
+          }
+        }
+      },
+      "PayrollReportPeriodDto": {
+        "required": [
+          "id",
+          "clientId",
+          "label",
+          "status",
+          "startDate",
+          "endDate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PeriodStatus"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "PayrollReportRowDto": {
+        "required": [
+          "cells"
+        ],
+        "type": "object",
+        "properties": {
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCell"
+            }
+          },
+          "emphasis": {
+            "type": "boolean",
+            "default": false
+          },
+          "periodId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "PayrollReportTableDto": {
+        "required": [
+          "heading",
+          "columns",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayrollReportRowDto"
+            }
+          }
+        }
+      },
       "PeriodPaymentsDto": {
         "required": [
           "periodId",
@@ -16393,6 +16807,39 @@
           }
         }
       },
+      "ReportCell": {
+        "required": [
+          "kind",
+          "display",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ReportCellKind"
+          },
+          "display": {
+            "type": "string"
+          },
+          "value": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "decimal"
+          }
+        }
+      },
+      "ReportCellKind": {
+        "enum": [
+          "text",
+          "count",
+          "average",
+          "percent",
+          "money"
+        ]
+      },
       "ReportExportDto": {
         "required": [
           "url",
@@ -17809,6 +18256,9 @@
     },
     {
       "name": "Payments"
+    },
+    {
+      "name": "PayrollReports"
     }
   ]
 }
