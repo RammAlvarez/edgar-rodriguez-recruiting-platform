@@ -1,0 +1,8 @@
+{
+  "apiUrl": "https://api.example.com",
+  "auth": {
+    "apiKey": "CHANGE_ME (Firebase → Project settings → Your apps → Web app)",
+    "authDomain": "CHANGE_ME.firebaseapp.com",
+    "projectId": "CHANGE_ME"
+  }
+}

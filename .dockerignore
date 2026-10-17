@@ -1,0 +1,13 @@
+# Build contexts never carry the client's workbooks, local secrets or build output.
+examples/
+archived-do-not-use/
+design-reference/
+docs/
+.env
+**/.env
+node_modules/
+dist/
+**/bin/
+**/obj/
+.git/
+.angular/

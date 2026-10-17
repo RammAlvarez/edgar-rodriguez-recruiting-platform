@@ -1,0 +1,102 @@
+# Same-VM variant (ARCHITECTURE §5, deploy/providers/same-vm in docs/HANDOFF.md): one Linux VM with Docker runs Postgres,
+# the migrations, the API, the scheduler and Caddy (the three apps + the API, automatic HTTPS). Storage is an S3-compatible
+# bucket of a provider (PLAN D54/D91); a MinIO container exists only behind the `local-s3` profile, for trying this file
+# on a laptop — its image is frozen and gets no security updates.
+#
+#   cp deploy/.env.example deploy/.env      # fill every CHANGE_ME
+#   cp deploy/config/admin.json.example deploy/config/admin.json  (and candidates, clients)
+#   docker compose -f deploy/docker-compose.same-vm.yml --env-file deploy/.env up -d --build
+name: platform
+
+services:
+  postgres:
+    image: postgres:18.0-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD}
+      PLATFORM_OWNER_PASSWORD: ${PLATFORM_OWNER_PASSWORD:?set PLATFORM_OWNER_PASSWORD}
+      PLATFORM_API_PASSWORD: ${PLATFORM_API_PASSWORD:?set PLATFORM_API_PASSWORD}
+      PLATFORM_READONLY_PASSWORD: ${PLATFORM_READONLY_PASSWORD:?set PLATFORM_READONLY_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./postgres/10-platform.sh:/docker-entrypoint-initdb.d/10-platform.sh:ro
+      - ../db/roles.sql:/docker-entrypoint-initdb.d/roles.sql.inc:ro
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d platform"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # Runs the pending migrations and exits; the API starts only after it succeeded.
+  migrate:
+    image: platform-api:${PLATFORM_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: services/platform-api/Dockerfile
+    entrypoint: ["./efbundle"]
+    environment:
+      MIGRATIONS_DATABASE_URL: postgres://platform_owner:${PLATFORM_OWNER_PASSWORD}@postgres:5432/platform
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: platform-api:${PLATFORM_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://platform_api:${PLATFORM_API_PASSWORD}@postgres:5432/platform
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  scheduler:
+    build: ../services/scheduler
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8080
+      INTERNAL_SECRET: ${INTERNAL_SECRET:?set INTERNAL_SECRET}
+    depends_on:
+      - api
+
+  caddy:
+    image: platform-apps:${PLATFORM_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: deploy/apps.Dockerfile
+    restart: unless-stopped
+    # Only the site names: Caddy never sees the API's secrets.
+    environment:
+      ADMIN_SITE: ${ADMIN_SITE:?set ADMIN_SITE}
+      CANDIDATES_SITE: ${CANDIDATES_SITE:?set CANDIDATES_SITE}
+      CLIENTS_SITE: ${CLIENTS_SITE:?set CLIENTS_SITE}
+      API_SITE: ${API_SITE:?set API_SITE}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./config:/appconfig:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+
+  # Laptop trials only (docker compose --profile local-s3 …): S3_ENDPOINT=http://minio:9000.
+  minio:
+    profiles: ["local-s3"]
+    image: bitnamilegacy/minio:2025.7.23
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
+      MINIO_DEFAULT_BUCKETS: ${S3_BUCKET_DOCUMENTS},${S3_BUCKET_EXPORTS}
+    volumes:
+      - minio-data:/bitnami/minio/data
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:
+  minio-data:

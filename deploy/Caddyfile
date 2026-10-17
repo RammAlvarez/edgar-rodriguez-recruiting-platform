@@ -1,0 +1,71 @@
+# Same-VM variant (ARCHITECTURE §5): Caddy serves the three apps and proxies the API, with automatic HTTPS for real
+# domains. Site addresses come from the environment (deploy/.env.example); locally they can be http://admin.localhost etc.
+{
+	email {$ACME_EMAIL:admin@example.com}
+}
+
+(app) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+	# Hashed bundles cache for a year; index.html and config.json never.
+	@static path *.js *.css *.woff2 *.png *.svg *.ico
+	header @static Cache-Control "public, max-age=31536000, immutable"
+	header /index.html Cache-Control "no-cache"
+	header /config.json Cache-Control "no-cache"
+	try_files {path} /index.html
+	file_server
+}
+
+{$ADMIN_SITE} {
+	handle /config.json {
+		root * /appconfig
+		rewrite * /admin.json
+		file_server
+	}
+	handle {
+		root * /srv/admin
+		import app
+	}
+}
+
+{$CANDIDATES_SITE} {
+	handle /config.json {
+		root * /appconfig
+		rewrite * /candidates.json
+		file_server
+	}
+	handle {
+		root * /srv/candidates
+		import app
+	}
+}
+
+{$CLIENTS_SITE} {
+	handle /config.json {
+		root * /appconfig
+		rewrite * /clients.json
+		file_server
+	}
+	handle {
+		root * /srv/clients
+		import app
+	}
+}
+
+{$API_SITE} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	# Jobs and bootstrap are for the scheduler and the operator inside the VM network only.
+	@internal path /internal /internal/*
+	respond @internal 404
+	reverse_proxy api:8080
+}

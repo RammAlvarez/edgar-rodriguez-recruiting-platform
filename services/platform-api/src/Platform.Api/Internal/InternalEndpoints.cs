@@ -4,6 +4,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Platform.Core.Access;
 using Platform.Core.Http;
+using Platform.Core.Security;
 using Platform.Core.Users;
 
 namespace Platform.Api.Internal;
@@ -69,6 +70,29 @@ public static class InternalEndpoints
                 return Results.Ok(new BootstrapResponse(user.Uid, user.Email, link));
             })
             .Validate<BootstrapRequest>();
+
+        // Restore drill and go-live (docs/HANDOFF.md): can this ENCRYPTION_KEY read what the database holds? Decrypts one stored
+        // account number and answers ok / failed — never the value.
+        group.MapGet("/health/encryption", async (DbContext db, IFieldCipher cipher, CancellationToken ct) =>
+            {
+                var stored = await db.Database.SqlQuery<byte[]>($"""
+                        SELECT account_number_enc AS "Value" FROM platform.person_bank_accounts
+                        UNION ALL SELECT charge_account_number_enc FROM platform.paying_accounts
+                        LIMIT 1
+                        """).ToListAsync(ct);
+                if (stored.Count == 0)
+                    return Results.Ok(new { status = "no-data", detail = "Aún no hay valores cifrados que probar." });
+                try
+                {
+                    _ = cipher.Decrypt(stored[0]);
+                    return Results.Ok(new { status = "ok", keyId = (int)stored[0][0] });
+                }
+                catch (Exception e) when (e is System.Security.Cryptography.CryptographicException or InvalidOperationException or ArgumentException)
+                {
+                    return Results.Json(new { status = "failed", detail = "La llave no descifra los datos guardados: no es la misma con la que se cifraron." },
+                        statusCode: StatusCodes.Status500InternalServerError);
+                }
+            });
 
         return app;
     }

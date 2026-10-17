@@ -1,0 +1,3 @@
+# pg_dump files of the same-VM backups; never committed.
+*
+!.gitignore
