@@ -124,6 +124,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | role | user_role NOT NULL | roles live here, never in token claims; the client reads them from `GET /v1/me` |
 | client_id | uuid FK clients | required when role = `client`, NULL otherwise (CHECK) |
 | mfa_required | boolean default false | owner can force |
+| mfa_secret_enc, mfa_enabled_at, mfa_last_step, mfa_failed_attempts, mfa_locked_until | | the TOTP secret (encrypted), when it was turned on, the last code's step (a code is good once), the wrong-code count and lock (PLAN D89, E16); `mfa_recovery_codes(user_id, code_hash, used_at)` and `mfa_sessions(user_id, auth_time, verified_at)` beside it |
 | is_active | boolean default true | |
 | last_login_at | timestamptz | |
 | invited_at / accepted_at | timestamptz | |
@@ -270,7 +271,7 @@ positions_catalog(id, name_es UNIQUE, is_active)                       -- "AUXIL
 education_levels(id, name_es UNIQUE, sort_order, is_active)            -- primaria … maestría
 benefits(id, name_es UNIQUE, is_default, is_active)                    -- "Prestaciones de ley", "Vales de despensa", …
 holidays(id, date UNIQUE, name_es, is_mandatory)                       -- LFT art. 74 (generated per year) + client-specific
-notifications(id, user_id FK, kind notification_kind, payload jsonb, read_at, created_at)
+notifications(id, user_id FK, kind notification_kind, title, body, link, dedupe_key, read_at, emailed_at, created_at)   -- as built (E16, D88); UNIQUE(user_id, dedupe_key)
 ```
 
 Catalog rows are deactivated (`is_active`), never deleted, so past records keep their labels; only `holidays` rows are deleted (a wrong date). `POST /v1/catalogs/holidays/statutory {year}` adds the LFT art. 74 days of a year (fraction IX, election days, by hand).

@@ -89,7 +89,7 @@ client_id ∈ { null = all clients, <client> }
 ### 2.3 Authentication and security
 
 - Firebase Auth as identity provider, used only behind an `AuthProvider` interface (ARCHITECTURE §2). Role, grants and client scope live **in the database** (`users`, `user_permissions`), never in token claims; the apps learn them from `GET /v1/me` and the API checks them per route (DATA_MODEL §8).
-- MFA (TOTP) **optional per user** in the Admin app; the owner can make it mandatory for Administradores from Usuarios.
+- MFA (TOTP) **optional per user** in the Admin app; the owner can make it mandatory for Administradores from Usuarios. Built in the platform, not in the identity provider (PLAN D89): asked at every new sign-in, with single-use recovery codes.
 - Email-link sign-in for candidates and clients; the link is bound to the app's domain (`candidates.*` / `clients.*`), so a client link cannot open the admin app.
 - Session: provider token (1 h) refreshed silently by the client adapter; the API verifies it on every request and loads the user row.
 - All personal data access is logged (who viewed/downloaded which document) — see ARCHITECTURE.md §6.

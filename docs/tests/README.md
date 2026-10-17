@@ -14,6 +14,7 @@
 | [2026-10-16-08](2026-10-16-08-s9-prenomina.md) | S9 Incidencias + Prenómina | pass after fixing D-011, D-012; screens on the S8 data; the seeded Semana 38 gate met on a fresh database |
 | [2026-10-16-09](2026-10-16-09-s10-pagos.md) | S10 Archivos de pago + Tarjetas | gate 2 pass; four display fixes in the run; 390 px checked |
 | [2026-10-16-10](2026-10-16-10-s11-reportes-nomina.md) | S11 Reportes de nómina | gate pass (fresh database and browser); two fixes in the run; 390 px checked |
+| [2026-10-16-11](2026-10-16-11-s12-go-live.md) | S12 Notifications, MFA, go-live | import gate pass; same-VM stack and restore drill pass; 500 employees under 2 s; D-013 fixed; 390 px checked |
 
 ## Defects
 
@@ -31,3 +32,4 @@
 | D-010 | 2026-10-16-06 | «Cerrar sesión» on the shared «Sin acceso» page signed out but stayed on the page, which then said «Tu cuenta no tiene acceso» again instead of offering to sign in with another email. | fixed — navigates to «Entrar» after signing out (`libs/ui/src/status-pages.ts`) |
 | D-011 | 2026-10-16-08 | The grid's Cuenta column read «A nombre de NOE ALANIS TREVINO» for the employee's own account: the holder was compared with the name accents included. | fixed — `PrepayrollQueries.SameName` ignores order, case and accents; test `The_holder_is_the_employee_whatever_the_order_case_or_accents` |
 | D-012 | 2026-10-16-08 | «Nueva incidencia» showed an empty Empleado list: `/v1/payroll/incidents/employees` answered 500 (EF cannot sort after projecting into the record). | fixed — sorted before the projection; the pickers are asserted in `PrepayrollTests` |
+| D-013 | 2026-10-16-11 | Two writes for the same person and period at once (a capture and an incidencia) recomputed the same prenómina line together; the second answered 500 (DbUpdateConcurrencyException). Found by the 500-employee load run. | fixed — a transaction-scoped advisory lock per line in one global order (`Prepayrolls.RecomputeAsync`, `EnsureLinesAsync`); `RecomputeConcurrencyTests` |
