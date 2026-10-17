@@ -15,6 +15,7 @@ import { email as emailSchema, type PermissionModule, type UserRole } from '@pla
 import { applyServerErrors, confirm, errorMessage, zodValidator } from '@platform/ui';
 import type { ClientOptionDto, UserDto } from '../data/api-types';
 import { DEFAULT_ADMIN_GRANTS, GRANTS, ROLE_LABELS } from '../data/labels';
+import { MfaRepository } from '../data/mfa-repository';
 import { UsersRepository } from '../data/repositories';
 import { fromGrants, toGrants } from './grants';
 
@@ -85,7 +86,7 @@ export interface UserPanelData {
         }
         @if (editing) {
           <mat-slide-toggle formControlName="isActive">Activo</mat-slide-toggle>
-          <mat-slide-toggle formControlName="mfaRequired">Requerir MFA</mat-slide-toggle>
+          <mat-slide-toggle formControlName="mfaRequired">Requerir verificación en dos pasos</mat-slide-toggle>
         }
         @if (role() === 'administrator') {
           <h3 class="section-title">Permisos delegados</h3>
@@ -116,6 +117,9 @@ export interface UserPanelData {
             <button matButton="outlined" type="button" (click)="resend()" [disabled]="busy() || !data.user!.isActive">
               <mat-icon fontSet="material-symbols-outlined">forward_to_inbox</mat-icon>Reenviar invitación
             </button>
+            @if (data.user!.id !== data.myId && data.user!.role !== 'client') {
+              <button matButton="outlined" type="button" (click)="resetMfa()" [disabled]="busy()">Restablecer verificación en dos pasos</button>
+            }
             @if (data.user!.isActive && data.user!.id !== data.myId) {
               <button matButton="outlined" class="destructive" type="button" (click)="deactivate()" [disabled]="busy()">
                 <mat-icon fontSet="material-symbols-outlined">person_off</mat-icon>Desactivar usuario
@@ -146,6 +150,7 @@ export class UserPanel {
   private readonly users = inject(UsersRepository);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
+  private readonly mfa = inject(MfaRepository);
 
   readonly editing = this.data.user !== null;
   readonly emailLocked = !!this.data.user?.acceptedAt;
@@ -227,6 +232,21 @@ export class UserPanel {
       this.snack.open(r.invitationSent ? `Invitación reenviada a ${r.user.email}` : 'No se pudo enviar el correo', undefined, {
         duration: 4000,
       });
+    });
+  }
+
+  /** A lost phone (PLAN D89): their next sign-in sets it up again if their account requires it. */
+  async resetMfa(): Promise<void> {
+    const u = this.data.user!;
+    const ok = await confirm(this.dialog, {
+      title: '¿Restablecer la verificación en dos pasos?',
+      body: `${u.displayName} tendrá que volver a activarla con su app al iniciar sesión (si su cuenta la requiere). Sus códigos de recuperación dejan de servir.`,
+      confirm: 'Restablecer',
+    });
+    if (!ok) return;
+    await this.run(async () => {
+      await this.mfa.reset(u.id);
+      this.snack.open('Verificación en dos pasos restablecida', undefined, { duration: 4000 });
     });
   }
 

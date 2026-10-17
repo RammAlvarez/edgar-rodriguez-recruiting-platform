@@ -34,6 +34,20 @@ public static partial class UserEndpoints
             })
             .WithName("ListUsers").RequireAccess(Manage);
 
+        // «Restablecer verificación en dos pasos»: a lost phone; the user sets it up again at the next sign-in if it is required.
+        g.MapPost("/{id:guid}/mfa/reset", async (Guid id, DbContext db, RequestContext ctx, CancellationToken ct) =>
+            {
+                if (id == ctx.RequiredPrincipal.UserId)
+                    return ApiResults.Conflict(UserMessages.Self);
+                if (await db.Set<User>().SingleOrDefaultAsync(u => u.Uid == id, ct) is not { } user)
+                    return ApiResults.NotFound(UserMessages.NotFound);
+                await MfaEndpoints.ResetAsync(db, user, ct);
+                await db.SaveChangesAsync(ct);
+                return TypedResults.NoContent();
+            })
+            .WithName("ResetUserMfa").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).RequireAccess(Manage).Invalidates(Tag);
+
         g.MapPost("", Invite)
             .WithName("InviteUser").Validate<InviteUserRequest>().Produces<InviteResultDto>()
             .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status409Conflict)

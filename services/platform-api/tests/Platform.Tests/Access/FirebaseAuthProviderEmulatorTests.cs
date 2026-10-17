@@ -28,6 +28,8 @@ public sealed class FirebaseAuthProviderEmulatorTests
         Assert.NotNull(identity);
         Assert.Equal(uid, identity.Uid);
         Assert.Equal(email, identity.Email);
+        // When that sign-in happened: what a verified MFA code is bound to (PLAN D89).
+        Assert.True(identity.AuthTime > 0);
     }
 
     [Fact]

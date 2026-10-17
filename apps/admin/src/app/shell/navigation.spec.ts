@@ -9,6 +9,8 @@ const me = (role: MeRole, grants: PermissionModule[] = []): MeDto => ({
   role,
   clientId: null,
   mfaRequired: false,
+  mfaEnabled: false,
+  mfaVerified: false,
   grants: grants.map((module) => ({ module, clientId: null })),
   actingFor: null,
   personId: null,
@@ -19,12 +21,32 @@ const paths = (m: MeDto) => visibleNavigation(m).flatMap((s) => s.items.map((i) 
 describe('admin navigation', () => {
   it('shows the owner every section, including both report screens', () => {
     const owner = me('administrator', [
-      'recruiting', 'recruiting_reports', 'payroll_prepayroll', 'payroll_attendance', 'payroll_incidents',
-      'payroll_staff', 'payroll_payment_files', 'payroll_card_requests', 'users',
+      'recruiting',
+      'recruiting_reports',
+      'payroll_prepayroll',
+      'payroll_attendance',
+      'payroll_incidents',
+      'payroll_staff',
+      'payroll_payment_files',
+      'payroll_card_requests',
+      'users',
     ]);
     expect(paths(owner)).toEqual([
-      'inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'reportes', 'personal', 'calendario',
-      'asistencia', 'incidencias', 'prenomina', 'clientes-nomina', 'reportes-nomina', 'usuarios', 'catalogos',
+      'inicio',
+      'vacantes',
+      'candidatos',
+      'reclutadores',
+      'clientes',
+      'reportes',
+      'personal',
+      'calendario',
+      'asistencia',
+      'incidencias',
+      'prenomina',
+      'clientes-nomina',
+      'reportes-nomina',
+      'usuarios',
+      'catalogos',
     ]);
   });
 
@@ -40,7 +62,14 @@ describe('admin navigation', () => {
   });
 
   it('shows Reclutamiento, Inicio and Catálogos only with the recruiting grant', () => {
-    expect(paths(me('administrator', ['recruiting']))).toEqual(['inicio', 'vacantes', 'candidatos', 'reclutadores', 'clientes', 'catalogos']);
+    expect(paths(me('administrator', ['recruiting']))).toEqual([
+      'inicio',
+      'vacantes',
+      'candidatos',
+      'reclutadores',
+      'clientes',
+      'catalogos',
+    ]);
   });
 
   it('shows an administrator covering a recruiter exactly the recruiter workspace (SPEC §4.4)', () => {

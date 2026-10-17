@@ -40,7 +40,8 @@ public sealed class FirebaseAuthProvider : IAuthProvider
             var decoded = await _auth.Value.VerifyIdTokenAsync(token, cancellationToken);
             decoded.Claims.TryGetValue("email", out var email);
             decoded.Claims.TryGetValue("email_verified", out var verified);
-            return new VerifiedIdentity(decoded.Uid, email as string, verified is true);
+            decoded.Claims.TryGetValue("auth_time", out var authTime);
+            return new VerifiedIdentity(decoded.Uid, email as string, verified is true, authTime is null ? null : Convert.ToInt64(authTime, System.Globalization.CultureInfo.InvariantCulture));
         }
         catch (FirebaseAuthException)
         {

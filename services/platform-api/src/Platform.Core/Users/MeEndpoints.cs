@@ -35,7 +35,9 @@ public sealed record MeDto(
     bool MfaRequired,
     IReadOnlyList<GrantDto> Grants,
     ActingForDto? ActingFor,
-    Guid? PersonId);
+    Guid? PersonId,
+    bool MfaEnabled = false,
+    bool MfaVerified = false);
 
 public static class MeEndpoints
 {
@@ -101,6 +103,6 @@ public static class MeEndpoints
         };
         return new MeDto(p.UserId, p.DisplayName, p.Email, role, p.ClientId, p.MfaRequired,
             p.Grants.Select(g => new GrantDto(g.Module, g.ClientId)).ToList(),
-            ctx.ActingFor is { } a ? new ActingForDto(a.UserId, a.DisplayName) : null, null);
+            ctx.ActingFor is { } a ? new ActingForDto(a.UserId, a.DisplayName) : null, null, p.MfaEnabled, p.MfaVerified);
     }
 }

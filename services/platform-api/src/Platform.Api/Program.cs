@@ -124,6 +124,7 @@ app.MapGet("/health", async (DbContext db, IObjectStorage storage, CancellationT
 
 var v1 = app.MapGroup("/v1");
 v1.MapMeEndpoints();
+v1.MapMfaEndpoints();
 v1.MapCatalogEndpoints();
 v1.MapClientEndpoints();
 v1.MapPeopleEndpoints();

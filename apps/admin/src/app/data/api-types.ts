@@ -137,3 +137,5 @@ export type PayrollReportOptionsDto = S['PayrollReportOptionsDto'];
 export type ReportCell = S['ReportCell'];
 export type NotificationsDto = S['NotificationsDto'];
 export type NotificationDto = S['NotificationDto'];
+export type MfaSetupDto = S['MfaSetupDto'];
+export type MfaRecoveryCodesDto = S['MfaRecoveryCodesDto'];

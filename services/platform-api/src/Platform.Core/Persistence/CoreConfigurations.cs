@@ -20,6 +20,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(u => u.Email).HasColumnType("citext");
         b.HasIndex(u => u.Email).IsUnique();
         b.Property(u => u.MfaRequired).HasDefaultValue(false).HasSentinel(false);
+        b.Property(u => u.MfaFailedAttempts).HasDefaultValue(0).HasSentinel(0);
         b.Property(u => u.IsActive).HasDefaultValue(true).HasSentinel(true);
         b.HasOne<Client>().WithMany().HasForeignKey(u => u.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasMany(u => u.Permissions).WithOne().HasForeignKey(p => p.UserId).HasPrincipalKey(u => u.Uid).OnDelete(DeleteBehavior.Cascade);

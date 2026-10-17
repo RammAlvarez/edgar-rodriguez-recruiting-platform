@@ -41,6 +41,10 @@
       <mat-menu #userMenu="matMenu" xPosition="before">
         <div class="user-label">{{ userLabel() }}</div>
         <mat-divider />
+        <a mat-menu-item routerLink="/verificacion">
+          <mat-icon fontSet="material-symbols-outlined">shield_lock</mat-icon>
+          <span>Verificación en dos pasos</span>
+        </a>
         <button mat-menu-item type="button" (click)="signOut()">
           <mat-icon fontSet="material-symbols-outlined">logout</mat-icon>
           <span>Cerrar sesión</span>

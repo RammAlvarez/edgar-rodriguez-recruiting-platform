@@ -14,6 +14,13 @@ public sealed class User : IStamped
     public UserRole Role { get; set; }
     public Guid? ClientId { get; set; }
     public bool MfaRequired { get; set; }
+    /// <summary>The TOTP secret, encrypted like the account numbers (D89); set at «Activar», kept once enabled.</summary>
+    public byte[]? MfaSecretEnc { get; set; }
+    public DateTimeOffset? MfaEnabledAt { get; set; }
+    /// <summary>The last code's time step: a code is good once.</summary>
+    public long? MfaLastStep { get; set; }
+    public int MfaFailedAttempts { get; set; }
+    public DateTimeOffset? MfaLockedUntil { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTimeOffset? LastLoginAt { get; set; }
     public DateTimeOffset? InvitedAt { get; set; }

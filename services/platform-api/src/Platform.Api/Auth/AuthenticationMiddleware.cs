@@ -18,6 +18,12 @@ public sealed class AuthenticationMiddleware(RequestDelegate next)
 {
     public const string ActingForHeader = "X-Acting-For";
 
+    /// <summary>What a user pending the MFA code may still call: who they are, the session start, and the MFA routes.</summary>
+    private static bool MfaExempt(HttpRequest request) =>
+        request.Path.Equals("/v1/me", StringComparison.OrdinalIgnoreCase)
+        || request.Path.Equals("/v1/me/sessions", StringComparison.OrdinalIgnoreCase)
+        || request.Path.StartsWithSegments("/v1/me/mfa", StringComparison.OrdinalIgnoreCase);
+
     public async Task InvokeAsync(HttpContext http, RequestContext ctx, IAuthProvider auth, DbContext db)
     {
         ctx.RequestId = http.TraceIdentifier;
@@ -58,10 +64,23 @@ public sealed class AuthenticationMiddleware(RequestDelegate next)
                 return;
             }
 
+            ctx.AuthTime = identity.AuthTime;
+            var mfaEnabled = user.MfaEnabledAt is not null;
+            var mfaVerified = mfaEnabled && identity.AuthTime is { } signedInAt
+                && await db.Set<MfaSession>().AnyAsync(s => s.UserId == user.Uid && s.AuthTime == signedInAt, http.RequestAborted);
             ctx.Principal = new Principal(user.Uid, user.DisplayName, user.Email, user.Role, user.ClientId, user.MfaRequired,
                 user.Role == UserRole.Administrator
                     ? user.Permissions.Select(p => new Grant(p.Module, p.ClientId)).ToList()
-                    : []);
+                    : [],
+                mfaEnabled, mfaVerified);
+
+            // Verificación en dos pasos (D89): staff who have it, or must, pass the code before anything but /me and /me/mfa.
+            if (user.Role is UserRole.Administrator or UserRole.Recruiter && (mfaEnabled || user.MfaRequired) && !mfaVerified
+                && !MfaExempt(http.Request))
+            {
+                await MfaEndpoints.Problem(enrolled: mfaEnabled).ExecuteAsync(http);
+                return;
+            }
 
             if (http.Request.Headers.TryGetValue(ActingForHeader, out var actingFor) && actingFor.ToString() is { Length: > 0 } raw)
             {

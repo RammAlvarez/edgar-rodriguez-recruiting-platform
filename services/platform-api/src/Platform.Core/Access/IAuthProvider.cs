@@ -1,7 +1,11 @@
 namespace Platform.Core.Access;
 
 /// <summary>What the identity provider vouches for. Roles are never read from the token (D36).</summary>
-public sealed record VerifiedIdentity(string Uid, string? Email, bool EmailVerified);
+/// <summary>
+/// A verified token. <paramref name="AuthTime"/> is when that sign-in happened (seconds since 1970): the same for every
+/// refreshed token of one sign-in, new on the next — what a verified MFA code is bound to (PLAN D89).
+/// </summary>
+public sealed record VerifiedIdentity(string Uid, string? Email, bool EmailVerified, long? AuthTime = null);
 
 /// <summary>
 /// The server side of the identity provider (ARCHITECTURE §2). The only implementation that talks to a vendor lives in

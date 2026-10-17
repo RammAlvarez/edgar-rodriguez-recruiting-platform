@@ -2096,6 +2096,86 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Platform.Core.Users.MfaRecoveryCode", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mfa_recovery_codes");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_mfa_recovery_codes_uid");
+
+                    b.HasIndex("UserId", "CodeHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_mfa_recovery_codes_user_id_code_hash");
+
+                    b.ToTable("mfa_recovery_codes", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Core.Users.MfaSession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AuthTime")
+                        .HasColumnType("bigint")
+                        .HasColumnName("auth_time");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTimeOffset>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verified_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mfa_sessions");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_mfa_sessions_uid");
+
+                    b.HasIndex("UserId", "AuthTime")
+                        .IsUnique()
+                        .HasDatabaseName("ix_mfa_sessions_user_id_auth_time");
+
+                    b.ToTable("mfa_sessions", "platform");
+                });
+
             modelBuilder.Entity("Platform.Core.Users.User", b =>
                 {
                     b.Property<long>("Id")
@@ -2152,11 +2232,33 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
 
+                    b.Property<DateTimeOffset?>("MfaEnabledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("mfa_enabled_at");
+
+                    b.Property<int>("MfaFailedAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("mfa_failed_attempts");
+
+                    b.Property<long?>("MfaLastStep")
+                        .HasColumnType("bigint")
+                        .HasColumnName("mfa_last_step");
+
+                    b.Property<DateTimeOffset?>("MfaLockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("mfa_locked_until");
+
                     b.Property<bool>("MfaRequired")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("mfa_required");
+
+                    b.Property<byte[]>("MfaSecretEnc")
+                        .HasColumnType("bytea")
+                        .HasColumnName("mfa_secret_enc");
 
                     b.Property<string>("Phone")
                         .HasColumnType("text")
@@ -4615,6 +4717,28 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasPrincipalKey("Uid")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_person_documents_users_validated_by");
+                });
+
+            modelBuilder.Entity("Platform.Core.Users.MfaRecoveryCode", b =>
+                {
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_mfa_recovery_codes_users_user_id");
+                });
+
+            modelBuilder.Entity("Platform.Core.Users.MfaSession", b =>
+                {
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_mfa_sessions_users_user_id");
                 });
 
             modelBuilder.Entity("Platform.Core.Users.User", b =>

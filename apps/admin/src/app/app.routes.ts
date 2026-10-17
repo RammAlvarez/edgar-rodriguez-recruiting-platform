@@ -3,6 +3,7 @@ import { type CanActivateFn, Router, type Routes } from '@angular/router';
 import type { MeRole, PermissionModule } from '@platform/shared';
 import { accessGuard, signedInGuard, signedOutGuard } from '@platform/ui/guards';
 import { Session } from '@platform/ui/session';
+import { mfaGuard } from './security/mfa-guard';
 import { CoverMode } from './shell/cover-mode';
 import { ALL_NAV_ITEMS, homePath } from './shell/navigation';
 
@@ -57,9 +58,15 @@ export const routes: Routes = [
   { path: 'entrar', loadComponent: () => import('./sign-in/sign-in').then((m) => m.SignIn), canActivate: [signedOutGuard], title: 'Entrar' },
   { path: 'sin-acceso', loadComponent: () => import('@platform/ui/status-pages').then((m) => m.NoAccessPage), title: 'Sin acceso' },
   {
+    path: 'verificacion',
+    loadComponent: () => import('./security/mfa-page').then((m) => m.MfaPage),
+    canActivate: [signedInGuard],
+    title: 'Verificación en dos pasos',
+  },
+  {
     path: '',
     loadComponent: () => import('./shell/shell').then((m) => m.Shell),
-    canActivate: [signedInGuard],
+    canActivate: [signedInGuard, mfaGuard],
     children: [
       { path: '', pathMatch: 'full', canActivate: [homeRedirect], children: [] },
       // Every section of the sidebar; each slice of docs/PLAN.md replaces its placeholder with the real screen.

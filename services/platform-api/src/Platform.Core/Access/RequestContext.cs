@@ -12,7 +12,9 @@ public sealed record Principal(
     UserRole Role,
     Guid? ClientId,
     bool MfaRequired,
-    IReadOnlyList<Grant> Grants)
+    IReadOnlyList<Grant> Grants,
+    bool MfaEnabled = false,
+    bool MfaVerified = false)
 {
     public bool IsAdministrator => Role == UserRole.Administrator;
 
@@ -42,6 +44,8 @@ public sealed record ActingFor(Guid UserId, string DisplayName);
 public sealed class RequestContext
 {
     public string RequestId { get; set; } = "";
+    /// <summary>When the caller's sign-in happened (the provider's <c>auth_time</c>): what a verified MFA code is bound to.</summary>
+    public long? AuthTime { get; set; }
     public Principal? Principal { get; set; }
     public CandidatePrincipal? Candidate { get; set; }
     public ActingFor? ActingFor { get; set; }
