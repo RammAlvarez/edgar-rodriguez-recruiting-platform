@@ -52,3 +52,25 @@ export class ComingSoonPage {
   readonly title = input.required<string>();
   readonly icon = input('construction');
 }
+
+/** While the session waits out a 429 on `/v1/me` (PLAN D92), the guards hold every route: say why instead of a blank page. */
+@Component({
+  selector: 'ui-session-wait',
+  imports: [MatIcon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @if (message(); as text) {
+      <main class="page empty-state" role="status">
+        <mat-icon fontSet="material-symbols-outlined">hourglass_top</mat-icon>
+        <p>{{ text }}</p>
+      </main>
+    }
+  `,
+})
+export class SessionWait {
+  private readonly session = inject(Session);
+  readonly message = computed(() => {
+    const s = this.session.state();
+    return s.status === 'loading' ? (s.message ?? null) : null;
+  });
+}

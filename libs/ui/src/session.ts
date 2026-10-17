@@ -4,7 +4,7 @@ import type { MeDto, PermissionModule } from '@platform/shared';
 import { API_CLIENT, AUTH_PROVIDER } from './api';
 
 export type SessionState =
-  | { readonly status: 'loading' }
+  | { readonly status: 'loading'; readonly message?: string }
   | { readonly status: 'signed-out' }
   | { readonly status: 'ready'; readonly me: MeDto }
   | { readonly status: 'denied'; readonly message: string };
@@ -60,6 +60,11 @@ export class Session {
     } catch (e) {
       if (e instanceof ApiError && (e.isForbidden || e.isUnauthorized))
         this.stateSignal.set({ status: 'denied', message: e.message });
+      // Too many requests (PLAN D92): stay loading and ask again when the API says.
+      else if (e instanceof ApiError && e.isRateLimited) {
+        this.stateSignal.set({ status: 'loading', message: e.message });
+        setTimeout(() => void this.load(start), (e.retryAfterSeconds ?? 5) * 1000);
+      }
       else throw e;
     }
   }

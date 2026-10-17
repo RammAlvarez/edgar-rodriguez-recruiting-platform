@@ -114,7 +114,8 @@ public static class ClientPortalEndpoints
                 return TypedResults.Ok((await Comments(db, db.Set<OpeningComment>().Where(c => c.Uid == comment.Uid), false, ct)).Single());
             })
             .WithName("PostClientOpeningComment").Validate<ClientCommentRequest>().Produces<ClientCommentDto>()
-            .ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Client).Invalidates(Tag, OpeningEndpoints.Tag);
+            .ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Client).Invalidates(Tag, OpeningEndpoints.Tag)
+            .RequireRateLimiting(RateLimitPolicies.Comments);
 
         // «Comentarios»: the latest messages across the client's vacantes, newest first.
         g.MapGet("/comments", async (DbContext db, RequestContext ctx, CancellationToken ct) =>

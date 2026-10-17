@@ -45,7 +45,8 @@ public static class CandidatePortalEndpoints
                     DuplicateId, ct);
             })
             .WithName("UpdateCandidateProfile").Validate<CandidateProfileRequest>().Produces<CandidateProfileDto>()
-            .ProducesProblem(StatusCodes.Status409Conflict).RequireAccess(AccessRule.Candidate).Invalidates(Tag, PeopleEndpoints.Tag);
+            .ProducesProblem(StatusCodes.Status409Conflict).RequireAccess(AccessRule.Candidate).Invalidates(Tag, PeopleEndpoints.Tag)
+            .RequireRateLimiting(RateLimitPolicies.Profile);
 
         // «Cuenta para tu pago» (SPEC §7, PLAN D77 → S7): the candidate adds the account they want to be paid to once hired; it
         // becomes their principal account. Only the last four digits ever come back.
@@ -64,7 +65,7 @@ public static class CandidatePortalEndpoints
                 return TypedResults.Ok(await BankAccounts.ListAsync(db, person.Uid, clock.Today(), ct));
             })
             .WithName("AddCandidateBankAccount").Validate<BankAccountRequest>().Produces<List<BankAccountDto>>()
-            .RequireAccess(AccessRule.Candidate).Invalidates(Tag);
+            .RequireAccess(AccessRule.Candidate).Invalidates(Tag).RequireRateLimiting(RateLimitPolicies.BankAccounts);
 
         g.MapGet("/banks", async (DbContext db, CancellationToken ct) =>
                 TypedResults.Ok(await db.Set<Platform.Core.Catalogs.Bank>().Where(b => b.IsActive).OrderBy(b => b.Name)

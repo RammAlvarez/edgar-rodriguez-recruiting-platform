@@ -21,6 +21,7 @@ D54/D91). Tried end to end on a laptop on 2026-10-16 (run 11).
 6. Owner and import: HANDOFF §3 steps 8–10, with `API_URL=http://api:8080` from inside the network
    (`docker compose … exec scheduler sh` has curl), or through `https://api.<domain>` for `/v1`.
 7. Backups: the host's cron, HANDOFF §5.
+8. Leave `TRUSTED_PROXY_HOPS` at 1: Caddy replaces any `X-Forwarded-For` the browser sends, and the API has no public port.
 
 ## Upgrades
 

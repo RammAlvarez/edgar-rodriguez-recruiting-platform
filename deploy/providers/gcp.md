@@ -72,6 +72,8 @@ gcloud run deploy platform-scheduler --image …/scheduler:2026-10-17 --region u
 The API's `/internal/*` stays on its public URL protected by `INTERNAL_SECRET` (≥ 32 characters, compared in constant time);
 for a tighter setup, put the API behind a load balancer with a rule that blocks `/internal`, and let the scheduler call the
 Cloud Run URL directly. Map `api.<domain>` with `gcloud run domain-mappings create` (or the load balancer).
+Put `TRUSTED_PROXY_HOPS=1` in `api.env.yaml` for the `run.app` URL or a domain mapping, `2` behind a load balancer, and
+check it once (HANDOFF §9: `ClientIp` in the request log is the caller's own address).
 
 Every upgrade: build and push, `gcloud run jobs update platform-migrate --image …` + `execute --wait`, then
 `gcloud run deploy platform-api --image …`.

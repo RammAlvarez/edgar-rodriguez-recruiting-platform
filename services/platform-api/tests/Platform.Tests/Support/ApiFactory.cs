@@ -12,7 +12,7 @@ using Platform.Infrastructure.Persistence;
 namespace Platform.Tests.Support;
 
 /// <summary>The real API host against the test database, with the fake identity provider.</summary>
-public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string InternalSecret = "test-internal-secret-0123456789-abcdefghij";
 
@@ -24,11 +24,28 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public FakeClock Clock { get; } = new();
 
+    /// <summary>
+    /// The suite shares one host and one client address, so its limits are off (0); <c>RateLimitTests</c> sets small ones
+    /// (PLAN D92).
+    /// </summary>
+    protected virtual IReadOnlyDictionary<string, string> RateLimits { get; } = new Dictionary<string, string>
+    {
+        ["RATE_LIMIT_IP_PER_MINUTE"] = "0",
+        ["RATE_LIMIT_PORTAL_PER_MINUTE"] = "0",
+        ["RATE_LIMIT_STAFF_PER_MINUTE"] = "0",
+        ["RATE_LIMIT_UPLOADS_PER_HOUR"] = "0",
+        ["RATE_LIMIT_BANK_ACCOUNTS_PER_HOUR"] = "0",
+        ["RATE_LIMIT_PROFILE_PER_10_MINUTES"] = "0",
+        ["RATE_LIMIT_COMMENTS_PER_HOUR"] = "0",
+    };
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("DATABASE_URL", TestDatabase.ApiConnectionString);
         builder.UseSetting("INTERNAL_SECRET", InternalSecret);
+        foreach (var (key, value) in RateLimits)
+            builder.UseSetting(key, value);
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<IAuthProvider>(Auth);

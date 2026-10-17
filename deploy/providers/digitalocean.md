@@ -40,6 +40,7 @@ Create the app from the repository with:
   (or commit a per-environment config through a build-time variable), output `dist/<app>/browser`, catch-all document
   `index.html`.
 
+`TRUSTED_PROXY_HOPS=1` (App Platform's router appends `X-Forwarded-For`); check it once as in HANDOFF §9.
 Block `/internal` from the public route if your plan allows a path rule; otherwise it is protected by `INTERNAL_SECRET`.
 Domains: add `admin.`, `candidatos.`, `clientes.`, `api.` to the app (App Platform issues the certificates), then to
 Firebase Auth → Authorized domains and to `APP_ORIGINS`.

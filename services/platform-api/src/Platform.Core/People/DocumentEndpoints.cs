@@ -44,7 +44,7 @@ public static class DocumentEndpoints
             })
             .WithName("PresignDocumentUpload").WithTags("Documents").Validate<PresignUploadRequest>()
             .Produces<PresignUploadResponse>().ProducesProblem(StatusCodes.Status404NotFound)
-            .RequireAccess(StaffOrCandidate).Invalidates(Tag);
+            .RequireAccess(StaffOrCandidate).Invalidates(Tag).RequireRateLimiting(RateLimitPolicies.Uploads);
 
         var people = v1.MapGroup("/people/{personId:guid}/documents").WithTags("Documents");
 

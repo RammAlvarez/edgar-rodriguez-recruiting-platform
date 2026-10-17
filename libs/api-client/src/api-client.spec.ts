@@ -76,6 +76,21 @@ describe('ApiClient', () => {
     expect(other).not.toHaveBeenCalled();
   });
 
+  it('reads a 429 as rate limited, with its Retry-After and a Spanish message even without a body', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(respond(429, { title: 'Demasiadas solicitudes', detail: 'Inténtalo de nuevo en 3 minutos.' }, { 'Retry-After': '170' }))
+      .mockResolvedValueOnce(new Response('', { status: 429 }));
+    const client = new ApiClient({ baseUrl: 'http://api.test', auth: auth(), fetch });
+    const first = (await client.get('/v1/me').catch((e: unknown) => e)) as ApiError;
+    expect(first.isRateLimited).toBe(true);
+    expect(first.retryAfterSeconds).toBe(170);
+    expect(first.message).toBe('Inténtalo de nuevo en 3 minutos.');
+    const bare = (await client.get('/v1/me').catch((e: unknown) => e)) as ApiError;
+    expect(bare.retryAfterSeconds).toBeNull();
+    expect(bare.message).toContain('demasiadas solicitudes');
+  });
+
   it('turns a network failure into a Spanish ApiError', async () => {
     const client = new ApiClient({
       baseUrl: 'http://api.test',

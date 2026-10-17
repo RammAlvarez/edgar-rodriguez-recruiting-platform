@@ -34,6 +34,7 @@ Development every one is required. The ones that need care:
 | `DATABASE_URL` / `MIGRATIONS_DATABASE_URL` | `platform_api` for the API, `platform_owner` for migrations — never the superuser. `?sslmode=require` on managed databases. |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | one line; lets the API create users and password links. |
 | `APP_ORIGINS` | the three app URLs exactly; nothing else gets CORS. |
+| `RATE_LIMIT_*`, `TRUSTED_PROXY_HOPS` | request limits (PLAN D92); the defaults fit 500 employees. `TRUSTED_PROXY_HOPS` must match the proxies in front of the API (1 for Caddy, Cloud Run, App Platform; 2 behind a load balancer), or every request counts against the proxy's address — or a forged header picks its own. |
 
 The apps' `/config.json` (`deploy/config/*.json.example`): `apiUrl` and the Firebase **web** config (apiKey, authDomain,
 projectId). It is public by nature; it changes per environment without rebuilding.
@@ -155,6 +156,14 @@ API on the copy answered `ok`, and another key answered `failed`.
   per job with `ok` / `failed`.
 - A failed job runs again at its next tick; `attendance-lock` every 15 minutes recovers by itself.
 - `/internal/health/encryption` after any change of secrets.
+- **After the first deploy, check `TRUSTED_PROXY_HOPS`:** open any app from your phone on mobile data, and find that request's log
+  line: its `ClientIp` must be the phone's public address, not the proxy's (a private `10.…`/`172.…` address) nor an address
+  you never had.
+- `Rate limit hit` warnings (PLAN D92) name the route, the person or `anonymous`, and the address. A few from one person
+  are a stuck screen or a script; many `anonymous` from one address are someone guessing. If an office of staff ever gets
+  429s together, `TRUSTED_PROXY_HOPS` is probably wrong (everyone counted as the proxy) or raise `RATE_LIMIT_IP_PER_MINUTE`.
+- The sign-in emails of the Candidates and Clients apps are sent by Firebase, not by the API, so these limits do not cover
+  them; Firebase applies its own per-project quotas (Authentication → Usage).
 
 ## 10. Who to call
 

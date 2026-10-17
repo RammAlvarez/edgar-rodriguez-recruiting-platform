@@ -63,6 +63,7 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithExposedHeaders(InvalidatesExtensions.HeaderName)));
 
 builder.Services.AddSingleton(settings);
+builder.Services.AddPlatformRateLimiting(settings.RateLimits);
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<RequestContext>();
 builder.Services.AddScoped<DataAccess>();
@@ -95,12 +96,19 @@ builder.Services.AddValidatorsFromAssemblyContaining<PayrollGroupRequest>(includ
 
 var app = builder.Build();
 
-app.UseSerilogRequestLogging();
+if (settings.RateLimits.TrustedProxyHops > 0)
+    app.UseForwardedHeaders();
+// ClientIp after the forwarded headers: what the per-address limit counts (PLAN D92, HANDOFF §9).
+app.UseSerilogRequestLogging(o => o.EnrichDiagnosticContext = (log, http) =>
+    log.Set("ClientIp", http.Connection.RemoteIpAddress?.ToString()));
 app.UseRouting();
 app.UseExceptionHandler();
 app.UseCors();
 app.UseInvalidatesHeader();
+// PLAN D92: per address before the token is checked, per person after.
+app.UseMiddleware<IpRateLimitMiddleware>();
 app.UseMiddleware<AuthenticationMiddleware>();
+app.UseRateLimiter();
 
 app.MapOpenApi("/openapi/{documentName}.json");
 
