@@ -16,7 +16,10 @@
 //   S8  a field supervisor (Asistencia, ECOVIA only), the current periods, today's ECOVIA capture and yesterday's via unlock;
 //   S9  Semana 38's attendance as the workbook implies (D84), written through the unlock path; periods 38 and 42 created; the
 //       lock job closes them to Revisión; the comments of SEM 38 without bank data; and the gate: Semana 38's grid totals
-//       334,654.83 payable and 334,655.149146 exact (D41), or the seed fails. Skipped once Semana 38 exists.
+//       334,654.83 payable and 334,655.149146 exact (D41), or the seed fails. Skipped once Semana 38 exists;
+//   S10 the cuenta de cargo (MAXIMA REPARACION Y LIMPIEZA SA DE CV at Banco Azteca, a generated number — never the client's) and
+//       the data the bank asks for (CURP, RFC, address, phone, birth) of the two people waiting for a card, so an alta file can be
+//       generated. Semana 38 stays En revisión: the browser check pays it. Skipped once a cuenta de cargo exists.
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
 import { GOLDEN, SEM38, sem38Rows, sem38Week } from './lib/sem38.mjs';
 import { addDays, candidatos as sampleCandidates, clients as sampleClients, empleados as sampleEmployees, payrollGroups as samplePayrollGroups, puestos as samplePositions, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
@@ -456,4 +459,45 @@ if ((await api(token, 'GET', '/v1/users')).body.some((u) => u.email === SUPERVIS
     if (!same) throw new Error(`SEM 38 gate failed: expected ${JSON.stringify(GOLDEN)}, the grid has ${JSON.stringify(got)}`);
     console.log(`semana 38: ${writes.length} days loaded, ${grid.rows.length} lines in ${grid.period.status}; total ${got.totalNet} (exact ${got.totalNetExact}) = golden`);
   }
+}
+
+// ---- S10: cuenta de cargo, and the queued cards' data ----
+if ((await api(token, 'GET', '/v1/payroll/paying-account')).status === 200) {
+  console.log('cuenta de cargo: already there, skipped');
+} else {
+  // A made-up 14-digit Azteca account: the client's real one is typed by the owner in Prenómina → Pagar → Cuenta de cargo.
+  const account = (await api(token, 'PUT', '/v1/payroll/paying-account', {
+    name: 'Cuenta Azteca — MAXIMA', chargeAccountNumber: '01990000004271', holderName: 'MAXIMA REPARACION Y LIMPIEZA SA DE CV',
+    holderRfc: 'MRL2407307G7', chargeLegend: 'PAGO', creditLegend: 'PAGO',
+  })).body;
+
+  // The queued requests' people only had a name: give them what Banorte / Banregio ask for, built from that name.
+  const plain = (s) => (s ?? '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/Ñ/g, 'X').replace(/[^A-Z]/g, '');
+  const vowel = (s) => [...plain(s).slice(1)].find((c) => 'AEIOU'.includes(c)) ?? 'X';
+  const consonant = (s) => [...plain(s).slice(1)].find((c) => !'AEIOU'.includes(c)) ?? 'X';
+  const BIRTH = [['1995-03-14', 'male', '8114567392', 'Calle Hidalgo', '245'], ['1998-07-02', 'female', '8127364519', 'Av Constitucion', '1180']];
+  const queue = (await api(token, 'GET', '/v1/card-requests')).body;
+  for (const [i, r] of queue.entries()) {
+    const employee = (await api(token, 'GET', `/v1/employees/${r.employeeId}`)).body;
+    const p = (await api(token, 'GET', `/v1/people/${employee.personId}`)).body;
+    const [birth, gender, mobile, street, number] = BIRTH[i % BIRTH.length];
+    const ymd = birth.slice(2).replaceAll('-', '');
+    const initials = plain(p.lastNamePaternal)[0] + vowel(p.lastNamePaternal) + (plain(p.lastNameMaternal)[0] ?? 'X') + plain(p.firstNames)[0];
+    const curp = initials + ymd + (gender === 'male' ? 'H' : 'M') + 'NL' + consonant(p.lastNamePaternal) + consonant(p.lastNameMaternal)
+      + consonant(p.firstNames) + '0' + String(i + 1);
+    await api(token, 'PUT', `/v1/people/${p.id}`, {
+      ...p, birthDate: birth, birthState: 'Nuevo León', gender, curp, rfc: initials + ymd + 'AB' + String(i + 1), mobilePhone: mobile,
+      email: `${plain(p.firstNames).toLowerCase()}.${plain(p.lastNamePaternal).toLowerCase()}@local.test`, street, extNumber: number,
+      neighborhood: 'Centro', postalCode: '64000', municipality: 'Monterrey', state: 'Nuevo León',
+    });
+  }
+  const ready = [];
+  for (const bank of ['banorte', 'banregio']) {
+    const preview = (await api(token, 'GET', `/v1/card-batches/preview?bank=${bank}&branchToSend=01234`)).body;
+    if (preview.rows.length && !preview.canGenerate) {
+      throw new Error(`S10: the ${bank} alta file would not generate: ${JSON.stringify(preview.rows.map((x) => x.issues))}`);
+    }
+    ready.push(`${bank} ${preview.rows.length}`);
+  }
+  console.log(`cuenta de cargo ·${account.last4}; cards ready for an alta file: ${ready.join(', ')}`);
 }

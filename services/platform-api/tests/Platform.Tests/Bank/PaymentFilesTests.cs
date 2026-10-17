@@ -244,6 +244,7 @@ public sealed class PaymentFilesTests(ApiFactory factory) : ApiTest(factory)
     public async Task Without_a_review_or_a_paying_account_nothing_is_generated_and_two_clicks_make_one_file()
     {
         var w = await ArrangeAsync(withPayingAccount: false);
+        Assert.Equal(HttpStatusCode.NoContent, (await _owner.GetAsync("/v1/payroll/paying-account")).StatusCode);
         var panel = await Panel(w.Period);
         Assert.Equal((false, PaymentFiles.NoPayingAccount), (panel.GetProperty("canGenerate").GetBoolean(), panel.GetProperty("cannotGenerate").GetString()));
         Assert.Equal(PaymentFiles.NoPayingAccount, await DetailOf(await _owner.PostAsync($"/v1/payroll/periods/{w.Period}/payment-files", null)));

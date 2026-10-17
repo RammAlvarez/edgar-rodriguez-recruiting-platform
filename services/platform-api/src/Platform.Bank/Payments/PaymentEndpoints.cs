@@ -285,11 +285,12 @@ public static class PaymentEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, PrepayrollEndpoints.Tag)
             .RequireAccess(Access);
 
+        // 204 until the owner types the cuenta de cargo.
         g.MapGet("/paying-account", async (DbContext db, CancellationToken ct) =>
-                TypedResults.Ok(await db.Set<PayingAccount>().AsNoTracking().OrderBy(a => a.Id).FirstOrDefaultAsync(ct) is { } a
-                    ? PaymentFiles.Dto(a)
-                    : null))
-            .WithName("GetPayingAccount").Produces<PayingAccountDto>().RequireAccess(Access);
+                await db.Set<PayingAccount>().AsNoTracking().OrderBy(a => a.Id).FirstOrDefaultAsync(ct) is { } a
+                    ? Results.Ok(PaymentFiles.Dto(a))
+                    : Results.NoContent())
+            .WithName("GetPayingAccount").Produces<PayingAccountDto>().Produces(StatusCodes.Status204NoContent).RequireAccess(Access);
 
         // One account for every client: only a grant over all of them changes it.
         g.MapPut("/paying-account", async (PayingAccountRequest r, DbContext db, RequestContext ctx, IFieldCipher cipher, CancellationToken ct) =>

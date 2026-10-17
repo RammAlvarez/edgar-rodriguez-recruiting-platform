@@ -10733,6 +10733,13 @@ export interface operations {
                     "application/json": components["schemas"]["PayingAccountDto"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     SetPayingAccount: {
