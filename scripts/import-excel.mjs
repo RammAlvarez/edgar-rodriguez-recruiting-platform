@@ -4,6 +4,9 @@
 //
 //   API_URL=https://api.example.com IMPORT_TOKEN=<owner's ID token> node scripts/import-excel.mjs --dir ./excel --out ./import.md
 //
+// --dir holds the six workbooks under the sample names of FILES below; a copy named otherwise is passed by path with its key
+// (--recruiting, --sem38, --banorte, --banregio, --master, --frequent). Missing ones stop the run before anything is written.
+//
 // Locally (Auth emulator) it signs in as IMPORT_EMAIL / IMPORT_PASSWORD (default: the seed's owner). With MFA on, pass the
 // current code in IMPORT_MFA_CODE. It refuses an installation that already has payroll groups or employees.
 //
@@ -14,7 +17,7 @@
 // What it reports and does not load: vacantes and candidatos rows (captured in the app, D90), recruiters (they need an email to
 // be invited), and bank-file rows that match no imported person. The report prints names and last four digits only — never
 // an account number — and is personal data: keep it private.
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadEnv } from './lib/env.mjs';
@@ -29,6 +32,13 @@ const { values: args } = parseArgs({
     force: { type: 'boolean', default: false },
     // Someone without an account in COMENTARIOS is queued for a card here (an alta needs one or the other, D82).
     'card-bank': { type: 'string', default: 'banorte' },
+    // Each workbook by its own path when the client's copy is named differently from the samples (FILES below).
+    recruiting: { type: 'string' },
+    sem38: { type: 'string' },
+    banorte: { type: 'string' },
+    banregio: { type: 'string' },
+    master: { type: 'string' },
+    frequent: { type: 'string' },
   },
 });
 const env = loadEnv();
@@ -41,7 +51,12 @@ const FILES = {
   master: 'Lo HFC MAESTRO 14AGOSTO.xlsx',
   frequent: 'cuentasfrec21sept.xlsx',
 };
-const file = (key) => join(args.dir, FILES[key]);
+const file = (key) => args[key] ?? join(args.dir, FILES[key]);
+const absent = Object.keys(FILES).filter((key) => !existsSync(file(key)));
+if (absent.length) {
+  throw new Error(`Missing workbooks (name them as below in --dir, or pass each with --<key> <path>):\n${absent
+    .map((key) => `  --${key}  ${file(key)}`).join('\n')}`);
+}
 const report = { loaded: [], review: [], errors: [], diff: [] };
 const addDays = (iso, n) => {
   const d = new Date(`${iso}T12:00:00Z`);

@@ -59,3 +59,4 @@ firebase-debug.log
 ui-debug.log
 .firebase/
 deploy/.env
+node_modules/

@@ -58,9 +58,29 @@ projectId). It is public by nature; it changes per environment without rebuildin
 8. **Owner:** `API_URL=… INTERNAL_SECRET=… node scripts/bootstrap.mjs --email dueno@empresa.mx --name "Edgar Rodríguez"`
    prints the link to set the password. The owner then turns on **Verificación en dos pasos** (account menu) and can require it
    for every Administrador in Usuarios.
-9. **Import** (once, on the empty installation, PLAN D90): sign in as the owner in the admin app, take the ID token
-   (`firebase.auth().currentUser.getIdToken()` in the browser console, or the REST sign-in), then
+9. **Import** (once, on the empty installation, PLAN D90). Put the client's six workbooks in one folder under these names, or
+   pass each by path with its option:
+
+   | Option | Sample name |
+   |---|---|
+   | `--recruiting` | `Sistema_Reclutamiento_Completo_2026.xlsx` |
+   | `--sem38` | `PRENOMINA SEM 38 12 HRS ECOVIA VALIDADORES.xlsx` |
+   | `--banorte` | `Alta_Nomina_Masiva Banorte 21Ago-1.xlsx` |
+   | `--banregio` | `ALTA BANREGIO EARL 19AGO26.xlsx` |
+   | `--master` | `Lo HFC MAESTRO 14AGOSTO.xlsx` |
+   | `--frequent` | `cuentasfrec21sept.xlsx` |
+
+   Take the owner's ID token with the REST sign-in (the web `apiKey` of `config.json`; the token lasts one hour):
+   ```sh
+   curl -s -X POST "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=<web apiKey>" \
+     -H 'Content-Type: application/json' \
+     -d '{"email":"dueno@empresa.mx","password":"…","returnSecureToken":true}' | jq -r .idToken
+   ```
+   then, with the current code of the owner's authenticator if two-step verification is on,
    `API_URL=… IMPORT_TOKEN=… [IMPORT_MFA_CODE=123456] node scripts/import-excel.mjs --dir ./excel --out ./importacion.md`.
+   **Before anyone generates an alta file:** the import queues a Banorte card for everyone without an account in COMENTARIOS
+   (34 of the 115 in the sample; `--card-bank` picks the bank). Capture in Personal the accounts the payroll clerk already
+   knows for those people first, or the cards are requested for nothing.
    The report lists what was loaded, Semana 38 against V121 (the only expected differences are the festivo primera mitad
    rows of PLAN D43 / SPEC Q12) and every row left for manual review. It contains names: keep it private.
 10. **Encryption check:** `curl -H "X-Internal-Secret: $INTERNAL_SECRET" https://api…/internal/health/encryption` → `ok`

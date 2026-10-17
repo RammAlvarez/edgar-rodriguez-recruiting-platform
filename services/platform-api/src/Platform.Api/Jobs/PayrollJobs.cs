@@ -39,7 +39,10 @@ public sealed class AttendanceLockJob(DbContext db, IClock clock) : IJob
                 .OrderBy(p => p.StartDate).ToListAsync(cancellationToken);
             foreach (var period in closing)
             {
+                // One transaction per period, as «Cerrar captura» does: the lines' advisory locks and the batch recompute need it.
+                await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
                 absences += await Prepayrolls.CloseCaptureAsync(db, group, period, now, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
                 reviewed++;
             }
         }
@@ -97,8 +100,13 @@ public sealed class PeriodRollJob(DbContext db, IClock clock) : IJob
             // Every open period has a line per employee who works in it (idempotent).
             foreach (var period in await db.Set<PayrollPeriod>()
                          .Where(p => p.PayrollGroupId == group.Uid && p.Status != PeriodStatus.Paid).ToListAsync(cancellationToken))
+            {
+                // In a transaction so the lines are locked against a capture at the same moment (D-013).
+                await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
                 lines += await Prepayrolls.EnsureLinesAsync(db, period, clock.UtcNow, cancellationToken);
-            await db.SaveChangesAsync(cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
         }
         return new { periodsCreated = created, linesCreated = lines };
     }
