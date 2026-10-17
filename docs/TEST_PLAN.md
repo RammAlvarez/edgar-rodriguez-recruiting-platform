@@ -115,5 +115,15 @@ Data: `npm run seed` on a fresh database (S9 block: ECOVIA's employees are the S
 4. Excel, Resumen PDF and Recibos download; the Excel's row 5 matches the client's B5:W5.
 5. «Tarjetas por solicitar» lists the two queued people by name; 390 px: Prenómina and Incidencias have no page-wide horizontal scroll (the grid scrolls inside).
 
-### S10–S12
+### S10 — Archivos de pago + Tarjetas
+Data: `npm run seed` on a fresh database (S10 block: the paying account MAXIMA REPARACION Y LIMPIEZA SA DE CV with a generated 14-digit Azteca number — never the client's; the two queued card requests' people get CURP, RFC, address and phone so an alta file can be generated; Semana 38 stays *En revisión* so the browser check pays it). API-level: `PaymentFilesTests` (readiness by line, «Generar archivos de pago» → rows only for lines with a valid principal account and an amount > 0, the period frozen as Pagada with each line's account snapshot, the Azteca file read back in the bank's layout with its total = Σ rows, the cuentas frecuentes companion only for unregistered accounts, «Subido al banco» → rows and lines paid and accounts registered, rechazado → re-included by «Archivo de pendientes» with the fixed account, deposit date, `decrypt_account` rows, attendance and status periods refused on paid dates, grants `payroll_payment_files` / `payroll_prepayroll` and client scope), `CardBatchTests` (preview issues, Banorte NOMINATIVA with sucursal and no card number, Banregio with an empty Tarjeta, employee numbers from the per-bank sequences and kept per employee, moot requests cancelled, uploaded, «Tarjeta recibida» → principal debit account, batch completed, grant `payroll_card_requests`), layout tests (Banregio without a card number).
+1. Prenómina → ECOVIA Semana 38 (En revisión) → «Pagar»: listos 112 with their amount, 2 tarjeta en trámite and 1 sin cuenta by name; the cuenta de cargo shown by its last four digits.
+2. «Generar archivos de pago» → confirm → the period reads Pagada and no cell or comment can be edited; the Azteca file and the cuentas frecuentes file download; the Azteca file opens with the bank's headers in row 1, one row per payment, importe in E, and its total equals the panel's «en este archivo»; the grid's TOTAL NETO A PAGAR is unchanged.
+3. «Marcar subido al banco» → rows Pagado; mark one row Rechazado → it appears in Pendientes; record the deposit date.
+4. Tarjetas → Por solicitar → Banorte: select the queued person, sucursal → preview without errors → «Generar alta» → the file opens in `Masiva_xls` with NOMINATIVA, the sucursal and no card number; «Marcar subido» → «Tarjeta recibida» with a valid 16-digit number → the person's principal account is that card.
+5. Back in Semana 38 → «Archivo de pendientes» → a second file with that person and the rejected row only.
+6. Asistencia / unlock on a date of Semana 38 is refused («El período ya se pagó»).
+7. 390 px: the payment panel and the Tarjetas panel have no page-wide horizontal scroll.
+
+### S11–S12
 Written when each slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.

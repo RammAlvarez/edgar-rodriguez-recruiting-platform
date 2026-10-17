@@ -191,9 +191,10 @@ public sealed class PrepayrollFiles : IPrepayrollFiles
 
         var pay = section.AddParagraph(r.Payment.State switch
         {
-            PaymentState.Ready => $"Depósito: {r.Payment.Bank} · terminación {r.Payment.Last4}"
+            _ when r.Payment.Last4 is { } last4 => $"Depósito: {r.Payment.Bank} · terminación {last4}"
                 + (r.Payment.ThirdPartyHolder is { } holder ? $" · a nombre de {holder}" : ""),
             PaymentState.CardRequested => "Depósito: tarjeta en trámite",
+            PaymentState.NothingDue => "Sin depósito en este período",
             _ => "Depósito: sin cuenta registrada",
         });
         pay.Format.SpaceBefore = Unit.FromPoint(6);

@@ -206,6 +206,17 @@ public sealed class BankLayoutRuleTests
     }
 
     [Fact]
+    public void Banregio_takes_an_empty_card_number_and_checks_one_when_present()
+    {
+        var row = new BanregioRegistrationRow("3000000001", "Juan", "Pérez", "", "PEPJ900101AB1", Curp, "Calle 1", "10",
+            "Centro", "64000", "8112345670", new DateOnly(1990, 1, 1), Gender.Male, "Técnico", "juan@example.com", null, "Nuevo León");
+        var layout = BanregioRegistration.Layout();
+        Assert.Empty(layout.Validate([row], Today));
+        Assert.Equal(["Tarjeta"], layout.Validate([row with { CardNumber = "4111111111111112" }], Today).Select(i => i.Field));
+        Assert.Equal(["FechaNac", "Genero"], layout.Validate([row with { BirthDate = null, Gender = null }], Today).Select(i => i.Field).Order());
+    }
+
+    [Fact]
     public void Frequent_accounts_take_debit_cards_clabes_and_own_accounts_with_their_type_code()
     {
         var layout = AztecaFrequentAccounts.Layout(Banks);

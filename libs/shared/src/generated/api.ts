@@ -114,6 +114,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/card-requests/{id}/received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReceiveCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/catalogs": {
         parameters: {
             query?: never;
@@ -1922,6 +1938,182 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/periods/{id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPeriodPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/periods/{id}/payment-files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GeneratePaymentFiles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/payment-batches/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DownloadPaymentFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/payment-batches/{id}/uploaded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MarkPaymentBatchUploaded"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/payment-batch-rows/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RejectPaymentRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/periods/{id}/deposit-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SetPeriodDepositDate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/paying-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPayingAccount"];
+        put: operations["SetPayingAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/card-batches/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PreviewRegistrationBatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/card-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListRegistrationBatches"];
+        put?: never;
+        post: operations["GenerateRegistrationBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/card-batches/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DownloadRegistrationBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/card-batches/{id}/uploaded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MarkRegistrationBatchUploaded"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -2086,6 +2278,8 @@ export type components = {
             /** @default true */
             isActive: boolean;
         };
+        /** @enum {unknown} */
+        BatchStatus: "generated" | "uploaded_to_bank" | "completed" | "cancelled";
         BenefitDto: {
             /** Format: uuid */
             id: string;
@@ -2502,6 +2696,10 @@ export type components = {
             /** Format: date */
             date: DateKey;
         };
+        DepositDateRequest: {
+            /** Format: date */
+            date: DateKey | null;
+        };
         DocumentChecklistDto: {
             /** Format: uuid */
             personId: string;
@@ -2734,6 +2932,16 @@ export type components = {
         };
         /** @enum {unknown} */
         Gender: "male" | "female" | "unspecified";
+        GeneratedPaymentFilesDto: {
+            batch: components["schemas"]["PaymentBatchDto"];
+            payments: components["schemas"]["ReportExportDto"];
+            frequentAccounts: null | components["schemas"]["ReportExportDto"];
+            skipped: string[];
+        };
+        GeneratedRegistrationDto: {
+            batch: components["schemas"]["RegistrationBatchDto"];
+            file: components["schemas"]["ReportExportDto"];
+        };
         GrantDto: {
             module: components["schemas"]["PermissionModule"];
             /** Format: uuid */
@@ -2914,6 +3122,8 @@ export type components = {
             accountType: null | components["schemas"]["BankAccountType"];
             thirdPartyHolder: null | string;
         };
+        /** @enum {unknown} */
+        LinePaymentState: "ready" | "card_requested" | "missing_account" | "invalid_account" | "nothing_due" | "pending" | "paid" | "rejected";
         MeDto: {
             /** Format: uuid */
             id: string;
@@ -3166,8 +3376,99 @@ export type components = {
             staleAfterDays: number | string;
             openings: components["schemas"]["OpenOpeningDto"][];
         };
+        PayingAccountDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            last4: string;
+            holderName: string;
+            holderRfc: string;
+            chargeLegend: string;
+            creditLegend: string;
+            currency: string;
+        };
+        PayingAccountRequest: {
+            name: string;
+            chargeAccountNumber: null | string;
+            holderName: string;
+            holderRfc: string;
+            chargeLegend: null | string;
+            creditLegend: null | string;
+        };
+        PaymentBatchDto: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["PaymentBatchKind"];
+            status: components["schemas"]["BatchStatus"];
+            /** Format: date-time */
+            generatedAt: Date;
+            generatedBy: string;
+            /** Format: date-time */
+            uploadedAt: Date | null;
+            uploadedBy: null | string;
+            /** Format: int32 */
+            rowCount: number | string;
+            /** Format: decimal */
+            totalAmount: Decimal;
+            /** Format: int32 */
+            frequentAccountsCount: number | string;
+            rows: components["schemas"]["PaymentBatchRowDto"][];
+        };
         /** @enum {unknown} */
-        PaymentState: "ready" | "card_requested" | "missing_account";
+        PaymentBatchKind: "period_payment" | "pending_payment" | "frequent_accounts";
+        PaymentBatchRowDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            lineNo: number | string;
+            /** Format: uuid */
+            lineId: string;
+            fullName: string;
+            displayName: string;
+            bank: string;
+            last4: string;
+            accountType: components["schemas"]["BankAccountType"];
+            paymentType: components["schemas"]["PaymentType"];
+            /** Format: decimal */
+            amount: Decimal;
+            status: components["schemas"]["PaymentRowStatus"];
+            rejectionReason: null | string;
+            registersFrequentAccount: boolean;
+        };
+        PaymentDownloadRequest: {
+            file: components["schemas"]["PaymentFile"];
+        };
+        /** @enum {unknown} */
+        PaymentFile: "payments" | "frequent_accounts";
+        PaymentLineDto: {
+            /** Format: uuid */
+            lineId: string;
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            /** Format: decimal */
+            amount: Decimal;
+            state: components["schemas"]["LinePaymentState"];
+            bank: null | string;
+            last4: null | string;
+            accountType: null | components["schemas"]["BankAccountType"];
+            thirdPartyHolder: null | string;
+            needsFrequentAccount: boolean;
+            inNextFile: boolean;
+        };
+        /** @enum {unknown} */
+        PaymentRowStatus: "ready" | "missing_account" | "invalid_account" | "pending" | "paid" | "rejected";
+        /** @enum {unknown} */
+        PaymentState: "ready" | "card_requested" | "missing_account" | "invalid_account" | "nothing_due" | "pending" | "paid" | "rejected";
+        PaymentStateTotalDto: {
+            state: components["schemas"]["LinePaymentState"];
+            /** Format: int32 */
+            lines: number | string;
+            /** Format: decimal */
+            amount: Decimal;
+        };
+        /** @enum {unknown} */
+        PaymentType: "spei" | "tef" | "baz_transfer";
         PayrollGroupDetailDto: {
             /** Format: uuid */
             id: string;
@@ -3260,6 +3561,29 @@ export type components = {
             lines: number | string;
             /** Format: decimal */
             totalNet: Decimal;
+        };
+        PeriodPaymentsDto: {
+            /** Format: uuid */
+            periodId: string;
+            status: components["schemas"]["PeriodStatus"];
+            /** Format: decimal */
+            totalNet: Decimal;
+            /** Format: date-time */
+            paidAt: Date | null;
+            /** Format: date */
+            depositDate: DateKey | null;
+            payingAccount: null | components["schemas"]["PayingAccountDto"];
+            lines: components["schemas"]["PaymentLineDto"][];
+            totals: components["schemas"]["PaymentStateTotalDto"][];
+            /** Format: int32 */
+            payable: number | string;
+            /** Format: decimal */
+            payableAmount: Decimal;
+            /** Format: int32 */
+            frequentAccounts: number | string;
+            canGenerate: boolean;
+            cannotGenerate: null | string;
+            batches: components["schemas"]["PaymentBatchDto"][];
         };
         /** @enum {unknown} */
         PeriodStatus: "capturing" | "in_review" | "paid";
@@ -3520,6 +3844,9 @@ export type components = {
             detail?: null | string;
             instance?: null | string;
         };
+        ReceiveCardRequest: {
+            cardNumber: string;
+        };
         RecruiterAssignmentDto: {
             /** Format: uuid */
             openingId: string;
@@ -3596,6 +3923,58 @@ export type components = {
         RecruitingReport: "recruiter_performance" | "summary" | "open_openings" | "stage_funnel" | "sources" | "client_openings";
         /** @enum {unknown} */
         RegistrationBank: "banorte" | "banregio";
+        RegistrationBatchDto: {
+            /** Format: uuid */
+            id: string;
+            bank: components["schemas"]["RegistrationBank"];
+            status: components["schemas"]["BatchStatus"];
+            /** Format: date-time */
+            generatedAt: Date;
+            generatedBy: string;
+            /** Format: date-time */
+            uploadedAt: Date | null;
+            cardType: null | string;
+            branchToSend: null | string;
+            rows: components["schemas"]["RegistrationBatchRowDto"][];
+        };
+        RegistrationBatchRequest: {
+            bank: components["schemas"]["RegistrationBank"];
+            requestIds: null | string[];
+            branchToSend: null | string;
+        };
+        RegistrationBatchRowDto: {
+            /** Format: uuid */
+            requestId: string;
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            employeeNumber: string;
+            status: components["schemas"]["CardRequestStatus"];
+        };
+        RegistrationIssueDto: {
+            field: string;
+            message: string;
+        };
+        RegistrationPreviewDto: {
+            bank: components["schemas"]["RegistrationBank"];
+            cardType: null | string;
+            branchToSend: null | string;
+            rows: components["schemas"]["RegistrationPreviewRowDto"][];
+            fileIssues: string[];
+            moot: string[];
+            canGenerate: boolean;
+        };
+        RegistrationPreviewRowDto: {
+            /** Format: uuid */
+            requestId: string;
+            /** Format: uuid */
+            employeeId: string;
+            fullName: string;
+            clientName: string;
+            groupName: string;
+            employeeNumber: null | string;
+            issues: components["schemas"]["RegistrationIssueDto"][];
+        };
         RehireRequest: {
             /** Format: uuid */
             payrollGroupId: string;
@@ -3607,6 +3986,9 @@ export type components = {
             cardBank: null | components["schemas"]["RegistrationBank"];
         };
         RejectDocumentRequest: {
+            reason: string;
+        };
+        RejectPaymentRowRequest: {
             reason: string;
         };
         RemoveRecruiterRequest: {
@@ -3962,6 +4344,7 @@ export type BankAccountType = components['schemas']['BankAccountType'];
 export type BankDto = components['schemas']['BankDto'];
 export type BankOptionDto = components['schemas']['BankOptionDto'];
 export type BankRequest = components['schemas']['BankRequest'];
+export type BatchStatus = components['schemas']['BatchStatus'];
 export type BenefitDto = components['schemas']['BenefitDto'];
 export type BenefitRequest = components['schemas']['BenefitRequest'];
 export type CalendarDayDto = components['schemas']['CalendarDayDto'];
@@ -4003,6 +4386,7 @@ export type ConversionDto = components['schemas']['ConversionDto'];
 export type CreateCandidateRequest = components['schemas']['CreateCandidateRequest'];
 export type CreateClientRequest = components['schemas']['CreateClientRequest'];
 export type CreatePeriodRequest = components['schemas']['CreatePeriodRequest'];
+export type DepositDateRequest = components['schemas']['DepositDateRequest'];
 export type DocumentChecklistDto = components['schemas']['DocumentChecklistDto'];
 export type DocumentStatus = components['schemas']['DocumentStatus'];
 export type DocumentTemplateDto = components['schemas']['DocumentTemplateDto'];
@@ -4026,6 +4410,8 @@ export type FunnelLossDto = components['schemas']['FunnelLossDto'];
 export type FunnelReasonDto = components['schemas']['FunnelReasonDto'];
 export type FunnelStageDto = components['schemas']['FunnelStageDto'];
 export type Gender = components['schemas']['Gender'];
+export type GeneratedPaymentFilesDto = components['schemas']['GeneratedPaymentFilesDto'];
+export type GeneratedRegistrationDto = components['schemas']['GeneratedRegistrationDto'];
 export type GrantDto = components['schemas']['GrantDto'];
 export type GroupConceptDto = components['schemas']['GroupConceptDto'];
 export type GroupConceptRequest = components['schemas']['GroupConceptRequest'];
@@ -4046,6 +4432,7 @@ export type LineCommentsRequest = components['schemas']['LineCommentsRequest'];
 export type LineDayDto = components['schemas']['LineDayDto'];
 export type LineItemDto = components['schemas']['LineItemDto'];
 export type LinePaymentDto = components['schemas']['LinePaymentDto'];
+export type LinePaymentState = components['schemas']['LinePaymentState'];
 export type MeDto = components['schemas']['MeDto'];
 export type MeRole = components['schemas']['MeRole'];
 export type MoveStageRequest = components['schemas']['MoveStageRequest'];
@@ -4067,11 +4454,23 @@ export type OpeningStatus = components['schemas']['OpeningStatus'];
 export type OpeningStatusRequest = components['schemas']['OpeningStatusRequest'];
 export type OpenOpeningDto = components['schemas']['OpenOpeningDto'];
 export type OpenOpeningsReportDto = components['schemas']['OpenOpeningsReportDto'];
+export type PayingAccountDto = components['schemas']['PayingAccountDto'];
+export type PayingAccountRequest = components['schemas']['PayingAccountRequest'];
+export type PaymentBatchDto = components['schemas']['PaymentBatchDto'];
+export type PaymentBatchKind = components['schemas']['PaymentBatchKind'];
+export type PaymentBatchRowDto = components['schemas']['PaymentBatchRowDto'];
+export type PaymentDownloadRequest = components['schemas']['PaymentDownloadRequest'];
+export type PaymentFile = components['schemas']['PaymentFile'];
+export type PaymentLineDto = components['schemas']['PaymentLineDto'];
+export type PaymentRowStatus = components['schemas']['PaymentRowStatus'];
 export type PaymentState = components['schemas']['PaymentState'];
+export type PaymentStateTotalDto = components['schemas']['PaymentStateTotalDto'];
+export type PaymentType = components['schemas']['PaymentType'];
 export type PayrollGroupDetailDto = components['schemas']['PayrollGroupDetailDto'];
 export type PayrollGroupListItemDto = components['schemas']['PayrollGroupListItemDto'];
 export type PayrollGroupRequest = components['schemas']['PayrollGroupRequest'];
 export type PayrollPeriodDto = components['schemas']['PayrollPeriodDto'];
+export type PeriodPaymentsDto = components['schemas']['PeriodPaymentsDto'];
 export type PeriodStatus = components['schemas']['PeriodStatus'];
 export type PeriodType = components['schemas']['PeriodType'];
 export type PermissionModule = components['schemas']['PermissionModule'];
@@ -4092,6 +4491,7 @@ export type PrepayrollRowDto = components['schemas']['PrepayrollRowDto'];
 export type PresignUploadRequest = components['schemas']['PresignUploadRequest'];
 export type PresignUploadResponse = components['schemas']['PresignUploadResponse'];
 export type ProblemDetails = components['schemas']['ProblemDetails'];
+export type ReceiveCardRequest = components['schemas']['ReceiveCardRequest'];
 export type RecruiterAssignmentDto = components['schemas']['RecruiterAssignmentDto'];
 export type RecruiterDetailDto = components['schemas']['RecruiterDetailDto'];
 export type RecruiterPerformanceGroupDto = components['schemas']['RecruiterPerformanceGroupDto'];
@@ -4100,8 +4500,15 @@ export type RecruiterPerformanceRowDto = components['schemas']['RecruiterPerform
 export type RecruiterSummaryDto = components['schemas']['RecruiterSummaryDto'];
 export type RecruitingReport = components['schemas']['RecruitingReport'];
 export type RegistrationBank = components['schemas']['RegistrationBank'];
+export type RegistrationBatchDto = components['schemas']['RegistrationBatchDto'];
+export type RegistrationBatchRequest = components['schemas']['RegistrationBatchRequest'];
+export type RegistrationBatchRowDto = components['schemas']['RegistrationBatchRowDto'];
+export type RegistrationIssueDto = components['schemas']['RegistrationIssueDto'];
+export type RegistrationPreviewDto = components['schemas']['RegistrationPreviewDto'];
+export type RegistrationPreviewRowDto = components['schemas']['RegistrationPreviewRowDto'];
 export type RehireRequest = components['schemas']['RehireRequest'];
 export type RejectDocumentRequest = components['schemas']['RejectDocumentRequest'];
+export type RejectPaymentRowRequest = components['schemas']['RejectPaymentRowRequest'];
 export type RemoveRecruiterRequest = components['schemas']['RemoveRecruiterRequest'];
 export type ReportExportDto = components['schemas']['ReportExportDto'];
 export type ReportExportRequest = components['schemas']['ReportExportRequest'];
@@ -4342,6 +4749,59 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReceiveCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiveCardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9975,6 +10435,493 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPeriodPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodPaymentsDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GeneratePaymentFiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeneratedPaymentFilesDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DownloadPaymentFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportExportDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkPaymentBatchUploaded: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentBatchDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RejectPaymentRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectPaymentRowRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentBatchDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetPeriodDepositDate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepositDateRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPayingAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayingAccountDto"];
+                };
+            };
+        };
+    };
+    SetPayingAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayingAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayingAccountDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PreviewRegistrationBatch: {
+        parameters: {
+            query: {
+                bank: string;
+                branchToSend?: string;
+                requestIds?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationPreviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ListRegistrationBatches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationBatchDto"][];
+                };
+            };
+        };
+    };
+    GenerateRegistrationBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeneratedRegistrationDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DownloadRegistrationBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportExportDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkRegistrationBatchUploaded: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationBatchDto"];
+                };
             };
             /** @description Not Found */
             404: {

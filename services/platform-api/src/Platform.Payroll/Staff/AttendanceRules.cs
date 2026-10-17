@@ -15,6 +15,7 @@ public static class AttendanceRules
     public const string Future = "No se captura asistencia de días que no han llegado.";
     public const string UnlockNeedsAllClients = "Solo un administrador con Asistencia para todos los clientes desbloquea días cerrados.";
     public const string ReasonRequired = "Indica el motivo del cambio.";
+    public const string PaidPeriod = "El período de ese día ya se pagó: la asistencia no cambia. Corrige con un retroactivo.";
 
     public static string NotEmployed(DateOnly date) => $"No trabajaba en el grupo el {Date(date)}.";
 

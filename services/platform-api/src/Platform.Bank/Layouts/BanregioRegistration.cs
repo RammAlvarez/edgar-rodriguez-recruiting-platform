@@ -21,17 +21,18 @@ public sealed record BanregioRegistrationRow(
     string Neighborhood,
     string PostalCode,
     string Mobile,
-    DateOnly BirthDate,
-    Gender Gender,
+    DateOnly? BirthDate,
+    Gender? Gender,
     string Position,
     string Email,
-    string CardNumber,
+    string? CardNumber,
     string BirthState);
 
 /// <summary>
 /// Banregio alta (SPEC §5.7), as in <c>examples/ALTA BANREGIO EARL 19AGO26.xlsx</c>: headers A1–Q1, records from row 2,
 /// every cell text, FechaNac <c>dd/mm/yyyy</c>. The bank's own rules are not documented in the examples; the checks are
-/// the identifiers' structure, lengths and the birth state list.
+/// the identifiers' structure, lengths and the birth state list. Tarjeta may be empty: the number is typed when the card
+/// arrives (PLAN D85), and checked when present.
 /// </summary>
 public static class BanregioRegistration
 {
@@ -66,16 +67,16 @@ public static class BanregioRegistration
             new("I", "Colonia", r => BankText.Normalize(r.Neighborhood), [Rules.Required]),
             new("J", "CodPostal", r => BankText.Digits(r.PostalCode), [Rules.Required, Rules.ExactDigits(5)]),
             new("K", "TelefonoCelular", r => BankText.Digits(r.Mobile), [Rules.Required, Rules.Mobile]),
-            new("L", "FechaNac", r => r.BirthDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture), []),
-            new("M", "Genero", r => r.Gender == Gender.Male ? "MASCULINO" : "FEMENINO", []),
+            new("L", "FechaNac", r => r.BirthDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture), [Rules.Required]),
+            new("M", "Genero", r => r.Gender switch { Gender.Male => "MASCULINO", Gender.Female => "FEMENINO", _ => null }, [Rules.Required]),
             new("N", "Puesto", r => BankText.Normalize(r.Position), [Rules.Required]),
             new("O", "CorreoElectronico", r => r.Email.Trim(), [Rules.Required, Rules.MaxLength(50), Rules.Email]),
-            new("P", "Tarjeta", r => BankText.Digits(r.CardNumber), [Rules.Required, Rules.CardNumber]),
+            new("P", "Tarjeta", r => BankText.Digits(r.CardNumber), [Rules.CardNumber]),
             new("Q", "Estado de nacimiento", r => BankText.Normalize(r.BirthState), [Rules.Required, Rules.OneOf([.. BirthStates])]),
         ],
         BatchRules = (rows, _) => rows
             .Select((r, i) => (Line: i + 1, Curp: BankText.Normalize(r.Curp), r.BirthDate))
-            .Where(x => BankText.IsCurp(x.Curp) && BankText.CurpBirthDate(x.Curp) != x.BirthDate)
+            .Where(x => x.BirthDate is not null && BankText.IsCurp(x.Curp) && BankText.CurpBirthDate(x.Curp) != x.BirthDate)
             .Select(x => new LayoutIssue(x.Line, "FechaNac", "La fecha de nacimiento no coincide con la CURP.")),
     };
 }

@@ -6,6 +6,8 @@ using Platform.Api.Auth;
 using Platform.Api.Hosting;
 using Platform.Api.Internal;
 using Platform.Api.Jobs;
+using Platform.Bank.Payments;
+using Platform.Bank.Registrations;
 using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Audit;
@@ -134,6 +136,8 @@ v1.MapScheduleEndpoints();
 v1.MapAttendanceEndpoints();
 v1.MapPrepayrollEndpoints();
 v1.MapIncidentEndpoints();
+v1.MapPaymentEndpoints();
+v1.MapRegistrationEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

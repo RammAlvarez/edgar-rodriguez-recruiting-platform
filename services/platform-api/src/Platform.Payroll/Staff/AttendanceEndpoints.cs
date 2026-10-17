@@ -227,6 +227,9 @@ public static class AttendanceEndpoints
             return ApiResults.Conflict(AttendanceRules.Future);
         if (date < e.HiredAt || (e.TerminatedAt is { } t && date >= t))
             return ApiResults.Conflict($"{name}: {AttendanceRules.NotEmployed(date)}");
+        if (await db.Set<Periods.PayrollPeriod>().AnyAsync(p => p.PayrollGroupId == g.Uid && p.Status == Periods.PeriodStatus.Paid
+                && p.StartDate <= date && p.EndDate >= date, ct))
+            return ApiResults.Conflict(AttendanceRules.PaidPeriod);
         var period = await db.Set<EmployeeStatusPeriod>().AsNoTracking()
             .FirstOrDefaultAsync(p => p.EmployeeId == e.Uid && p.StartDate <= date && (p.EndDate == null || p.EndDate >= date), ct);
         return period is null ? null : ApiResults.Conflict($"{name}: {AttendanceRules.StatusPeriodDay(period)}");

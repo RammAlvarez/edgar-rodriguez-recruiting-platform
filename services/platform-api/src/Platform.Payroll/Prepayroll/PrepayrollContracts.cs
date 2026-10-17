@@ -11,12 +11,20 @@ public sealed record PayrollPeriodDto(Guid Id, Guid GroupId, string GroupName, G
 /// <summary>«Crear período»: the period of the group that contains <see cref="Date"/> (idempotent).</summary>
 public sealed record CreatePeriodRequest(DateOnly Date);
 
-/// <summary>Whether the pay can be deposited: a current principal account, a card on its way, or nothing.</summary>
+/// <summary>
+/// Whether the pay can be deposited: before payment a current principal account, a card on its way, or nothing; once the
+/// period is paid, what its files did with the line (S10).
+/// </summary>
 public enum PaymentState
 {
     Ready,
     CardRequested,
     MissingAccount,
+    InvalidAccount,
+    NothingDue,
+    Pending,
+    Paid,
+    Rejected,
 }
 
 /// <summary>

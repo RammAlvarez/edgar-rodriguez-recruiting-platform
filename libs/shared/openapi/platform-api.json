@@ -293,6 +293,77 @@
         }
       }
     },
+    "/v1/card-requests/{id}/received": {
+      "post": {
+        "tags": [
+          "CardBatches"
+        ],
+        "operationId": "ReceiveCard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiveCardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/catalogs": {
       "get": {
         "tags": [
@@ -7922,6 +7993,634 @@
           }
         }
       }
+    },
+    "/v1/payroll/periods/{id}/payments": {
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "GetPeriodPayments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodPaymentsDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/periods/{id}/payment-files": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "GeneratePaymentFiles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneratedPaymentFilesDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/payment-batches/{id}/download": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "DownloadPaymentFile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentDownloadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportExportDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/payment-batches/{id}/uploaded": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "MarkPaymentBatchUploaded",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentBatchDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/payment-batch-rows/{id}/reject": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "RejectPaymentRow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectPaymentRowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentBatchDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/periods/{id}/deposit-date": {
+      "put": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "SetPeriodDepositDate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositDateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payroll/paying-account": {
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "GetPayingAccount",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayingAccountDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "SetPayingAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayingAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayingAccountDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/card-batches/preview": {
+      "get": {
+        "tags": [
+          "CardBatches"
+        ],
+        "operationId": "PreviewRegistrationBatch",
+        "parameters": [
+          {
+            "name": "bank",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchToSend",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requestIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/card-batches": {
+      "post": {
+        "tags": [
+          "CardBatches"
+        ],
+        "operationId": "GenerateRegistrationBatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneratedRegistrationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "CardBatches"
+        ],
+        "operationId": "ListRegistrationBatches",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistrationBatchDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/card-batches/{id}/download": {
+      "post": {
+        "tags": [
+          "CardBatches"
+        ],
+        "operationId": "DownloadRegistrationBatch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportExportDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/card-batches/{id}/uploaded": {
+      "post": {
+        "tags": [
+          "CardBatches"
+        ],
+        "operationId": "MarkRegistrationBatchUploaded",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationBatchDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8555,6 +9254,14 @@
             "default": true
           }
         }
+      },
+      "BatchStatus": {
+        "enum": [
+          "generated",
+          "uploaded_to_bank",
+          "completed",
+          "cancelled"
+        ]
       },
       "BenefitDto": {
         "required": [
@@ -10360,6 +11067,21 @@
           }
         }
       },
+      "DepositDateRequest": {
+        "required": [
+          "date"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "DocumentChecklistDto": {
         "required": [
           "personId",
@@ -11313,6 +12035,54 @@
           "unspecified"
         ]
       },
+      "GeneratedPaymentFilesDto": {
+        "required": [
+          "batch",
+          "payments",
+          "frequentAccounts",
+          "skipped"
+        ],
+        "type": "object",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/PaymentBatchDto"
+          },
+          "payments": {
+            "$ref": "#/components/schemas/ReportExportDto"
+          },
+          "frequentAccounts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportExportDto"
+              }
+            ]
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GeneratedRegistrationDto": {
+        "required": [
+          "batch",
+          "file"
+        ],
+        "type": "object",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/RegistrationBatchDto"
+          },
+          "file": {
+            "$ref": "#/components/schemas/ReportExportDto"
+          }
+        }
+      },
       "GrantDto": {
         "required": [
           "module",
@@ -12028,6 +12798,18 @@
             ]
           }
         }
+      },
+      "LinePaymentState": {
+        "enum": [
+          "ready",
+          "card_requested",
+          "missing_account",
+          "invalid_account",
+          "nothing_due",
+          "pending",
+          "paid",
+          "rejected"
+        ]
       },
       "MeDto": {
         "required": [
@@ -13108,11 +13890,380 @@
           }
         }
       },
+      "PayingAccountDto": {
+        "required": [
+          "id",
+          "name",
+          "last4",
+          "holderName",
+          "holderRfc",
+          "chargeLegend",
+          "creditLegend",
+          "currency"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          },
+          "holderName": {
+            "type": "string"
+          },
+          "holderRfc": {
+            "type": "string"
+          },
+          "chargeLegend": {
+            "type": "string"
+          },
+          "creditLegend": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "PayingAccountRequest": {
+        "required": [
+          "name",
+          "chargeAccountNumber",
+          "holderName",
+          "holderRfc",
+          "chargeLegend",
+          "creditLegend"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "chargeAccountNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "holderName": {
+            "type": "string"
+          },
+          "holderRfc": {
+            "type": "string"
+          },
+          "chargeLegend": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "creditLegend": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PaymentBatchDto": {
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "generatedAt",
+          "generatedBy",
+          "uploadedAt",
+          "uploadedBy",
+          "rowCount",
+          "totalAmount",
+          "frequentAccountsCount",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PaymentBatchKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BatchStatus"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "generatedBy": {
+            "type": "string"
+          },
+          "uploadedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "uploadedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalAmount": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "frequentAccountsCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentBatchRowDto"
+            }
+          }
+        }
+      },
+      "PaymentBatchKind": {
+        "enum": [
+          "period_payment",
+          "pending_payment",
+          "frequent_accounts"
+        ]
+      },
+      "PaymentBatchRowDto": {
+        "required": [
+          "id",
+          "lineNo",
+          "lineId",
+          "fullName",
+          "displayName",
+          "bank",
+          "last4",
+          "accountType",
+          "paymentType",
+          "amount",
+          "status",
+          "rejectionReason",
+          "registersFrequentAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lineNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lineId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "bank": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          },
+          "accountType": {
+            "$ref": "#/components/schemas/BankAccountType"
+          },
+          "paymentType": {
+            "$ref": "#/components/schemas/PaymentType"
+          },
+          "amount": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentRowStatus"
+          },
+          "rejectionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "registersFrequentAccount": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaymentDownloadRequest": {
+        "required": [
+          "file"
+        ],
+        "type": "object",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/PaymentFile"
+          }
+        }
+      },
+      "PaymentFile": {
+        "enum": [
+          "payments",
+          "frequent_accounts"
+        ]
+      },
+      "PaymentLineDto": {
+        "required": [
+          "lineId",
+          "employeeId",
+          "fullName",
+          "amount",
+          "state",
+          "bank",
+          "last4",
+          "accountType",
+          "thirdPartyHolder",
+          "needsFrequentAccount",
+          "inNextFile"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "employeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "state": {
+            "$ref": "#/components/schemas/LinePaymentState"
+          },
+          "bank": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "last4": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "accountType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BankAccountType"
+              }
+            ]
+          },
+          "thirdPartyHolder": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "needsFrequentAccount": {
+            "type": "boolean"
+          },
+          "inNextFile": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaymentRowStatus": {
+        "enum": [
+          "ready",
+          "missing_account",
+          "invalid_account",
+          "pending",
+          "paid",
+          "rejected"
+        ]
+      },
       "PaymentState": {
         "enum": [
           "ready",
           "card_requested",
-          "missing_account"
+          "missing_account",
+          "invalid_account",
+          "nothing_due",
+          "pending",
+          "paid",
+          "rejected"
+        ]
+      },
+      "PaymentStateTotalDto": {
+        "required": [
+          "state",
+          "lines",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/LinePaymentState"
+          },
+          "lines": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "amount": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          }
+        }
+      },
+      "PaymentType": {
+        "enum": [
+          "spei",
+          "tef",
+          "baz_transfer"
         ]
       },
       "PayrollGroupDetailDto": {
@@ -13450,6 +14601,111 @@
             "pattern": "^-?\\d+(\\.\\d+)?$",
             "type": "string",
             "format": "decimal"
+          }
+        }
+      },
+      "PeriodPaymentsDto": {
+        "required": [
+          "periodId",
+          "status",
+          "totalNet",
+          "paidAt",
+          "depositDate",
+          "payingAccount",
+          "lines",
+          "totals",
+          "payable",
+          "payableAmount",
+          "frequentAccounts",
+          "canGenerate",
+          "cannotGenerate",
+          "batches"
+        ],
+        "type": "object",
+        "properties": {
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PeriodStatus"
+          },
+          "totalNet": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "paidAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "depositDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "payingAccount": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PayingAccountDto"
+              }
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentLineDto"
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentStateTotalDto"
+            }
+          },
+          "payable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "payableAmount": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
+          },
+          "frequentAccounts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "canGenerate": {
+            "type": "boolean"
+          },
+          "cannotGenerate": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "batches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentBatchDto"
+            }
           }
         }
       },
@@ -14517,6 +15773,17 @@
           }
         }
       },
+      "ReceiveCardRequest": {
+        "required": [
+          "cardNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "cardNumber": {
+            "type": "string"
+          }
+        }
+      },
       "RecruiterAssignmentDto": {
         "required": [
           "openingId",
@@ -14825,6 +16092,230 @@
           "banregio"
         ]
       },
+      "RegistrationBatchDto": {
+        "required": [
+          "id",
+          "bank",
+          "status",
+          "generatedAt",
+          "generatedBy",
+          "uploadedAt",
+          "cardType",
+          "branchToSend",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bank": {
+            "$ref": "#/components/schemas/RegistrationBank"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BatchStatus"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "generatedBy": {
+            "type": "string"
+          },
+          "uploadedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "cardType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "branchToSend": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistrationBatchRowDto"
+            }
+          }
+        }
+      },
+      "RegistrationBatchRequest": {
+        "required": [
+          "bank",
+          "requestIds",
+          "branchToSend"
+        ],
+        "type": "object",
+        "properties": {
+          "bank": {
+            "$ref": "#/components/schemas/RegistrationBank"
+          },
+          "requestIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "branchToSend": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RegistrationBatchRowDto": {
+        "required": [
+          "requestId",
+          "employeeId",
+          "fullName",
+          "employeeNumber",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "employeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "employeeNumber": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CardRequestStatus"
+          }
+        }
+      },
+      "RegistrationIssueDto": {
+        "required": [
+          "field",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RegistrationPreviewDto": {
+        "required": [
+          "bank",
+          "cardType",
+          "branchToSend",
+          "rows",
+          "fileIssues",
+          "moot",
+          "canGenerate"
+        ],
+        "type": "object",
+        "properties": {
+          "bank": {
+            "$ref": "#/components/schemas/RegistrationBank"
+          },
+          "cardType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "branchToSend": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistrationPreviewRowDto"
+            }
+          },
+          "fileIssues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "moot": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "canGenerate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RegistrationPreviewRowDto": {
+        "required": [
+          "requestId",
+          "employeeId",
+          "fullName",
+          "clientName",
+          "groupName",
+          "employeeNumber",
+          "issues"
+        ],
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "employeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "employeeNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistrationIssueDto"
+            }
+          }
+        }
+      },
       "RehireRequest": {
         "required": [
           "payrollGroupId",
@@ -14863,6 +16354,17 @@
         }
       },
       "RejectDocumentRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "RejectPaymentRowRequest": {
         "required": [
           "reason"
         ],
@@ -16264,6 +17766,9 @@
       "name": "Calendar"
     },
     {
+      "name": "CardBatches"
+    },
+    {
       "name": "Catalogs"
     },
     {
@@ -16298,6 +17803,9 @@
     },
     {
       "name": "Incidents"
+    },
+    {
+      "name": "Payments"
     }
   ]
 }

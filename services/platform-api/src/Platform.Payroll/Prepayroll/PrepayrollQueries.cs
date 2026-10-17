@@ -53,7 +53,7 @@ public static class PrepayrollQueries
             .Join(db.Set<Person>(), x => x.PersonId, p => p.Uid, (x, p) => new { x.l, x.PersonId, p.FullName })
             .OrderBy(x => x.FullName).ToListAsync(ct);
         var pivot = await Pivot.LoadAsync(db, lines.Select(x => x.l), ct);
-        var payments = await Payments(db, lines.Select(x => (x.l.EmployeeId, x.PersonId, x.FullName)).ToList(), today, ct);
+        var payments = await Payments(db, lines.Select(x => (x.l, x.PersonId, x.FullName)).ToList(), period.Status == PeriodStatus.Paid, today, ct);
 
         var cells = lines.Select(x => pivot.Cells(x.l)).ToList();
         var columns = Enum.GetValues<PayConcept>().Where(c => c != PayConcept.ManualAdjustment)
@@ -104,13 +104,14 @@ public static class PrepayrollQueries
     /// <summary>Every line of the period as a receipt, by name; an ajuste manual prints as «Ajuste: SUELDO».</summary>
     public static async Task<List<Receipt>> Receipts(DbContext db, Guid periodId, DateOnly today, CancellationToken ct)
     {
+        var paid = await db.Set<PayrollPeriod>().AnyAsync(p => p.Uid == periodId && p.Status == PeriodStatus.Paid, ct);
         var lines = await db.Set<PrepayrollLine>().AsNoTracking().Include(l => l.Items).Where(l => l.PayrollPeriodId == periodId)
             .Join(db.Set<Employee>(), l => l.EmployeeId, e => e.Uid, (l, e) => new { l, e.PersonId })
             .Join(db.Set<Person>(), x => x.PersonId, p => p.Uid, (x, p) => new { x.l, x.PersonId, p.FullName })
             .OrderBy(x => x.FullName).ToListAsync(ct);
         var concepts = await db.Set<PayConceptRow>().AsNoTracking().ToDictionaryAsync(c => c.Uid, ct);
         var pivot = await Pivot.LoadAsync(db, lines.Select(x => x.l), ct);
-        var payments = await Payments(db, lines.Select(x => (x.l.EmployeeId, x.PersonId, x.FullName)).ToList(), today, ct);
+        var payments = await Payments(db, lines.Select(x => (x.l, x.PersonId, x.FullName)).ToList(), paid, today, ct);
         return lines.Select(x =>
             {
                 var items = x.l.Items.OrderBy(i => concepts[i.PayConceptId].SortOrder).ThenBy(i => i.Id)
@@ -154,15 +155,18 @@ public static class PrepayrollQueries
         return (await Pivot.LoadAsync(db, [line], ct)).Cells(line);
     }
 
-    /// <summary>Live: the person's current principal account, else a pending card request, else nothing.</summary>
-    private static async Task<Dictionary<Guid, LinePaymentDto>> Payments(DbContext db, List<(Guid EmployeeId, Guid PersonId, string FullName)> who,
-        DateOnly today, CancellationToken ct)
+    /// <summary>
+    /// Open period: live — the person's current principal account, else a pending card request, else nothing. Paid period: the
+    /// account the line was paid to (its snapshot) and the state its payment files left it in.
+    /// </summary>
+    private static async Task<Dictionary<Guid, LinePaymentDto>> Payments(DbContext db,
+        List<(PrepayrollLine Line, Guid PersonId, string FullName)> who, bool paid, DateOnly today, CancellationToken ct)
     {
         var people = who.Select(w => w.PersonId).Distinct().ToList();
-        var employees = who.Select(w => w.EmployeeId).ToList();
+        var employees = who.Select(w => w.Line.EmployeeId).ToList();
+        var banks = await db.Set<Bank>().AsNoTracking().ToDictionaryAsync(b => b.Uid, b => b.Name, ct);
         var accounts = (await db.Set<PersonBankAccount>().AsNoTracking()
                 .Where(a => people.Contains(a.PersonId) && a.IsPrimary && (a.ValidTo == null || a.ValidTo >= today))
-                .Join(db.Set<Bank>(), a => a.BankId, b => b.Uid, (a, b) => new { a.PersonId, Bank = b.Name, a.AccountLast4, a.AccountType, a.HolderName })
                 .ToListAsync(ct))
             .GroupBy(a => a.PersonId).ToDictionary(g => g.Key, g => g.First());
         var cards = (await db.Set<CardRequest>().AsNoTracking()
@@ -170,11 +174,30 @@ public static class PrepayrollQueries
                     && (r.Status == CardRequestStatus.Queued || r.Status == CardRequestStatus.InBatch || r.Status == CardRequestStatus.Uploaded))
                 .Select(r => r.EmployeeId).ToListAsync(ct))
             .ToHashSet();
-        return who.ToDictionary(w => w.EmployeeId, w => accounts.TryGetValue(w.PersonId, out var a)
-            ? new LinePaymentDto(PaymentState.Ready, a.Bank, a.AccountLast4, a.AccountType,
-                SameName(a.HolderName, w.FullName) ? null : a.HolderName)
-            : new LinePaymentDto(cards.Contains(w.EmployeeId) ? PaymentState.CardRequested : PaymentState.MissingAccount, null, null, null, null));
+        return who.ToDictionary(w => w.Line.EmployeeId, w =>
+        {
+            var l = w.Line;
+            string? Third(string? holder) => holder is null || SameName(holder, w.FullName) ? null : holder;
+            if (paid && l.BankId is { } bank)
+                return new LinePaymentDto(State(l.PaymentStatus, false), banks[bank], l.AccountLast4, l.AccountType, Third(l.HolderName));
+            if (paid)
+                return new LinePaymentDto(State(l.PaymentStatus, cards.Contains(l.EmployeeId)), null, null, null, null);
+            return accounts.TryGetValue(w.PersonId, out var a)
+                ? new LinePaymentDto(PaymentState.Ready, banks[a.BankId], a.AccountLast4, a.AccountType, Third(a.HolderName))
+                : new LinePaymentDto(cards.Contains(l.EmployeeId) ? PaymentState.CardRequested : PaymentState.MissingAccount, null, null, null, null);
+        });
     }
+
+    private static PaymentState State(PaymentRowStatus? status, bool cardRequested) => status switch
+    {
+        null => PaymentState.NothingDue,
+        PaymentRowStatus.Pending => PaymentState.Pending,
+        PaymentRowStatus.Paid => PaymentState.Paid,
+        PaymentRowStatus.Rejected => PaymentState.Rejected,
+        PaymentRowStatus.InvalidAccount => PaymentState.InvalidAccount,
+        PaymentRowStatus.Ready => PaymentState.Ready,
+        _ => cardRequested ? PaymentState.CardRequested : PaymentState.MissingAccount,
+    };
 
     /// <summary>
     /// The holder is the employee when the same words appear, in any order, case or accents («NOE ALANIS TREVINO» is

@@ -75,8 +75,12 @@ public static class StaffRules
         var existing = await db.Set<AttendanceRecord>()
             .Where(a => a.EmployeeId == period.EmployeeId && a.WorkDate >= from && a.WorkDate <= to)
             .ToDictionaryAsync(a => a.WorkDate, ct);
+        var paid = await PaidDatesAsync(db, period.EmployeeId, from, to, ct);
         for (var d = from; d <= to; d = d.AddDays(1))
         {
+            // A paid period's days stay as they were paid (S10).
+            if (paid.Contains(d))
+                continue;
             if (!existing.TryGetValue(d, out var day))
                 db.Add(day = new AttendanceRecord { EmployeeId = period.EmployeeId, WorkDate = d });
             day.Status = status;
@@ -94,9 +98,29 @@ public static class StaffRules
     /// Removes the days a period wrote after <paramref name="after"/> (all of them when <c>null</c>). Loaded and removed one by
     /// one, not bulk-deleted, so each removal reaches <c>audit_log</c>.
     /// </summary>
-    public static async Task UnfillAsync(DbContext db, EmployeeStatusPeriod period, DateOnly? after, CancellationToken ct) =>
-        db.RemoveRange(await db.Set<AttendanceRecord>().Where(a => a.StatusPeriodId == period.Uid && (after == null || a.WorkDate > after))
-            .ToListAsync(ct));
+    public static async Task UnfillAsync(DbContext db, EmployeeStatusPeriod period, DateOnly? after, CancellationToken ct)
+    {
+        var days = await db.Set<AttendanceRecord>().Where(a => a.StatusPeriodId == period.Uid && (after == null || a.WorkDate > after))
+            .ToListAsync(ct);
+        if (days.Count == 0)
+            return;
+        var paid = await PaidDatesAsync(db, period.EmployeeId, days.Min(d => d.WorkDate), days.Max(d => d.WorkDate), ct);
+        db.RemoveRange(days.Where(d => !paid.Contains(d.WorkDate)));
+    }
+
+    /// <summary>The dates between <paramref name="from"/> and <paramref name="to"/> in a paid period of the employee's group.</summary>
+    public static async Task<HashSet<DateOnly>> PaidDatesAsync(DbContext db, Guid employeeId, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var groupId = await db.Set<Employee>().Where(e => e.Uid == employeeId).Select(e => e.PayrollGroupId).SingleAsync(ct);
+        var periods = await db.Set<Periods.PayrollPeriod>()
+            .Where(p => p.PayrollGroupId == groupId && p.Status == Periods.PeriodStatus.Paid && p.StartDate <= to && p.EndDate >= from)
+            .Select(p => new { p.StartDate, p.EndDate }).ToListAsync(ct);
+        var dates = new HashSet<DateOnly>();
+        foreach (var p in periods)
+            for (var d = p.StartDate; d <= p.EndDate; d = d.AddDays(1))
+                dates.Add(d);
+        return dates;
+    }
 
     /// <summary>The puesto's rates valid on <paramref name="date"/>.</summary>
     public static Task<PositionRate?> PositionRatesOn(DbContext db, Guid positionId, DateOnly date, CancellationToken ct) =>

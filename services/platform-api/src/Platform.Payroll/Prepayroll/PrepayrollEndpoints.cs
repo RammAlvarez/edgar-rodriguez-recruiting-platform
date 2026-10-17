@@ -229,20 +229,14 @@ public static partial class PrepayrollEndpoints
         var totals = grid.Columns.Select((c, i) => new ReportRow([ReportCell.Text(c), ReportCell.Money(grid.Footers[i])]))
             .Append(new ReportRow([ReportCell.Text("TOTAL NETO A PAGAR"), ReportCell.Money(grid.TotalNet)], Emphasis: true))
             .ToList();
-        var states = new[] { (PaymentState.Ready, "Con cuenta"), (PaymentState.CardRequested, "Tarjeta en trámite"), (PaymentState.MissingAccount, "Sin cuenta") }
-            .Select(s => (Label: s.Item2, Rows: grid.Rows.Where(r => r.Payment.State == s.Item1).ToList()))
-            .Select(s => new ReportRow([ReportCell.Text(s.Label), ReportCell.Count(s.Rows.Count), ReportCell.Money(s.Rows.Sum(r => r.TotalNet))]))
+        var states = grid.Rows.GroupBy(r => r.Payment.State).OrderBy(g => g.Key)
+            .Select(g => new ReportRow([ReportCell.Text(StateLabel(g.Key)), ReportCell.Count(g.Count()), ReportCell.Money(g.Sum(r => r.TotalNet))]))
             .ToList();
         var people = grid.Rows.Select(r => new ReportRow(
             [
                 ReportCell.Text(r.FullName), ReportCell.Text(r.PositionName), ReportCell.Text(r.DaysWorked.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)),
                 ReportCell.Money(r.TotalNet),
-                ReportCell.Text(r.Payment.State switch
-                {
-                    PaymentState.Ready => $"{r.Payment.Bank} ·{r.Payment.Last4}",
-                    PaymentState.CardRequested => "Tarjeta en trámite",
-                    _ => "Sin cuenta",
-                }),
+                ReportCell.Text(r.Payment.Last4 is { } last4 ? $"{r.Payment.Bank} ·{last4} · {StateLabel(r.Payment.State)}" : StateLabel(r.Payment.State)),
             ]))
             .ToList();
         return new ReportDocument($"Prenómina {heading.PeriodLabel}",
@@ -253,6 +247,19 @@ public static partial class PrepayrollEndpoints
                 new ReportTable("Por persona", ["Empleado", "Puesto", "Días", "Total neto", "Depósito"], people),
             ]);
     }
+
+    /// <summary>«Estado de pago» as the grid and the files print it (SPEC §5.5).</summary>
+    public static string StateLabel(PaymentState state) => state switch
+    {
+        PaymentState.Ready => "Con cuenta",
+        PaymentState.CardRequested => "Tarjeta en trámite",
+        PaymentState.MissingAccount => "Sin cuenta",
+        PaymentState.InvalidAccount => "Cuenta inválida",
+        PaymentState.NothingDue => "Sin pago",
+        PaymentState.Pending => "En archivo",
+        PaymentState.Paid => "Pagado",
+        _ => "Rechazado",
+    };
 
     public static IQueryable<PayrollGroup> Groups(DbContext db, RequestContext ctx) =>
         PayrollScope.Groups(db, ctx, PermissionModule.PayrollPrepayroll);

@@ -88,10 +88,16 @@ export const PERIOD_STATUS: Record<PeriodStatus, { label: string; tone: '' | 'po
   paid: { label: 'Pagado', tone: 'positive' },
 };
 
+/** «Estado de pago» (SPEC §5.5): before payment, whether the line can be paid; once paid, what its files did with it. */
 export const PAYMENT_STATE: Record<PaymentState, { label: string; tone: '' | 'positive' | 'negative' }> = {
   ready: { label: 'Lista', tone: 'positive' },
   card_requested: { label: 'Tarjeta en trámite', tone: '' },
   missing_account: { label: 'Sin cuenta', tone: 'negative' },
+  invalid_account: { label: 'Cuenta inválida', tone: 'negative' },
+  nothing_due: { label: 'Sin pago', tone: '' },
+  pending: { label: 'En archivo', tone: '' },
+  paid: { label: 'Pagado', tone: 'positive' },
+  rejected: { label: 'Rechazado', tone: 'negative' },
 };
 
 /** The concepts an incidencia may carry (IncidentEndpoints.Concepts): hour ones take hours, the rest an amount. */
