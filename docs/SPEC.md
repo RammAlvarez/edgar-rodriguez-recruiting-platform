@@ -482,6 +482,8 @@ Passwordless. First visit: the aviso de privacidad (PLAN D77, P8); then the cand
 | D30 | No system codes in the UI: vacantes are displayed as "Cliente – Puesto" (date suffix only to disambiguate), candidates by name; `VAC-`/`CAN-` codes exist only as `legacy_code` for import | 2026-10-08 |
 | D31 | Vacantes can be assigned to a recruiter from the recruiter detail (líder / apoyo) as well as from the vacante; removing a líder requires a replacement | 2026-10-08 |
 | D32 | Employee status is a dated model: Vacaciones / Incapacidad / Suspensión are periods that pre-fill attendance and auto-expire; Baja is set only from the detail with date + motivo, never from the table | 2026-10-08 |
+| D33 | Banco Azteca *cuentas frecuentes* registers **debit cards, CLABEs and Azteca own accounts**. Columns C and J both carry the account type in two digits, the same codes as column H of *pagos masivos*: `01` own account (14 digits), `03` debit card (16; the sample file), `40` CLABE (18). The codes for `01` and `40` are inferred from the master and checked on the first real upload | answers 2026-10-16 (Q13) |
+| D34 | Banco Azteca *pagos masivos*: column E is the **importe** (the client in the 2026-09-25 meeting: "en la E aquí no dice, pero es el monto a pagar"). The file writes the payable amount there as a number with 2 decimals; E1 stays blank, as in the master the client uploads | answers 2026-10-16 (Q14) |
 
 ## 10. Open questions for the client
 
@@ -489,8 +491,6 @@ Passwordless. First visit: the aviso de privacidad (PLAN D77, P8); then the cand
 |---|---|---|
 | Q12 | `FESTIVO PRIMERA MITAD` in SEM 38: the rule (D14, 4 h × costo/hora × 3) gives 428.52 / 585.60, and the sheet types 428.5 / 585.7 on 39 rows, but 249.50 on rows 65, 83, 99, 117 and 178.60 on rows 81, 85, 87. Why did those seven get less (partial holiday shift? manual cap?) | the engine applies D14 to every entitled row; SEM 38 comes out $1,466.02 higher than the sheet until answered |
 | Q4 | Which bonus scheme is paid today? The current `SEM 38` tab declares `BONO DIAS TRABAJADOS` 450 / 600 in the header but no row pays it; the older `Formula` tab pays `BONO PUNTUALIDAD Y ASISTENCIA = 400/7 × días` and `BONO PRODUCTIVIDAD = 360/7 × días`. Options: (a) none, (b) fixed 450/600 under a condition (e.g. 6 días), (c) puntualidad + productividad per day | which concepts are active in the ECOVIA group; demo grid columns |
-| Q13 | Banco Azteca *cuentas frecuentes*: the sample file (`cuentasfrec21sept.xlsx`) has `03` in column C and again in column J, and both rows are debit cards. What do C and J hold for a CLABE (18 digits) or an Azteca own account (14/20)? | until answered the platform registers only debit cards as cuentas frecuentes (PLAN D64); CLABE accounts must be registered by hand |
-| Q14 | Banco Azteca *pagos masivos*: in `Lo HFC MAESTRO 14AGOSTO.xlsx` column E (between LEYENDA DEL CARGO and MONEDA) has no header and is empty; we take it to be the **importe**. Is that right, and does the bank expect a header text there and a number or a text cell? | the generated file writes the payable amount in E as a number with 2 decimals and leaves E1 blank, as in the master |
 
 ## 11. Delivery plan (suggested)
 

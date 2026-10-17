@@ -206,13 +206,17 @@ public sealed class BankLayoutRuleTests
     }
 
     [Fact]
-    public void Only_debit_cards_are_registered_as_frequent_accounts_until_Q13_is_answered()
+    public void Frequent_accounts_take_debit_cards_clabes_and_own_accounts_with_their_type_code()
     {
         var layout = AztecaFrequentAccounts.Layout(Banks);
-        Assert.Empty(layout.Validate([new FrequentAccountRow("hfc", "JUAN PEREZ", AccountType.DebitCard, Card, "012")], Today));
-        Assert.Equal([1, 2], layout.Validate([
-            new FrequentAccountRow("hfc", "JUAN PEREZ", AccountType.Clabe, Clabe, "012"),
-            new FrequentAccountRow("hfc", "JUAN PEREZ", AccountType.OwnAccount, "12345678901234", "127"),
-        ], Today).Select(i => i.Line));
+        FrequentAccountRow[] rows =
+        [
+            new("hfc", "JUAN PEREZ", AccountType.DebitCard, Card, "012"),
+            new("hfc", "JUAN PEREZ", AccountType.Clabe, Clabe, "012"),
+            new("hfc", "JUAN PEREZ", AccountType.OwnAccount, "12345678901234", "127"),
+        ];
+        Assert.Empty(layout.Validate(rows, Today));
+        Assert.Equal(["03", "40", "01"], rows.Select(r => AztecaFrequentAccounts.TypeCode(r.AccountType)));
+        Assert.Equal([1], layout.Validate([rows[1] with { AccountNumber = "012180000000000016" }], Today).Select(i => i.Line));
     }
 }
