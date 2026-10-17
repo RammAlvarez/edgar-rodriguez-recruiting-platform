@@ -18,6 +18,8 @@ export class Session {
   private readonly api = inject(API_CLIENT);
   private readonly auth = inject(AUTH_PROVIDER);
   private readonly stateSignal = signal<SessionState>({ status: 'loading' });
+  /** The pending retry after a 429; a sign-out or another user cancels it. */
+  private retry: ReturnType<typeof setTimeout> | undefined;
 
   readonly state = this.stateSignal.asReadonly();
   readonly me = computed(() => {
@@ -29,6 +31,7 @@ export class Session {
     let currentUid: string | null = null;
     this.auth.onChange((user) => {
       if (!user) {
+        clearTimeout(this.retry);
         currentUid = null;
         this.stateSignal.set({ status: 'signed-out' });
         return;
@@ -36,6 +39,7 @@ export class Session {
       // Token refreshes call back with the same user: keep the session; a new user must wait for /v1/me,
       // so guards see "loading" instead of a stale "signed-out".
       if (user.uid === currentUid) return;
+      clearTimeout(this.retry);
       currentUid = user.uid;
       this.stateSignal.set({ status: 'loading' });
       void this.load(true);
@@ -63,7 +67,7 @@ export class Session {
       // Too many requests (PLAN D92): stay loading and ask again when the API says.
       else if (e instanceof ApiError && e.isRateLimited) {
         this.stateSignal.set({ status: 'loading', message: e.message });
-        setTimeout(() => void this.load(start), (e.retryAfterSeconds ?? 5) * 1000);
+        this.retry = setTimeout(() => void this.load(start), (e.retryAfterSeconds ?? 5) * 1000);
       }
       else throw e;
     }

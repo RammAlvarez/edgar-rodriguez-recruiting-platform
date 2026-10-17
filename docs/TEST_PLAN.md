@@ -14,6 +14,7 @@
 | Bank layouts | xUnit, pure + ClosedXML | headers and rules of the four bank files in `examples/` | S2 |
 | Libs | Vitest | money/date formatting, api-client (auth header, errors, X-Invalidates, reviver), Zod schemas | `libs/**/**.spec.ts` |
 | Apps | Vitest via `ng test` | navigation/visibility, routes, repositories, pure component logic | `apps/*/src/**/*.spec.ts` |
+| Request limits | xUnit, small limits | per address, per person, the four candidate/client routes, forged `X-Forwarded-For`, CORS on 429 (PLAN D92) | `RateLimitTests` |
 | Conventions | xUnit | every `/v1` route has an access rule; every mutating route declares cache tags | `RouteConventionTests` |
 | Neutrality | `scripts/check-neutrality.sh` + ESLint | vendor SDKs only in their adapter files; no `fetch` outside libs/api-client | CI |
 

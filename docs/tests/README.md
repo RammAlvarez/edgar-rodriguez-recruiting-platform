@@ -15,6 +15,7 @@
 | [2026-10-16-09](2026-10-16-09-s10-pagos.md) | S10 Archivos de pago + Tarjetas | gate 2 pass; four display fixes in the run; 390 px checked |
 | [2026-10-16-10](2026-10-16-10-s11-reportes-nomina.md) | S11 Reportes de nómina | gate pass (fresh database and browser); two fixes in the run; 390 px checked |
 | [2026-10-16-11](2026-10-16-11-s12-go-live.md) | S12 Notifications, MFA, go-live | import gate pass; same-VM stack and restore drill pass; 500 employees under 2 s; D-013 fixed; 390 px checked |
+| [2026-10-17-12](2026-10-17-12-rate-limits.md) | Request limits (D92) | pass after one fix (blank page while waiting out a 429) |
 
 ## Defects
 
