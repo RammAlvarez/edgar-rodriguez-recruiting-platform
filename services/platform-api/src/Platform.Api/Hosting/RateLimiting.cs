@@ -12,7 +12,7 @@ namespace Platform.Api.Hosting;
 /// with several instances a person can reach the limit once per instance.
 /// </summary>
 /// <param name="TrustedProxyHops">
-/// Proxies in front of the API that append to <c>X-Forwarded-For</c> (Caddy, Cloud Run, App Platform: 1). Only that many
+/// Proxies in front of the API that append to <c>X-Forwarded-For</c> (Caddy or a provider's front end: 1). Only that many
 /// entries from the right are believed, so a header the browser forges is ignored. 0 uses the connection's address.
 /// </param>
 public sealed record RateLimitSettings(
@@ -59,7 +59,7 @@ public static partial class RateLimiting
         {
             o.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
             o.ForwardLimit = s.TrustedProxyHops;
-            // The proxies' own addresses change (containers, Google's and DigitalOcean's front ends): the hop count is the trust.
+            // The proxies' own addresses change (containers, the providers' front ends): the hop count is the trust.
             o.KnownIPNetworks.Clear();
             o.KnownProxies.Clear();
         });
