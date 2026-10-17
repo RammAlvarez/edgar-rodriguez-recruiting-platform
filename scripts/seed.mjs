@@ -19,7 +19,11 @@
 //       334,654.83 payable and 334,655.149146 exact (D41), or the seed fails. Skipped once Semana 38 exists;
 //   S10 the cuenta de cargo (MAXIMA REPARACION Y LIMPIEZA SA DE CV at Banco Azteca, a generated number — never the client's) and
 //       the data the bank asks for (CURP, RFC, address, phone, birth) of the two people waiting for a card, so an alta file can be
-//       generated. Semana 38 stays En revisión: the browser check pays it. Skipped once a cuenta de cargo exists.
+//       generated. Semana 38 stays En revisión: the browser check pays it. Skipped once a cuenta de cargo exists;
+//   S11 Semanas 39–41 of ECOVIA as SEM 38's pattern one, two and three weeks later (the festivo becomes a working day; days a
+//       vacation, incapacidad or baja already holds are refused and skipped), closed to Revisión by the lock job; 39 paid and
+//       uploaded, 40 paid with its file not uploaded, so the Resumen de pago has both; and the gate: Costo de nómina for ECOVIA
+//       over 38–41 has one row per week equal to its prenómina grid, or the seed fails. Skipped once Semana 39 exists.
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
 import { GOLDEN, SEM38, sem38Rows, sem38Week } from './lib/sem38.mjs';
 import { addDays, candidatos as sampleCandidates, clients as sampleClients, empleados as sampleEmployees, payrollGroups as samplePayrollGroups, puestos as samplePositions, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
@@ -500,4 +504,70 @@ if ((await api(token, 'GET', '/v1/payroll/paying-account')).status === 200) {
     ready.push(`${bank} ${preview.rows.length}`);
   }
   console.log(`cuenta de cargo ·${account.last4}; cards ready for an alta file: ${ready.join(', ')}`);
+}
+
+// ---- S11: four ECOVIA weeks for the Reportes de nómina ----
+{
+  const clientsList = (await api(token, 'GET', '/v1/clients')).body;
+  const ecoviaClient = clientsList.find((c) => c.shortName === 'ECOVIA');
+  const ecovia = (await api(token, 'GET', '/v1/payroll/groups')).body.find((g) => g.clientId === ecoviaClient.id);
+  const periods = (await api(token, 'GET', `/v1/payroll/periods?groupId=${ecovia.id}`)).body;
+  const week39Start = addDays(SEM38.start, 7);
+  if (periods.some((p) => p.startDate === week39Start)) {
+    console.log('semanas 39–41: already there, skipped');
+  } else {
+    const employees = Object.fromEntries((await api(token, 'GET', `/v1/employees?clientId=${ecoviaClient.id}&includeTerminated=true`)).body
+      .map((e) => [e.fullName, e.id]));
+    const rows = sem38Rows();
+    const writes = [1, 2, 3].flatMap((k) => rows.flatMap((r) => {
+      const week = sem38Week(r);
+      // Some variation between weeks: every sixth person (a different one each week) misses the last day they would work,
+      // which closes as an automatic falta.
+      const lastPresent = week.findLast((d) => d.status === 'present');
+      return week.filter((d) => !(d === lastPresent && (r.row + k) % 6 === 0)).map((d) => ({
+        employeeId: employees[r.fullName], date: addDays(d.date, 7 * k),
+        // No festivo in these weeks: SEM 38's 16 de septiembre is an ordinary working day.
+        status: d.status === 'holiday' ? 'present' : d.status, hoursWorked: d.hoursWorked, overtimeHours: d.overtimeHours,
+      }));
+    }));
+    let next = 0;
+    let skipped = 0;
+    await Promise.all(Array.from({ length: 8 }, async () => {
+      while (next < writes.length) {
+        const w = writes[next++];
+        const { status } = await api(token, 'POST', '/v1/attendance/unlock', {
+          employeeId: w.employeeId, date: w.date, siteId: null, status: w.status, hoursWorked: w.hoursWorked, overtimeHours: w.overtimeHours,
+          note: null, reason: 'Carga de ejemplo (patrón SEM 38)',
+        });
+        // A vacation, incapacidad or baja already holds the day (409): it stays as it is.
+        if (status !== 200) skipped++;
+      }
+    }));
+    const ids = [];
+    for (const k of [1, 2, 3]) {
+      ids.push((await api(token, 'POST', `/v1/payroll/groups/${ecovia.id}/periods`, { date: addDays(SEM38.start, 7 * k) })).body.id);
+    }
+    await internal('jobs/attendance-lock', {});
+
+    // 39 paid and uploaded, 40 paid with its file still to upload.
+    const first = (await api(token, 'POST', `/v1/payroll/periods/${ids[0]}/payment-files`, {})).body;
+    await api(token, 'POST', `/v1/payroll/payment-batches/${first.batch.id}/uploaded`, {});
+    await api(token, 'POST', `/v1/payroll/periods/${ids[1]}/payment-files`, {});
+
+    // The gate: one row per week, each equal to its grid; Semana 38 still the golden total.
+    const report = (await api(token, 'GET', `/v1/payroll-reports/cost?clientId=${ecoviaClient.id}&from=${SEM38.start}&to=${addDays(SEM38.end, 21)}`)).body;
+    const table = report.tables[0];
+    const col = (name) => table.columns.indexOf(name);
+    const weekRows = table.rows.filter((r) => !r.emphasis);
+    if (weekRows.length !== 4) throw new Error(`S11 gate: expected 4 weeks of ECOVIA, the report has ${weekRows.length}`);
+    const totals = [];
+    for (const r of weekRows) {
+      const grid = (await api(token, 'GET', `/v1/payroll/periods/${r.periodId}`)).body;
+      const shown = +r.cells[col('Total neto')].value;
+      if (shown !== +grid.totalNet) throw new Error(`S11 gate: ${r.cells[0].display} reports ${shown}, its grid ${grid.totalNet}`);
+      totals.push(`${r.cells[0].display.split(' · ')[0]} ${r.cells[col('Total neto')].display}`);
+    }
+    if (+weekRows[0].cells[col('Total neto')].value !== +GOLDEN.totalNet) throw new Error('S11 gate: Semana 38 is not the golden total');
+    console.log(`semanas 39–41: ${writes.length - skipped} days loaded (${skipped} held by a status period or baja); 39 paid, 40 file generated; costo de nómina: ${totals.join(', ')}`);
+  }
 }
