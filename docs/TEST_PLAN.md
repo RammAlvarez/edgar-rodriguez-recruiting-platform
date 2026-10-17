@@ -133,5 +133,15 @@ Data: `npm run seed` on a fresh database (S11 block: Semanas 39–41 of ECOVIA f
 4. Exportar Excel and PDF of step 2: the Excel has the title, the filters line and the same rows and total.
 5. 390 px: every report without page-wide horizontal scroll (tables scroll inside their card).
 
-### S12
-Written when the slice starts, from the "Done when" column of PLAN §2 and the demo path of ARCHITECTURE §9.
+### S12 — Notifications, MFA, go-live
+Data: `npm run seed` (S12 adds nothing new to the seed but the notifications its jobs and actions create). API-level: `NotificationTests` (each trigger once, no duplicates when a job runs twice, own rows only, mark read, the digest emails each user their unread items once), `MfaTests` (RFC 6238 test vector, enrollment and verification, a forced Administrador refused until the sign-in passed the code, a new sign-in asks again, recovery codes single-use, wrong-code limit, «Restablecer MFA», candidates and client users untouched), the import's pure mappers in Vitest. Import gate: `scripts/import-excel` on an empty `platform_test` through a second API; never on the owner's database (it loads real account numbers, encrypted).
+1. The bell shows the unread count; opening it lists them; one opens its screen and turns read; «Marcar todas como leídas».
+2. Mi cuenta → Activar verificación en dos pasos: QR and manual key, a code from an authenticator → recovery codes shown once; sign out and in → the code is asked before any screen; a recovery code works once.
+3. Usuarios → a user → «Requerir verificación en dos pasos»: at their next request they must enroll; «Restablecer» clears it.
+4. Import (`npm run import-excel -- --dir examples` against the second API): the report lists what was loaded and every row left for manual review; Semana 38 created from the workbook has 115 lines and its per-row diff against K–V and V121 shows only the known Q12 festivo rows and the total gap.
+5. Same-VM: `docker compose -f deploy/docker-compose.same-vm.yml up` on free local ports → the three apps through Caddy, `/v1` proxied, `/internal` not reachable from outside; migrations run before the API starts.
+6. Restore drill (HANDOFF): dump, restore into a scratch database, start the API on it, `/internal/health/encryption` answers ok.
+7. 390 px: the bell list and the MFA screens.
+
+### Performance and security (S12 hardening)
+500 employees in one group: the prenómina grid, the attendance day, Personal, the payment panel and Costo de nómina each answer in under 2 s on the local stack; findings of the security pass written into the run record.

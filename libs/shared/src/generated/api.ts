@@ -2162,6 +2162,54 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReadNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReadAllNotifications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -3225,6 +3273,24 @@ export type components = {
         NoteRequest: {
             contentHtml: string;
             contentJson: null | string;
+        };
+        NotificationDto: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["NotificationKind"];
+            title: string;
+            body: null | string;
+            link: null | string;
+            /** Format: date-time */
+            createdAt: Date;
+            read: boolean;
+        };
+        /** @enum {unknown} */
+        NotificationKind: "document_expiring" | "document_uploaded" | "opening_idle" | "attendance_missing" | "period_in_review" | "user_invited";
+        NotificationsDto: {
+            /** Format: int32 */
+            unread: number | string;
+            items: components["schemas"]["NotificationDto"][];
         };
         OpeningCommentDto: {
             /** Format: uuid */
@@ -4563,6 +4629,9 @@ export type MoveStageResultDto = components['schemas']['MoveStageResultDto'];
 export type NewContactFields = components['schemas']['NewContactFields'];
 export type NoteDto = components['schemas']['NoteDto'];
 export type NoteRequest = components['schemas']['NoteRequest'];
+export type NotificationDto = components['schemas']['NotificationDto'];
+export type NotificationKind = components['schemas']['NotificationKind'];
+export type NotificationsDto = components['schemas']['NotificationsDto'];
 export type OpeningCommentDto = components['schemas']['OpeningCommentDto'];
 export type OpeningCommentRequest = components['schemas']['OpeningCommentRequest'];
 export type OpeningDetailDto = components['schemas']['OpeningDetailDto'];
@@ -11179,6 +11248,73 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+        };
+    };
+    ListNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsDto"];
+                };
+            };
+        };
+    };
+    ReadNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReadAllNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -32,6 +32,9 @@
       <span class="title">Plataforma de Reclutamiento y Prenómina</span>
       <span class="spacer"></span>
       <ui-refresh-button />
+      @if (staff()) {
+        <app-notification-bell />
+      }
       <button matIconButton type="button" [matMenuTriggerFor]="userMenu" aria-label="Cuenta" matTooltip="Cuenta">
         <mat-icon fontSet="material-symbols-outlined">account_circle</mat-icon>
       </button>

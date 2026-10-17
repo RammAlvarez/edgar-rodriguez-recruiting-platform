@@ -50,6 +50,7 @@ public static class PostgresEnums
         Of<Platform.Bank.Payments.BatchStatus>("batch_status"),
         Of<Platform.Bank.Payments.PaymentBatchKind>("payment_batch_kind"),
         Of<Platform.Bank.Payments.PaymentType>("payment_type"),
+        Of<Platform.Core.Notifications.NotificationKind>("notification_kind"),
     ];
 
     private static Entry Of<T>(string name) where T : struct, Enum => new(

@@ -9,6 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Platform.Bank.Payments;
 using Platform.Core.Audit;
 using Platform.Core.Catalogs;
+using Platform.Core.Notifications;
 using Platform.Core.People;
 using Platform.Core.Users;
 using Platform.Infrastructure.Persistence;
@@ -51,6 +52,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "gender", new[] { "male", "female", "unspecified" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "interview_outcome", new[] { "pending", "attended", "no_show" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "item_source", new[] { "attendance", "incident", "position", "manual" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "notification_kind", new[] { "document_expiring", "document_uploaded", "opening_idle", "attendance_missing", "period_in_review", "user_invited" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_event_kind", new[] { "created", "edited", "status_changed", "recruiter_assigned", "recruiter_removed", "lead_changed" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_priority", new[] { "high", "medium", "low" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_status", new[] { "open", "in_progress", "filled", "cancelled", "paused" });
@@ -1600,6 +1602,78 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_client_sites_postal_code", "postal_code IS NULL OR postal_code ~ '^\\d{5}$'");
                         });
+                });
+
+            modelBuilder.Entity("Platform.Core.Notifications.Notification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Body")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DedupeKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("dedupe_key");
+
+                    b.Property<DateTimeOffset?>("EmailedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("emailed_at");
+
+                    b.Property<NotificationKind>("Kind")
+                        .HasColumnType("platform.notification_kind")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("link");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("title");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notifications");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_notifications_uid");
+
+                    b.HasIndex("UserId", "DedupeKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notifications_user_id_dedupe_key");
+
+                    b.HasIndex("UserId", "ReadAt")
+                        .HasDatabaseName("ix_notifications_user_id_read_at");
+
+                    b.ToTable("notifications", "platform");
                 });
 
             modelBuilder.Entity("Platform.Core.People.Person", b =>
@@ -4478,6 +4552,17 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasPrincipalKey("Uid")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_client_sites_zones_zone_id");
+                });
+
+            modelBuilder.Entity("Platform.Core.Notifications.Notification", b =>
+                {
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_notifications_user_user_id");
                 });
 
             modelBuilder.Entity("Platform.Core.People.PersonBankAccount", b =>

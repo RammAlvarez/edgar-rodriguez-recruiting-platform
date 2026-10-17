@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Platform.Core.Catalogs;
+using Platform.Core.Clients;
+using Platform.Core.Notifications;
+using Platform.Core.Users;
 using Platform.Payroll.Engine;
 using Platform.Payroll.Groups;
 using Platform.Payroll.Periods;
@@ -225,6 +228,13 @@ public static class Prepayrolls
         tracked.ReviewStartedAt = now;
         await db.SaveChangesAsync(ct);
         await EnsureLinesAsync(db, tracked, now, ct, recomputeAll: true);
+        // Who prepares the prenómina of that client hears that the period can be reviewed and paid (SPEC §3.5).
+        var client = await db.Set<Client>().Where(c => c.Uid == group.ClientId).Select(c => c.ShortName).SingleAsync(ct);
+        var label = $"{(group.PeriodType == PeriodType.Weekly ? "Semana" : "Quincena")} {period.PeriodNumber}";
+        await Notifier.NotifyAsync(db, await Notifier.Holders(db, PermissionModule.PayrollPrepayroll, group.ClientId).ToListAsync(ct),
+            new NotificationDraft(NotificationKind.PeriodInReview, $"period-review:{period.Uid}", $"{label} de {client} · {group.Name} en revisión",
+                created > 0 ? $"La captura cerró; {created} días sin captura quedaron como falta." : "La captura cerró. Revisa la prenómina y genera los pagos.",
+                $"/prenomina?period={period.Uid}"), now, ct);
         await db.SaveChangesAsync(ct);
         return created;
     }

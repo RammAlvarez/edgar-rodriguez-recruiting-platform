@@ -8766,6 +8766,73 @@
           }
         }
       }
+    },
+    "/v1/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "ListNotifications",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notifications/{id}/read": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "ReadNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "operationId": "ReadAllNotifications",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13178,6 +13245,82 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "NotificationDto": {
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "link",
+          "createdAt",
+          "read"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NotificationKind"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "link": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "read": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NotificationKind": {
+        "enum": [
+          "document_expiring",
+          "document_uploaded",
+          "opening_idle",
+          "attendance_missing",
+          "period_in_review",
+          "user_invited"
+        ]
+      },
+      "NotificationsDto": {
+        "required": [
+          "unread",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "unread": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationDto"
+            }
           }
         }
       },
@@ -18259,6 +18402,9 @@
     },
     {
       "name": "PayrollReports"
+    },
+    {
+      "name": "Notifications"
     }
   ]
 }

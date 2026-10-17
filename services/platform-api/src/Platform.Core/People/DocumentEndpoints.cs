@@ -105,7 +105,7 @@ public static class DocumentEndpoints
     }
 
     private static async Task<IResult> Confirm(Guid personId, ConfirmDocumentRequest r, DbContext db, IObjectStorage storage,
-        IClock clock, IPersonScope scope, CancellationToken ct)
+        IClock clock, IPersonScope scope, RequestContext ctx, IEnumerable<Notifications.ICandidateDocumentListener> listeners, CancellationToken ct)
     {
         if (!await scope.CanAccessAsync(personId, ct) || !await db.Set<Person>().AnyAsync(p => p.Uid == personId && p.DeletedAt == null, ct))
             return ApiResults.NotFound(PeopleEndpoints.NotFound);
@@ -160,6 +160,13 @@ public static class DocumentEndpoints
         }
         db.Add(doc);
         await db.SaveChangesAsync(ct);
+        // A candidate's own upload tells their recruiters (SPEC §3.5).
+        if (ctx.Candidate is not null)
+        {
+            foreach (var listener in listeners)
+                await listener.UploadedAsync(db, personId, doc.Uid, type.NameEs, clock.UtcNow, ct);
+            await db.SaveChangesAsync(ct);
+        }
         await tx.CommitAsync(ct);
         return TypedResults.Ok(PersonDocumentDto.From(doc));
     }

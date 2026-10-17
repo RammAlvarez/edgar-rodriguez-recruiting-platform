@@ -15,6 +15,7 @@ import { map } from 'rxjs';
 import { API_CLIENT } from '@platform/ui';
 import { CoverMode } from './cover-mode';
 import { visibleNavigation } from './navigation';
+import { NotificationBell } from './notification-bell';
 
 const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', client: 'Cliente', candidate: 'Candidato' } as const;
 
@@ -42,6 +43,7 @@ const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', c
     MatDivider,
     MatTooltip,
     RefreshButton,
+    NotificationBell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './shell.scss',
@@ -58,6 +60,8 @@ export class Shell {
     { initialValue: false },
   );
   readonly me = this.session.me;
+  /** The bell is for staff (the admin app's users); a candidate or a client user never reaches this shell. */
+  readonly staff = computed(() => ['administrator', 'recruiter'].includes(this.me()?.role ?? ''));
   readonly covering = inject(CoverMode).active;
   private readonly coverMode = inject(CoverMode);
   private readonly api = inject(API_CLIENT);

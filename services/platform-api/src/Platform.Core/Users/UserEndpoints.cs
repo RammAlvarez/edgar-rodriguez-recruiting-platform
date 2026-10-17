@@ -102,6 +102,13 @@ public static partial class UserEndpoints
             return ApiResults.Conflict(UserMessages.EmailTaken);
         }
 
+        if (user.Role != UserRole.Client)
+        {
+            await Notifications.Notifier.NotifyAsync(db, [user.Uid], new Notifications.NotificationDraft(Notifications.NotificationKind.UserInvited,
+                $"invited:{user.Uid}", "Te damos la bienvenida a la plataforma", $"{caller.DisplayName} te dio acceso. Revisa tu perfil en Mi cuenta.", "/"),
+                clock.UtcNow, ct);
+            await db.SaveChangesAsync(ct);
+        }
         var sent = await SendInvitation(user, ctx, auth, email, links, logs, ct);
         var clients = await db.Set<Client>().AsNoTracking().ToDictionaryAsync(c => c.Uid, c => c.ShortName, ct);
         return TypedResults.Ok(new InviteResultDto(ToDto(user, clients), sent));

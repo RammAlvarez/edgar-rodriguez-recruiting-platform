@@ -15,6 +15,7 @@ using Platform.Core.Audit;
 using Platform.Core.Catalogs;
 using Platform.Core.Clients;
 using Platform.Core.Http;
+using Platform.Core.Notifications;
 using Platform.Core.People;
 using Platform.Core.Reports;
 using Platform.Core.Security;
@@ -76,6 +77,9 @@ builder.Services.AddSingleton<IFieldCipher, AesGcmFieldCipher>();
 builder.Services.AddScoped<IJob, AttendanceLockJob>();
 builder.Services.AddScoped<IJob, PeriodRollJob>();
 builder.Services.AddScoped<IJob, StatusRollJob>();
+builder.Services.AddScoped<IJob, DocumentExpiryJob>();
+builder.Services.AddScoped<IJob, NotificationsDigestJob>();
+builder.Services.AddScoped<Platform.Core.Notifications.ICandidateDocumentListener, Platform.Recruiting.Candidates.CandidateDocumentListener>();
 builder.Services.AddSingleton(settings.Firebase);
 builder.Services.AddSingleton<IAuthProvider, FirebaseAuthProvider>();
 builder.Services.AddSingleton(settings.Links);
@@ -140,6 +144,7 @@ v1.MapIncidentEndpoints();
 v1.MapPaymentEndpoints();
 v1.MapRegistrationEndpoints();
 v1.MapPayrollReportEndpoints();
+v1.MapNotificationEndpoints();
 
 app.MapInternalEndpoints(settings.InternalSecret);
 

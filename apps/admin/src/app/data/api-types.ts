@@ -135,3 +135,5 @@ export type PayrollReportTableDto = S['PayrollReportTableDto'];
 export type PayrollReportRowDto = S['PayrollReportRowDto'];
 export type PayrollReportOptionsDto = S['PayrollReportOptionsDto'];
 export type ReportCell = S['ReportCell'];
+export type NotificationsDto = S['NotificationsDto'];
+export type NotificationDto = S['NotificationDto'];
