@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Platform.Core.Abstractions;
+using Platform.Core.Catalogs;
+using Platform.Core.People;
 using Platform.Core.Persistence;
 using Platform.Core.Users;
 using Platform.Payroll.Engine;
@@ -75,7 +77,31 @@ public sealed class PrepayrollLine : IDerived
     public string? Comments { get; set; }
     public DateTimeOffset ComputedAt { get; set; }
 
+    // The account the line is paid to, copied from the person's principal account when it goes into a payment file (S10);
+    // null while the period is open (the grid shows the live account) and for a line never paid.
+    public Guid? BankId { get; set; }
+    public BankAccountType? AccountType { get; set; }
+    public byte[]? AccountNumberEnc { get; set; }
+    public string? AccountLast4 { get; set; }
+    public string? HolderName { get; set; }
+    /// <summary>Set when the period is paid (S10); null while open, and for a line with nothing to pay (net ≤ 0).</summary>
+    public PaymentRowStatus? PaymentStatus { get; set; }
+
     public List<PrepayrollLineItem> Items { get; set; } = [];
+}
+
+/// <summary>
+/// Postgres enum <c>payment_row_status</c> (DATA_MODEL §2): a line or a payment-file row. <c>Pending</c> = in a file not yet
+/// uploaded; the others are the reasons a line is not in a file yet, or what the bank did with it.
+/// </summary>
+public enum PaymentRowStatus
+{
+    Ready,
+    MissingAccount,
+    InvalidAccount,
+    Pending,
+    Paid,
+    Rejected,
 }
 
 /// <summary>DATA_MODEL §5.12: one column of the row, exact and stored with 6 decimals (D42).</summary>
@@ -138,7 +164,10 @@ internal sealed class PrepayrollLineConfiguration : IEntityTypeConfiguration<Pre
         foreach (var name in new[] { nameof(PrepayrollLine.GrossEarnings), nameof(PrepayrollLine.TotalDeductions), nameof(PrepayrollLine.TotalNetExact) })
             b.Property(name).HasPrecision(18, 6);
         b.Property(l => l.TotalNet).HasPrecision(12, 2);
+        b.Property(l => l.AccountLast4).HasMaxLength(4);
+        b.Property(l => l.HolderName).HasMaxLength(40);
         b.HasIndex(l => new { l.PayrollPeriodId, l.EmployeeId }).IsUnique();
+        b.HasOne<Bank>().WithMany().HasForeignKey(l => l.BankId).HasPrincipalKey(x => x.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasMany(l => l.Items).WithOne().HasForeignKey(i => i.PrepayrollLineId).HasPrincipalKey(l => l.Uid).OnDelete(DeleteBehavior.Cascade);
         b.HasOne<PayrollPeriod>().WithMany().HasForeignKey(l => l.PayrollPeriodId).HasPrincipalKey(p => p.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Employee>().WithMany().HasForeignKey(l => l.EmployeeId).HasPrincipalKey(e => e.Uid).OnDelete(DeleteBehavior.Restrict);

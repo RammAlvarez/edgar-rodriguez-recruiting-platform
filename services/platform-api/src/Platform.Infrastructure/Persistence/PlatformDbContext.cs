@@ -17,6 +17,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
         typeof(User).Assembly, // Platform.Core
         typeof(Platform.Recruiting.Openings.JobOpening).Assembly, // Platform.Recruiting
         typeof(Platform.Payroll.Staff.Employee).Assembly, // Platform.Payroll
+        typeof(Platform.Bank.Payments.PaymentBatch).Assembly, // Platform.Bank
     ];
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -46,6 +46,10 @@ public static class PostgresEnums
         Of<Platform.Payroll.Staff.AttendanceStatus>("attendance_status"),
         Of<Platform.Payroll.Periods.PeriodStatus>("period_status"),
         Of<Platform.Payroll.Engine.ItemSource>("item_source"),
+        Of<Platform.Payroll.Prepayroll.PaymentRowStatus>("payment_row_status"),
+        Of<Platform.Bank.Payments.BatchStatus>("batch_status"),
+        Of<Platform.Bank.Payments.PaymentBatchKind>("payment_batch_kind"),
+        Of<Platform.Bank.Payments.PaymentType>("payment_type"),
     ];
 
     private static Entry Of<T>(string name) where T : struct, Enum => new(

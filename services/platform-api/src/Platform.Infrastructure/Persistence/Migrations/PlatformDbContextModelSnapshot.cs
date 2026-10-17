@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Platform.Bank.Payments;
 using Platform.Core.Audit;
 using Platform.Core.Catalogs;
 using Platform.Core.People;
@@ -14,6 +15,7 @@ using Platform.Infrastructure.Persistence;
 using Platform.Payroll.Engine;
 using Platform.Payroll.Groups;
 using Platform.Payroll.Periods;
+using Platform.Payroll.Prepayroll;
 using Platform.Payroll.Staff;
 using Platform.Recruiting.Candidates;
 using Platform.Recruiting.Openings;
@@ -36,6 +38,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "attendance_status", new[] { "present", "partial", "absent", "rest_day", "rest_day_worked", "holiday", "holiday_worked", "sick_leave", "leave_paid", "leave_unpaid", "vacation" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "audit_action", new[] { "insert", "update", "delete", "unlock", "export", "login" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "bank_account_type", new[] { "own_account", "debit_card", "clabe" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "batch_status", new[] { "generated", "uploaded_to_bank", "completed", "cancelled" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "candidate_source", new[] { "facebook", "linkedin", "whatsapp", "referral", "job_board", "other" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "candidate_stage", new[] { "new", "contacted", "interview", "suitable", "not_suitable", "hired", "discarded" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "card_request_status", new[] { "queued", "in_batch", "uploaded", "received", "cancelled" });
@@ -51,6 +54,9 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_event_kind", new[] { "created", "edited", "status_changed", "recruiter_assigned", "recruiter_removed", "lead_changed" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_priority", new[] { "high", "medium", "low" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_status", new[] { "open", "in_progress", "filled", "cancelled", "paused" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "payment_batch_kind", new[] { "period_payment", "pending_payment", "frequent_accounts" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "payment_row_status", new[] { "ready", "missing_account", "invalid_account", "pending", "paid", "rejected" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "payment_type", new[] { "spei", "tef", "baz_transfer" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "period_status", new[] { "capturing", "in_review", "paid" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "period_type", new[] { "weekly", "biweekly" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "permission_module", new[] { "recruiting", "recruiting_reports", "payroll_prepayroll", "payroll_attendance", "payroll_incidents", "payroll_staff", "payroll_payment_files", "payroll_card_requests", "users" });
@@ -60,6 +66,579 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Platform.Bank.Payments.PayingAccount", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("BankId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bank_id");
+
+                    b.Property<string>("ChargeAccountLast4")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("charge_account_last4");
+
+                    b.Property<byte[]>("ChargeAccountNumberEnc")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("charge_account_number_enc");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("MXP")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("DefaultChargeLegend")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("PAGO")
+                        .HasColumnName("default_charge_legend");
+
+                    b.Property<string>("DefaultCreditLegend")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("PAGO")
+                        .HasColumnName("default_credit_legend");
+
+                    b.Property<string>("HolderName")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("holder_name");
+
+                    b.Property<string>("HolderRfc")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)")
+                        .HasColumnName("holder_rfc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_paying_accounts");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_paying_accounts_uid");
+
+                    b.HasIndex("BankId")
+                        .HasDatabaseName("ix_paying_accounts_bank_id");
+
+                    b.ToTable("paying_accounts", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Payments.PaymentBatch", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("FrequentAccountsCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("frequent_accounts_count");
+
+                    b.Property<string>("FrequentAccountsStoragePath")
+                        .HasColumnType("text")
+                        .HasColumnName("frequent_accounts_storage_path");
+
+                    b.Property<DateTimeOffset>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at");
+
+                    b.Property<Guid>("GeneratedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("generated_by");
+
+                    b.Property<PaymentBatchKind>("Kind")
+                        .HasColumnType("platform.payment_batch_kind")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("LayoutVersion")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("layout_version");
+
+                    b.Property<Guid>("PayingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paying_account_id");
+
+                    b.Property<Guid?>("PayrollPeriodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payroll_period_id");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<BatchStatus>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.batch_status")
+                        .HasDefaultValue(BatchStatus.Generated)
+                        .HasColumnName("status");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("storage_path");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.Property<Guid?>("UploadedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payment_batches");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_payment_batches_uid");
+
+                    b.HasIndex("GeneratedBy")
+                        .HasDatabaseName("ix_payment_batches_generated_by");
+
+                    b.HasIndex("PayingAccountId")
+                        .HasDatabaseName("ix_payment_batches_paying_account_id");
+
+                    b.HasIndex("PayrollPeriodId")
+                        .HasDatabaseName("ix_payment_batches_payroll_period_id");
+
+                    b.HasIndex("UploadedBy")
+                        .HasDatabaseName("ix_payment_batches_uploaded_by");
+
+                    b.ToTable("payment_batches", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_payment_batches_rows", "row_count > 0 AND total_amount > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Bank.Payments.PaymentBatchRow", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("AccountLast4")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("account_last4");
+
+                    b.Property<byte[]>("AccountNumberEnc")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("account_number_enc");
+
+                    b.Property<BankAccountType>("AccountType")
+                        .HasColumnType("platform.bank_account_type")
+                        .HasColumnName("account_type");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("ChargeLegend")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("charge_legend");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CreditLegend")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("credit_legend");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("display_name");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_no");
+
+                    b.Property<Guid>("PaymentBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_batch_id");
+
+                    b.Property<PaymentType>("PaymentType")
+                        .HasColumnType("platform.payment_type")
+                        .HasColumnName("payment_type");
+
+                    b.Property<Guid>("PersonBankAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("person_bank_account_id");
+
+                    b.Property<Guid>("PrepayrollLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("prepayroll_line_id");
+
+                    b.Property<string>("ReceivingBankCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("receiving_bank_code");
+
+                    b.Property<bool>("RegistersFrequentAccount")
+                        .HasColumnType("boolean")
+                        .HasColumnName("registers_frequent_account");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<PaymentRowStatus>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.payment_row_status")
+                        .HasDefaultValue(PaymentRowStatus.Pending)
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payment_batch_rows");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_payment_batch_rows_uid");
+
+                    b.HasIndex("PersonBankAccountId")
+                        .HasDatabaseName("ix_payment_batch_rows_person_bank_account_id");
+
+                    b.HasIndex("PrepayrollLineId")
+                        .HasDatabaseName("ix_payment_batch_rows_prepayroll_line_id");
+
+                    b.HasIndex("PaymentBatchId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payment_batch_rows_payment_batch_id_line_no");
+
+                    b.ToTable("payment_batch_rows", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_payment_batch_rows_amount", "amount > 0 AND amount = trunc(amount, 2)");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Bank.Registrations.EmployeeBankNumber", b =>
+                {
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<RegistrationBank>("Bank")
+                        .HasColumnType("platform.registration_bank")
+                        .HasColumnName("bank");
+
+                    b.Property<string>("EmployeeNumber")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("employee_number");
+
+                    b.HasKey("EmployeeId", "Bank")
+                        .HasName("pk_employee_bank_numbers");
+
+                    b.HasIndex("Bank", "EmployeeNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_employee_bank_numbers_bank_employee_number");
+
+                    b.ToTable("employee_bank_numbers", "platform");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Registrations.RegistrationBatch", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<RegistrationBank>("Bank")
+                        .HasColumnType("platform.registration_bank")
+                        .HasColumnName("bank");
+
+                    b.Property<string>("BranchToSend")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("branch_to_send");
+
+                    b.Property<string>("CardType")
+                        .HasColumnType("text")
+                        .HasColumnName("card_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at");
+
+                    b.Property<Guid>("GeneratedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("generated_by");
+
+                    b.Property<decimal?>("GrossMonthlySalary")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("gross_monthly_salary");
+
+                    b.Property<string>("LayoutVersion")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("layout_version");
+
+                    b.Property<string>("OccupationCode")
+                        .HasColumnType("text")
+                        .HasColumnName("occupation_code");
+
+                    b.Property<string>("ProductCode")
+                        .HasColumnType("text")
+                        .HasColumnName("product_code");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<BatchStatus>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("platform.batch_status")
+                        .HasDefaultValue(BatchStatus.Generated)
+                        .HasColumnName("status");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("storage_path");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.Property<Guid?>("UploadedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_registration_batches");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_registration_batches_uid");
+
+                    b.HasIndex("GeneratedBy")
+                        .HasDatabaseName("ix_registration_batches_generated_by");
+
+                    b.HasIndex("UploadedBy")
+                        .HasDatabaseName("ix_registration_batches_uploaded_by");
+
+                    b.ToTable("registration_batches", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_registration_batches_rows", "row_count > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Platform.Bank.Registrations.RegistrationBatchRow", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("CardRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_request_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("employee_id");
+
+                    b.Property<string>("EmployeeNumber")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("employee_number");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_no");
+
+                    b.Property<Guid>("RegistrationBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("registration_batch_id");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_registration_batch_rows");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_registration_batch_rows_uid");
+
+                    b.HasIndex("CardRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_registration_batch_rows_card_request_id");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("ix_registration_batch_rows_employee_id");
+
+                    b.HasIndex("RegistrationBatchId", "LineNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_registration_batch_rows_registration_batch_id_line_no");
+
+                    b.ToTable("registration_batch_rows", "platform");
+                });
 
             modelBuilder.Entity("Platform.Core.Audit.AuditEntry", b =>
                 {
@@ -2213,6 +2792,23 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("AccountLast4")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("account_last4");
+
+                    b.Property<byte[]>("AccountNumberEnc")
+                        .HasColumnType("bytea")
+                        .HasColumnName("account_number_enc");
+
+                    b.Property<BankAccountType?>("AccountType")
+                        .HasColumnType("platform.bank_account_type")
+                        .HasColumnName("account_type");
+
+                    b.Property<Guid?>("BankId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bank_id");
+
                     b.Property<string>("Comments")
                         .HasColumnType("text")
                         .HasColumnName("comments");
@@ -2249,6 +2845,11 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("hired_at");
 
+                    b.Property<string>("HolderName")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("holder_name");
+
                     b.Property<int>("HolidaysEntitled")
                         .HasColumnType("integer")
                         .HasColumnName("holidays_entitled");
@@ -2282,6 +2883,10 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)")
                         .HasColumnName("partial_hours");
+
+                    b.Property<PaymentRowStatus?>("PaymentStatus")
+                        .HasColumnType("platform.payment_row_status")
+                        .HasColumnName("payment_status");
 
                     b.Property<Guid>("PayrollPeriodId")
                         .HasColumnType("uuid")
@@ -2326,6 +2931,9 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                     b.HasAlternateKey("Uid")
                         .HasName("ak_prepayroll_lines_uid");
+
+                    b.HasIndex("BankId")
+                        .HasDatabaseName("ix_prepayroll_lines_bank_id");
 
                     b.HasIndex("EmployeeId")
                         .HasDatabaseName("ix_prepayroll_lines_employee_id");
@@ -3690,6 +4298,133 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Platform.Bank.Payments.PayingAccount", b =>
+                {
+                    b.HasOne("Platform.Core.Catalogs.Bank", null)
+                        .WithMany()
+                        .HasForeignKey("BankId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_paying_accounts_banks_bank_id");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Payments.PaymentBatch", b =>
+                {
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("GeneratedBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_batches_users_generated_by");
+
+                    b.HasOne("Platform.Bank.Payments.PayingAccount", null)
+                        .WithMany()
+                        .HasForeignKey("PayingAccountId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_batches_paying_accounts_paying_account_id");
+
+                    b.HasOne("Platform.Payroll.Periods.PayrollPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("PayrollPeriodId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_payment_batches_payroll_periods_payroll_period_id");
+
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_payment_batches_users_uploaded_by");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Payments.PaymentBatchRow", b =>
+                {
+                    b.HasOne("Platform.Bank.Payments.PaymentBatch", null)
+                        .WithMany("Rows")
+                        .HasForeignKey("PaymentBatchId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_batch_rows_payment_batches_payment_batch_id");
+
+                    b.HasOne("Platform.Core.People.PersonBankAccount", null)
+                        .WithMany()
+                        .HasForeignKey("PersonBankAccountId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_batch_rows_person_bank_accounts_person_bank_account");
+
+                    b.HasOne("Platform.Payroll.Prepayroll.PrepayrollLine", null)
+                        .WithMany()
+                        .HasForeignKey("PrepayrollLineId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_batch_rows_prepayroll_lines_prepayroll_line_id");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Registrations.EmployeeBankNumber", b =>
+                {
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_employee_bank_numbers_employees_employee_id");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Registrations.RegistrationBatch", b =>
+                {
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("GeneratedBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_registration_batches_users_generated_by");
+
+                    b.HasOne("Platform.Core.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedBy")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_registration_batches_users_uploaded_by");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Registrations.RegistrationBatchRow", b =>
+                {
+                    b.HasOne("Platform.Payroll.Staff.CardRequest", null)
+                        .WithMany()
+                        .HasForeignKey("CardRequestId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_registration_batch_rows_card_requests_card_request_id");
+
+                    b.HasOne("Platform.Payroll.Staff.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_registration_batch_rows_employees_employee_id");
+
+                    b.HasOne("Platform.Bank.Registrations.RegistrationBatch", null)
+                        .WithMany("Rows")
+                        .HasForeignKey("RegistrationBatchId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_registration_batch_rows_registration_batches_registration_b");
+                });
+
             modelBuilder.Entity("Platform.Core.Catalogs.DocumentTemplateItem", b =>
                 {
                     b.HasOne("Platform.Core.Catalogs.DocumentType", null)
@@ -3946,6 +4681,13 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Platform.Payroll.Prepayroll.PrepayrollLine", b =>
                 {
+                    b.HasOne("Platform.Core.Catalogs.Bank", null)
+                        .WithMany()
+                        .HasForeignKey("BankId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_prepayroll_lines_banks_bank_id");
+
                     b.HasOne("Platform.Payroll.Staff.Employee", null)
                         .WithMany()
                         .HasForeignKey("EmployeeId")
@@ -4324,6 +5066,16 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_opening_comments_job_openings_job_opening_id");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Payments.PaymentBatch", b =>
+                {
+                    b.Navigation("Rows");
+                });
+
+            modelBuilder.Entity("Platform.Bank.Registrations.RegistrationBatch", b =>
+                {
+                    b.Navigation("Rows");
                 });
 
             modelBuilder.Entity("Platform.Core.Catalogs.DocumentTemplate", b =>
