@@ -96,6 +96,10 @@ public sealed class HttpConventionTests : IAsyncLifetime
 
         var response = await app.GetTestClient().PostAsync("/payments", Json("{not json"));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // D-023: the framework's «Bad Request» reached the apps as is; the answer names the problem in Spanish.
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains(ProblemResponseExtensions.UnreadableTitle, body);
+        Assert.Contains(ProblemResponseExtensions.UnreadableDetail, body);
     }
 
     [Theory]

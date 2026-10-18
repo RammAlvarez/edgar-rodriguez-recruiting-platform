@@ -24,8 +24,8 @@ public sealed class BootstrapRequestValidator : AbstractValidator<BootstrapReque
 {
     public BootstrapRequestValidator()
     {
-        RuleFor(r => r.Email).NotEmpty().EmailAddress().WithMessage("Introduce un correo válido.");
-        RuleFor(r => r.DisplayName).NotEmpty().WithMessage("El nombre es obligatorio.").MaximumLength(120);
+        RuleFor(r => r.Email).NotEmpty().WithMessage("Este campo es obligatorio.").EmailAddress().WithMessage("Introduce un correo válido.");
+        RuleFor(r => r.DisplayName).NotEmpty().WithMessage("El nombre es obligatorio.").MaximumLength(120).WithMessage("Admite hasta 120 caracteres.");
     }
 }
 

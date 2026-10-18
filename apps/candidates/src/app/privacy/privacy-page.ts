@@ -70,6 +70,7 @@ export class PrivacyPage {
   readonly error = signal<string | null>(null);
 
   async accept(): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(true);
     this.error.set(null);
     try {

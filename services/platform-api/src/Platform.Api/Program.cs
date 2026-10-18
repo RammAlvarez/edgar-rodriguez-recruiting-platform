@@ -89,6 +89,8 @@ if (settings.Email.ResendApiKey is { Length: > 0 })
     builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>(c => c.BaseAddress = ResendEmailSender.BaseAddress);
 else
     builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
+// Every rule carries its own Spanish message; a rule that forgets one still answers in Spanish, never English (D-019).
+ValidatorOptions.Global.LanguageManager.Culture = System.Globalization.CultureInfo.GetCultureInfo("es");
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 builder.Services.AddValidatorsFromAssemblyContaining<MeDto>(includeInternalTypes: true);
 builder.Services.AddValidatorsFromAssemblyContaining<OpeningRequest>(includeInternalTypes: true);

@@ -46,8 +46,8 @@ public sealed record PayrollGroupDetailDto(Guid Id, Guid ClientId, string Client
 
 internal static class RateRules
 {
-    public const string Money = "Importe en pesos con hasta 2 decimales.";
-    public const string Hourly = "Importe en pesos con hasta 4 decimales.";
+    public const string Money = "Importe en pesos, de 0 en adelante, con hasta 2 decimales.";
+    public const string Hourly = "Importe en pesos, de 0 en adelante, con hasta 4 decimales.";
 
     public static bool IsMoney(decimal v) => v >= 0 && v < 1_000_000 && decimal.Round(v, 2) == v;
 

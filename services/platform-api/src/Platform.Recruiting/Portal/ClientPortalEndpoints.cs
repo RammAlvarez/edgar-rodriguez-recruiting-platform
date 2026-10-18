@@ -60,7 +60,7 @@ public sealed record ClientCommentRequest(string Body);
 internal sealed class ClientCommentRequestValidator : AbstractValidator<ClientCommentRequest>
 {
     public ClientCommentRequestValidator() =>
-        RuleFor(r => r.Body).Must(b => b.Clean() is not null).WithMessage("Escribe el comentario.").MaximumLength(2000);
+        RuleFor(r => r.Body).Must(b => b.Clean() is not null).WithMessage("Escribe el comentario.").MaximumLength(2000).WithMessage("Admite hasta 2000 caracteres.");
 }
 
 /// <summary>

@@ -48,6 +48,7 @@ const multiplier = z.string().trim().regex(/^[1-5](\.\d{1,2})?$/, 'Entre 1 y 5.'
                 <mat-option [value]="p.value">{{ p.label }}</mat-option>
               }
             </mat-select>
+            <mat-error>{{ s.msg('periodType') }}</mat-error>
           </mat-form-field>
           <mat-form-field>
             <mat-label>Día de corte</mat-label>
@@ -57,6 +58,7 @@ const multiplier = z.string().trim().regex(/^[1-5](\.\d{1,2})?$/, 'Entre 1 y 5.'
               }
             </mat-select>
             <mat-hint>El día en que termina el período</mat-hint>
+            <mat-error>{{ s.msg('cutoffWeekday') }}</mat-error>
           </mat-form-field>
         </div>
         <div class="row">
@@ -69,6 +71,7 @@ const multiplier = z.string().trim().regex(/^[1-5](\.\d{1,2})?$/, 'Entre 1 y 5.'
             <mat-label>Cierre de asistencia</mat-label>
             <input matInput type="time" formControlName="attendanceLockTime" />
             <mat-hint>Cada día a esta hora</mat-hint>
+            <mat-error>{{ s.msg('attendanceLockTime') }}</mat-error>
           </mat-form-field>
         </div>
         <div class="row">
@@ -79,6 +82,7 @@ const multiplier = z.string().trim().regex(/^[1-5](\.\d{1,2})?$/, 'Entre 1 y 5.'
                 <mat-option [value]="n">{{ n }}</mat-option>
               }
             </mat-select>
+            <mat-error>{{ s.msg('seventhDayDivisor') }}</mat-error>
           </mat-form-field>
           <mat-form-field>
             <mat-label>Prima dominical</mat-label>

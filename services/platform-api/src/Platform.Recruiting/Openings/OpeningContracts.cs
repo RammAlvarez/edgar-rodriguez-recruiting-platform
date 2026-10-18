@@ -121,11 +121,11 @@ internal sealed class OpeningRequestValidator : AbstractValidator<OpeningRequest
     public OpeningRequestValidator()
     {
         RuleFor(r => r.ClientId).NotEmpty().WithMessage("Elige el cliente.");
-        RuleFor(r => r.PositionName).NotEmpty().WithMessage("El puesto es obligatorio.").MaximumLength(120);
+        RuleFor(r => r.PositionName).NotEmpty().WithMessage("El puesto es obligatorio.").MaximumLength(120).WithMessage("Admite hasta 120 caracteres.");
         RuleFor(r => r.HeadcountRequested).InclusiveBetween(1, 1000).WithMessage("Indica cuántas vacantes (1 o más).");
         RuleFor(r => r.MonthlySalary).Must(m => m is not { } v || (v >= 0 && v < 10_000_000 && decimal.Round(v, 2) == v))
             .WithMessage("El sueldo es un importe en pesos con hasta dos decimales.");
-        RuleForEach(r => r.Benefits).NotEmpty().MaximumLength(120).WithMessage("Cada prestación admite hasta 120 caracteres.");
+        RuleForEach(r => r.Benefits).NotEmpty().WithMessage("Este campo es obligatorio.").MaximumLength(120).WithMessage("Cada prestación admite hasta 120 caracteres.");
         RuleFor(r => r.Benefits).Must(b => b is null || b.Count <= 30).WithMessage("Hasta 30 prestaciones.");
         RuleFor(r => r.Schedule).OptionalText(200);
         RuleFor(r => r.YearsExperience).InclusiveBetween(0, 60).WithMessage("Años de experiencia entre 0 y 60.");
@@ -174,5 +174,5 @@ internal sealed class RemoveRecruiterRequestValidator : AbstractValidator<Remove
 internal sealed class OpeningCommentRequestValidator : AbstractValidator<OpeningCommentRequest>
 {
     public OpeningCommentRequestValidator() =>
-        RuleFor(r => r.Body).Must(b => b.Clean() is not null).WithMessage("Escribe el comentario.").MaximumLength(2000);
+        RuleFor(r => r.Body).Must(b => b.Clean() is not null).WithMessage("Escribe el comentario.").MaximumLength(2000).WithMessage("Admite hasta 2000 caracteres.");
 }

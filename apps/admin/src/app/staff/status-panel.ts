@@ -63,6 +63,7 @@ type Choice = Exclude<EmployeeStatus, 'active'> | 'reactivate';
             <mat-form-field>
               <mat-label>Folio IMSS (opcional)</mat-label>
               <input matInput formControlName="reference" autocomplete="off" />
+              <mat-error>{{ s.msg('reference') }}</mat-error>
             </mat-form-field>
           }
         } @else {
@@ -85,6 +86,7 @@ type Choice = Exclude<EmployeeStatus, 'active'> | 'reactivate';
               <mat-label>Folio IMSS (opcional)</mat-label>
               <input matInput formControlName="reference" autocomplete="off" />
               <mat-hint>No se guarda información médica</mat-hint>
+              <mat-error>{{ s.msg('reference') }}</mat-error>
             </mat-form-field>
           }
           @if (choice() === 'suspended') {

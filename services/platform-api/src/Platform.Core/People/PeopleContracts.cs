@@ -64,8 +64,8 @@ public sealed class PersonRequestValidator : AbstractValidator<PersonRequest>
 {
     public PersonRequestValidator()
     {
-        RuleFor(r => r.FirstNames).NotEmpty().WithMessage("El nombre es obligatorio.").MaximumLength(80);
-        RuleFor(r => r.LastNamePaternal).NotEmpty().WithMessage("El apellido paterno es obligatorio.").MaximumLength(60);
+        RuleFor(r => r.FirstNames).NotEmpty().WithMessage("El nombre es obligatorio.").MaximumLength(80).WithMessage("Admite hasta 80 caracteres.");
+        RuleFor(r => r.LastNamePaternal).NotEmpty().WithMessage("El apellido paterno es obligatorio.").MaximumLength(60).WithMessage("Admite hasta 60 caracteres.");
         RuleFor(r => r.LastNameMaternal).OptionalText(60);
         RuleFor(r => PersonText.Id(r.Curp)).Must(c => c is null || MexicanIds.IsCurp(c))
             .WithMessage("La CURP debe tener 18 caracteres con el formato oficial.").OverridePropertyName("curp");

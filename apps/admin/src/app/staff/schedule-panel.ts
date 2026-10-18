@@ -64,6 +64,7 @@ export interface SchedulePanelData {
           <mat-form-field>
             <mat-label>Entrada</mat-label>
             <input matInput type="time" formControlName="startTime" />
+            <mat-error>{{ s.msg('startTime') }}</mat-error>
           </mat-form-field>
           <mat-form-field>
             <mat-label>Salida</mat-label>
@@ -75,6 +76,7 @@ export interface SchedulePanelData {
         <mat-form-field>
           <mat-label>Trabajo (opcional)</mat-label>
           <input matInput formControlName="jobDescription" autocomplete="off" placeholder="Mantenimiento A/C" />
+          <mat-error>{{ s.msg('jobDescription') }}</mat-error>
         </mat-form-field>
         @if (s.alert()) {
           <p class="form-alert" role="alert">{{ s.alert() }}</p>

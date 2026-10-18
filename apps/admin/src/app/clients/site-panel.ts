@@ -46,14 +46,17 @@ export interface SitePanelData {
         <mat-form-field>
           <mat-label>Calle</mat-label>
           <input matInput formControlName="street" autocomplete="off" />
+          <mat-error>{{ s.msg('street') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Número</mat-label>
           <input matInput formControlName="extNumber" autocomplete="off" />
+          <mat-error>{{ s.msg('extNumber') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Colonia</mat-label>
           <input matInput formControlName="neighborhood" autocomplete="off" />
+          <mat-error>{{ s.msg('neighborhood') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Código postal</mat-label>
@@ -63,10 +66,12 @@ export interface SitePanelData {
         <mat-form-field>
           <mat-label>Municipio</mat-label>
           <input matInput formControlName="municipality" autocomplete="off" />
+          <mat-error>{{ s.msg('municipality') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Estado</mat-label>
           <input matInput formControlName="state" autocomplete="off" />
+          <mat-error>{{ s.msg('state') }}</mat-error>
         </mat-form-field>
         @if (data.site) {
           <mat-slide-toggle formControlName="isActive">Activo</mat-slide-toggle>

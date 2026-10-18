@@ -122,6 +122,7 @@ export class AssignOpeningPanel {
   }
 
   async save(): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(true);
     this.alert.set(null);
     try {

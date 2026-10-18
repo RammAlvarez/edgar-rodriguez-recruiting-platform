@@ -109,7 +109,8 @@ public static class CandidateMessages
     };
 
     public static string HeadcountReached(int headcount) =>
-        $"La vacante ya tiene sus {headcount} contratados; aumenta las vacantes solicitadas para contratar a otro.";
+        (headcount == 1 ? "La vacante ya tiene a su contratado" : $"La vacante ya tiene sus {headcount} contratados")
+        + "; aumenta las vacantes solicitadas para contratar a otro.";
 }
 
 internal static class MoneyRule

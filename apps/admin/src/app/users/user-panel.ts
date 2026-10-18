@@ -104,6 +104,7 @@ export interface UserPanelData {
               }
             </mat-select>
             <mat-hint>{{ scopeHint }}</mat-hint>
+            <mat-error>{{ msg('onlyClientId') }}</mat-error>
           </mat-form-field>
           @if (form.controls.grants.errors?.['server']; as m) {
             <p class="form-alert">{{ m }}</p>
@@ -264,6 +265,7 @@ export class UserPanel {
   }
 
   private async run(work: () => Promise<void>): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(true);
     this.alert.set(null);
     try {
@@ -271,7 +273,7 @@ export class UserPanel {
     } catch (e) {
       if (e instanceof ApiError && e.isValidation) {
         const rest = applyServerErrors(this.form, e);
-        this.alert.set(rest[0] ?? null);
+        this.alert.set(rest[0] ?? (Object.keys(e.fieldErrors).length ? null : e.message));
       } else {
         this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
       }

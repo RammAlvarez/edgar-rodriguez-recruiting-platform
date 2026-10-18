@@ -50,6 +50,7 @@ const toLocalInput = (d: Date) => {
           <mat-label>Lugar</mat-label>
           <input matInput formControlName="location" autocomplete="off" />
           <mat-hint>Dirección, sucursal o «Videollamada»</mat-hint>
+          <mat-error>{{ s.msg('location') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Resultado</mat-label>
@@ -59,10 +60,12 @@ const toLocalInput = (d: Date) => {
             }
           </mat-select>
           <mat-hint>La etapa del candidato se cambia en el Pipeline</mat-hint>
+          <mat-error>{{ s.msg('outcome') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Notas</mat-label>
           <textarea matInput formControlName="notes" rows="3"></textarea>
+          <mat-error>{{ s.msg('notes') }}</mat-error>
         </mat-form-field>
         @if (s.alert()) {
           <p class="form-alert" role="alert">{{ s.alert() }}</p>

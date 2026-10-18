@@ -5,7 +5,7 @@ import type { z } from 'zod';
 
 /**
  * Client-side checks give the server's message earlier; the server's 400 is authoritative and lands on the same
- * controls (`server` error), cleared as soon as the user edits the field.
+ * controls (`server` error), cleared as soon as the user edits the form.
  */
 export function zodValidator(schema: z.ZodType): ValidatorFn {
   return (control) => {
@@ -16,9 +16,15 @@ export function zodValidator(schema: z.ZodType): ValidatorFn {
   };
 }
 
-/** Puts each 400 field message on its control; returns the messages that matched no control (shown above the actions). */
+/**
+ * Puts each 400 field message on its control; returns the messages that matched no control (shown above the actions).
+ * The marks clear on the next edit anywhere in the form, not only in the marked field: a rule can name one field while the
+ * fix is in another («Hasta 30 prestaciones» lands on Prestaciones, the user shortens Otras prestaciones), and a mark that
+ * stayed would keep the form invalid and block every later Guardar. The server checks again on the next submit.
+ */
 export function applyServerErrors(form: FormGroup, error: ApiError): string[] {
   const unmatched: string[] = [];
+  const marked: AbstractControl[] = [];
   for (const [field, messages] of Object.entries(error.fieldErrors)) {
     const control = form.get(field);
     const message = messages[0];
@@ -26,17 +32,21 @@ export function applyServerErrors(form: FormGroup, error: ApiError): string[] {
     if (control) {
       control.setErrors({ ...(control.errors ?? {}), server: message });
       control.markAsTouched();
-      const sub = control.valueChanges.subscribe(() => {
-        if (control.errors?.['server']) {
-          const rest = { ...control.errors };
-          delete rest['server'];
-          control.setErrors(Object.keys(rest).length ? rest : null);
-        }
-        sub.unsubscribe();
-      });
+      marked.push(control);
     } else {
       unmatched.push(message);
     }
+  }
+  if (marked.length) {
+    const sub = form.valueChanges.subscribe(() => {
+      sub.unsubscribe();
+      for (const control of marked) {
+        if (!control.errors?.['server']) continue;
+        const rest = { ...control.errors };
+        delete rest['server'];
+        control.setErrors(Object.keys(rest).length ? rest : null);
+      }
+    });
   }
   return unmatched;
 }
@@ -73,6 +83,10 @@ export class PanelState {
   }
 
   async run(work: () => Promise<void>): Promise<void> {
+    // A second click or Enter before the button shows as disabled must not send the form twice (D-024).
+    if (this.busy()) return;
+    // A server alert from the last attempt no longer applies once the user tries again.
+    this.alert.set(null);
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
     this.busy.set(true);
@@ -80,8 +94,11 @@ export class PanelState {
     try {
       await work();
     } catch (e) {
-      if (e instanceof ApiError && e.isValidation) this.alert.set(applyServerErrors(this.form, e)[0] ?? null);
-      else this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
+      if (e instanceof ApiError && e.isValidation) {
+        const marked = Object.keys(e.fieldErrors).length > 0;
+        // A 400 without field errors (an unreadable value) still says what happened.
+        this.alert.set(applyServerErrors(this.form, e)[0] ?? (marked ? null : e.message));
+      } else this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
     } finally {
       this.busy.set(false);
     }

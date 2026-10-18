@@ -52,6 +52,9 @@ public sealed class S3ObjectStorageTests : IDisposable
         Assert.Equal(type, (await _storage.HeadAsync(StorageBucket.Exports, key, default))?.ContentType);
         var get = await _storage.PresignDownloadAsync(StorageBucket.Exports, key, "Rendimiento por reclutador.xlsx", TimeSpan.FromMinutes(5), default);
         Assert.Equal(bytes, await (await _browser.GetAsync(get.Url)).Content.ReadAsByteArrayAsync());
+        // The first bytes only (the document signature check, D-027); a longer count returns what there is.
+        Assert.Equal("PK"u8.ToArray(), await _storage.ReadPrefixAsync(StorageBucket.Exports, key, 2, default));
+        Assert.Equal(bytes, await _storage.ReadPrefixAsync(StorageBucket.Exports, key, 64, default));
 
         await _storage.DeleteAsync(StorageBucket.Exports, key, default);
     }

@@ -98,6 +98,24 @@ public sealed class DocumentTests(ApiFactory factory) : ApiTest(factory)
         Assert.DoesNotContain(Factory.Storage.Objects.Keys, k => k.Item2 == big);
     }
 
+    [Theory]
+    [InlineData("application/pdf", new byte[] { 0x4D, 0x5A, 0x90, 0x00 })] // an executable renamed .pdf (MZ)
+    [InlineData("image/jpeg", new byte[] { 0x25, 0x50, 0x44, 0x46, 0x2D })] // a PDF sent as a photo
+    [InlineData("image/png", new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 })] // a JPG named .png
+    public async Task Confirm_refuses_a_file_whose_bytes_are_not_its_type(string contentType, byte[] head)
+    {
+        // FORMS run (D-027): only the declared type was checked, so «programa.pdf» was recorded as an INE.
+        await Arrange();
+        var key = $"people/{_person}/INE/{Guid.NewGuid()}.{DocumentFiles.Extensions[contentType]}";
+        Factory.Storage.Put(key, 2000, contentType, head);
+
+        var response = await _admin.PostAsJsonAsync($"/v1/people/{_person}/documents",
+            new { documentTypeId = _types["INE"], storageKey = key, originalFilename = "ine.pdf" });
+
+        Assert.Equal([DocumentFiles.NotAFile], (await ErrorsOf(response))["storageKey"]);
+        Assert.DoesNotContain(Factory.Storage.Objects.Keys, k => k.Item2 == key);
+    }
+
     [Fact]
     public async Task A_reupload_is_a_new_version_and_the_previous_one_is_kept()
     {

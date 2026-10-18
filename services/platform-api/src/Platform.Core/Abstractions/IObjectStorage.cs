@@ -32,5 +32,8 @@ public interface IObjectStorage
     /// <summary>Size and type of an uploaded object, or <c>null</c> when it does not exist.</summary>
     Task<StoredObject?> HeadAsync(StorageBucket bucket, string key, CancellationToken cancellationToken);
 
+    /// <summary>The first <paramref name="count"/> bytes of an object (fewer when it is shorter): enough to check its signature.</summary>
+    Task<byte[]> ReadPrefixAsync(StorageBucket bucket, string key, int count, CancellationToken cancellationToken);
+
     Task DeleteAsync(StorageBucket bucket, string key, CancellationToken cancellationToken);
 }

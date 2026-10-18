@@ -49,6 +49,7 @@ export interface GroupConceptsPanelData {
                     <mat-label>Base (días)</mat-label>
                     <input matInput formControlName="daysBasis" inputmode="decimal" autocomplete="off" />
                     <mat-hint>{{ c.code === 'BONUS_PUNCTUALITY' ? '400 / 7 × días' : 'importe / base × días' }}</mat-hint>
+                    <mat-error>{{ s.msg('concepts.' + i + '.daysBasis') }}</mat-error>
                   </mat-form-field>
                 }
               </div>

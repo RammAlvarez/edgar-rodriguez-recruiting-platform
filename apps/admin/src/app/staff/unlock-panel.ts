@@ -43,6 +43,7 @@ export interface UnlockPanelData {
               <mat-option [value]="s">{{ label[s].label }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('status') }}</mat-error>
         </mat-form-field>
         @if (worked()) {
           <div class="row">

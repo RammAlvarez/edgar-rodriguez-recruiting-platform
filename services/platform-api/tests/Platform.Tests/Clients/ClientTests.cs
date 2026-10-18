@@ -141,6 +141,9 @@ public sealed class ClientTests(ApiFactory factory) : ApiTest(factory)
         Assert.Contains("postalCode", (await ErrorsOf(badZip)).Keys);
         var duplicate = await admin.PostAsJsonAsync($"/v1/clients/{id}/sites", new { name = "Estación Centro" });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        // D-021: the same name in other capitals (accents included) is the same site.
+        var otherCase = await admin.PostAsJsonAsync($"/v1/clients/{id}/sites", new { name = "ESTACIÓN centro" });
+        Assert.Equal("Este cliente ya tiene un sitio con ese nombre.", await DetailOf(otherCase));
 
         static JsonElement Row(JsonElement list) => Assert.Single(list.EnumerateArray());
     }

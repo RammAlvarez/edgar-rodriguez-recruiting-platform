@@ -54,6 +54,7 @@ export interface AccountPanelData {
                   <mat-option [value]="t.value">{{ t.label }}</mat-option>
                 }
               </mat-select>
+              <mat-error>{{ s.msg('accountType') }}</mat-error>
             </mat-form-field>
           </div>
           <mat-form-field>
@@ -72,6 +73,7 @@ export interface AccountPanelData {
         <mat-form-field>
           <mat-label>Alias</mat-label>
           <input matInput formControlName="alias" autocomplete="off" placeholder="Cuenta de mi esposa" />
+          <mat-error>{{ s.msg('alias') }}</mat-error>
         </mat-form-field>
         @if (a) {
           <mat-form-field>

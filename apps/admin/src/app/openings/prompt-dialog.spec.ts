@@ -35,4 +35,13 @@ describe('PromptDialog', () => {
     submit.click();
     expect(close).not.toHaveBeenCalled();
   });
+
+  it('keeps the dialog open and says why when the motivo passes 500 characters (D-025)', () => {
+    const { fixture, close, submit } = render({ title: 'Pausar', label: 'Motivo', confirm: 'Pausar', kind: 'text' });
+    fixture.componentInstance.value.setValue('m'.repeat(501));
+    submit.click();
+    fixture.detectChanges();
+    expect(close).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).querySelector('mat-error')?.textContent).toContain('Admite hasta 500 caracteres.');
+  });
 });

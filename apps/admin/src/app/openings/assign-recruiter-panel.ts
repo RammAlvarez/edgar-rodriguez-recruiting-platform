@@ -109,6 +109,7 @@ export class AssignRecruiterPanel {
   }
 
   async save(): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(true);
     this.alert.set(null);
     try {

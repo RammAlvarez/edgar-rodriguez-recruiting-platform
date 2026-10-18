@@ -78,7 +78,7 @@ internal sealed class ClientSiteConfiguration : IEntityTypeConfiguration<ClientS
         b.ToTable("client_sites", t => t.HasCheckConstraint("ck_client_sites_postal_code", @"postal_code IS NULL OR postal_code ~ '^\d{5}$'"));
         b.HasIdentityAndUid();
         b.HasStamps();
-        b.HasIndex(x => new { x.ClientId, x.Name }).IsUnique();
+        // Unique ignoring case: an expression index on lower(…) made in the CaseInsensitiveNames migration (D-021).
         b.Property(x => x.IsActive).HasDefaultValue(true).HasSentinel(true);
         b.HasOne<Zone>().WithMany().HasForeignKey(x => x.ZoneId).HasPrincipalKey(z => z.Uid).OnDelete(DeleteBehavior.Restrict);
     }

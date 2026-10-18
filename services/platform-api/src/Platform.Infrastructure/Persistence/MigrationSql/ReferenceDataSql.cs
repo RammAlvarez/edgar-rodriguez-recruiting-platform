@@ -2,7 +2,8 @@ namespace Platform.Infrastructure.Persistence.MigrationSql;
 
 /// <summary>
 /// Catalog rows every installation starts with (DATA_MODEL §3.8, §3.9, §3.11). Idempotent: run by the S3 migration
-/// and again by the tests after each truncation. Rows edited later from Catálogos are never overwritten.
+/// and again by the tests after each truncation. Rows edited later from Catálogos are never overwritten. The name rows use
+/// a bare `ON CONFLICT DO NOTHING`: their unique index was a plain column and is `lower(name)` since D-021.
 /// </summary>
 public static class ReferenceDataSql
 {
@@ -36,7 +37,7 @@ public static class ReferenceDataSql
         INSERT INTO platform.document_templates (name_es, scope, is_default) VALUES
             ('Candidato — estándar', 'candidate', true),
             ('Empleado — expediente', 'employee', true)
-        ON CONFLICT (name_es) DO NOTHING;
+        ON CONFLICT DO NOTHING;
 
         INSERT INTO platform.document_template_items (template_id, document_type_id, is_required)
         SELECT t.uid, d.uid, x.required
@@ -68,16 +69,16 @@ public static class ReferenceDataSql
             'Melchor Ocampo', 'Mier y Noriega', 'Mina', 'Montemorelos', 'Monterrey', 'Parás', 'Pesquería', 'Rayones',
             'Sabinas Hidalgo', 'Salinas Victoria', 'San Nicolás de los Garza', 'San Pedro Garza García',
             'Santa Catarina', 'Santiago', 'Vallecillo', 'Villaldama']) AS name
-        ON CONFLICT (state, name_es) DO NOTHING;
+        ON CONFLICT DO NOTHING;
 
         INSERT INTO platform.education_levels (name_es, sort_order) VALUES
             ('Primaria', 10), ('Secundaria', 20), ('Preparatoria', 30), ('Carrera técnica', 40),
             ('Licenciatura', 50), ('Maestría', 60)
-        ON CONFLICT (name_es) DO NOTHING;
+        ON CONFLICT DO NOTHING;
 
         INSERT INTO platform.benefits (name_es, is_default) VALUES
             ('Prestaciones de ley', true), ('IMSS', true), ('Vales de despensa', false), ('Fondo de ahorro', false),
             ('Transporte', false), ('Uniformes', false), ('Seguro de vida', false)
-        ON CONFLICT (name_es) DO NOTHING;
+        ON CONFLICT DO NOTHING;
         """;
 }

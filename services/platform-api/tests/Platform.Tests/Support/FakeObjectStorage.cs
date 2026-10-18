@@ -13,8 +13,17 @@ public sealed class FakeObjectStorage : IObjectStorage
 
     public ConcurrentBag<(StorageBucket Bucket, string Key, string? DownloadAs)> Downloads { get; } = [];
 
-    public void Put(string key, long size, string contentType) =>
+    /// <summary>An upload; without <paramref name="head"/> its first bytes are a valid signature of <paramref name="contentType"/>.</summary>
+    public void Put(string key, long size, string contentType, byte[]? head = null)
+    {
         Objects[(StorageBucket.Documents, key)] = new StoredObject(size, contentType);
+        Contents[(StorageBucket.Documents, key)] = head ?? contentType switch
+        {
+            "image/png" => [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+            "image/jpeg" => [0xFF, 0xD8, 0xFF, 0xE0],
+            _ => "%PDF-1.4"u8.ToArray(),
+        };
+    }
 
     public Task PingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -43,6 +52,9 @@ public sealed class FakeObjectStorage : IObjectStorage
 
     public Task<StoredObject?> HeadAsync(StorageBucket bucket, string key, CancellationToken cancellationToken) =>
         Task.FromResult(Objects.TryGetValue((bucket, key), out var o) ? o : null);
+
+    public Task<byte[]> ReadPrefixAsync(StorageBucket bucket, string key, int count, CancellationToken cancellationToken) =>
+        Task.FromResult(Contents.TryGetValue((bucket, key), out var c) ? c[..Math.Min(count, c.Length)] : []);
 
     public Task DeleteAsync(StorageBucket bucket, string key, CancellationToken cancellationToken)
     {

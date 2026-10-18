@@ -55,6 +55,7 @@ const rfc = z
           <mat-form-field>
             <mat-label>Notas</mat-label>
             <textarea matInput formControlName="notes" rows="3"></textarea>
+            <mat-error>{{ s.msg('notes') }}</mat-error>
           </mat-form-field>
           <mat-slide-toggle formControlName="isActive">Activo</mat-slide-toggle>
         } @else {

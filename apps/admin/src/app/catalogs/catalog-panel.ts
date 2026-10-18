@@ -38,6 +38,7 @@ export interface CatalogPanelData {
                     <mat-option [value]="o.value">{{ o.label }}</mat-option>
                   }
                 </mat-select>
+                <mat-error>{{ s.msg(f.key) }}</mat-error>
               </mat-form-field>
             }
             @default {

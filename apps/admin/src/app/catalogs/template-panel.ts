@@ -38,6 +38,7 @@ type Use = 'none' | 'optional' | 'required';
             <mat-option value="candidate">Candidatos</mat-option>
             <mat-option value="employee">Empleados</mat-option>
           </mat-select>
+          <mat-error>{{ s.msg('scope') }}</mat-error>
         </mat-form-field>
         <mat-slide-toggle formControlName="isDefault">Plantilla por omisión</mat-slide-toggle>
         <h3 class="section-title">Documentos</h3>
@@ -53,6 +54,9 @@ type Use = 'none' | 'optional' | 'required';
             </div>
           }
         </div>
+        @if (s.msg('items'); as m) {
+          <p class="form-alert" role="alert">{{ m }}</p>
+        }
         @if (s.alert()) {
           <p class="form-alert" role="alert">{{ s.alert() }}</p>
         }

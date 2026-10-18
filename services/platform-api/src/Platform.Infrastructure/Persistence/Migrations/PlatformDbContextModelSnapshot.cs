@@ -889,10 +889,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Uid")
                         .HasName("ak_benefits_uid");
 
-                    b.HasIndex("NameEs")
-                        .IsUnique()
-                        .HasDatabaseName("ix_benefits_name_es");
-
                     b.ToTable("benefits", "platform");
                 });
 
@@ -946,10 +942,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                     b.HasAlternateKey("Uid")
                         .HasName("ak_positions_catalog_uid");
-
-                    b.HasIndex("NameEs")
-                        .IsUnique()
-                        .HasDatabaseName("ix_positions_catalog_name_es");
 
                     b.ToTable("positions_catalog", "platform");
                 });
@@ -1006,10 +998,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                     b.HasAlternateKey("Uid")
                         .HasName("ak_document_templates_uid");
-
-                    b.HasIndex("NameEs")
-                        .IsUnique()
-                        .HasDatabaseName("ix_document_templates_name_es");
 
                     b.HasIndex("Scope")
                         .IsUnique()
@@ -1216,10 +1204,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Uid")
                         .HasName("ak_education_levels_uid");
 
-                    b.HasIndex("NameEs")
-                        .IsUnique()
-                        .HasDatabaseName("ix_education_levels_name_es");
-
                     b.ToTable("education_levels", "platform");
                 });
 
@@ -1338,10 +1322,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                     b.HasAlternateKey("Uid")
                         .HasName("ak_zones_uid");
-
-                    b.HasIndex("State", "NameEs")
-                        .IsUnique()
-                        .HasDatabaseName("ix_zones_state_name_es");
 
                     b.ToTable("zones", "platform");
                 });
@@ -1591,12 +1571,11 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Uid")
                         .HasName("ak_client_sites_uid");
 
+                    b.HasIndex("ClientId")
+                        .HasDatabaseName("ix_client_sites_client_id");
+
                     b.HasIndex("ZoneId")
                         .HasDatabaseName("ix_client_sites_zone_id");
-
-                    b.HasIndex("ClientId", "Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_client_sites_client_id_name");
 
                     b.ToTable("client_sites", "platform", t =>
                         {

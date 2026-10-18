@@ -111,10 +111,11 @@ public static class PeopleEndpoints
         var duplicate = (await Duplicates(db, person.Curp, person.Rfc, person.Uid, ct)).FirstOrDefault();
         if (duplicate is null)
             return null;
-        var field = duplicate.MatchedOn.Contains("curp") ? "CURP" : "RFC";
+        // «la CURP», «el RFC».
+        var (article, demonstrative, field) = duplicate.MatchedOn.Contains("curp") ? ("La", "esa", "CURP") : ("El", "ese", "RFC");
         return ApiResults.Conflict(duplicate.IsDeleted
-            ? $"La {field} pertenece a {duplicate.FullName}, que fue dado de baja del registro."
-            : $"Ya existe una persona con esa {field}: {duplicate.FullName}.");
+            ? $"{article} {field} pertenece a {duplicate.FullName}, que fue dado de baja del registro."
+            : $"Ya existe una persona con {demonstrative} {field}: {duplicate.FullName}.");
     }
 
     public static void Apply(Person p, PersonRequest r)

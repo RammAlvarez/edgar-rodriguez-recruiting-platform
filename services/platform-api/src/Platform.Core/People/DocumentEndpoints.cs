@@ -129,6 +129,11 @@ public static class DocumentEndpoints
             await storage.DeleteAsync(StorageBucket.Documents, r.StorageKey, ct);
             return Field("storageKey", "Sube un PDF, JPG o PNG de máximo 10 MB.");
         }
+        if (!DocumentFiles.HasSignature(contentType, await storage.ReadPrefixAsync(StorageBucket.Documents, r.StorageKey, 8, ct)))
+        {
+            await storage.DeleteAsync(StorageBucket.Documents, r.StorageKey, ct);
+            return Field("storageKey", DocumentFiles.NotAFile);
+        }
 
         var today = clock.Today();
         var expiresAt = type.HasExpiry

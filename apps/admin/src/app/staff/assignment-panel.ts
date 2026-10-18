@@ -46,6 +46,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
                 <mat-option [value]="g.id">{{ g.clientName }} — {{ g.name }}</mat-option>
               }
             </mat-select>
+            <mat-error>{{ s.msg('payrollGroupId') }}</mat-error>
           </mat-form-field>
           <mat-form-field>
             <mat-label>Puesto</mat-label>
@@ -100,6 +101,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
           <mat-form-field>
             <mat-label>Comentarios</mat-label>
             <textarea matInput formControlName="notes" rows="3"></textarea>
+            <mat-error>{{ s.msg('notes') }}</mat-error>
           </mat-form-field>
         }
         @if (s.alert()) {

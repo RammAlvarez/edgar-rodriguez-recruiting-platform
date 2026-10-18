@@ -11,7 +11,7 @@ internal sealed class ZoneConfiguration : IEntityTypeConfiguration<Zone>
         b.ToTable("zones");
         b.HasIdentityAndUid();
         b.HasStamps();
-        b.HasIndex(z => new { z.State, z.NameEs }).IsUnique();
+        // Unique ignoring case: an expression index on lower(…) made in the CaseInsensitiveNames migration (D-021).
         b.Property(z => z.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
@@ -23,7 +23,7 @@ internal sealed class CatalogPositionConfiguration : IEntityTypeConfiguration<Ca
         b.ToTable("positions_catalog");
         b.HasIdentityAndUid();
         b.HasStamps();
-        b.HasIndex(p => p.NameEs).IsUnique();
+        // Unique ignoring case: an expression index on lower(…) made in the CaseInsensitiveNames migration (D-021).
         b.Property(p => p.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
@@ -35,7 +35,7 @@ internal sealed class EducationLevelConfiguration : IEntityTypeConfiguration<Edu
         b.ToTable("education_levels");
         b.HasIdentityAndUid();
         b.HasStamps();
-        b.HasIndex(e => e.NameEs).IsUnique();
+        // Unique ignoring case: an expression index on lower(…) made in the CaseInsensitiveNames migration (D-021).
         b.Property(e => e.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
@@ -47,7 +47,7 @@ internal sealed class BenefitConfiguration : IEntityTypeConfiguration<Benefit>
         b.ToTable("benefits");
         b.HasIdentityAndUid();
         b.HasStamps();
-        b.HasIndex(e => e.NameEs).IsUnique();
+        // Unique ignoring case: an expression index on lower(…) made in the CaseInsensitiveNames migration (D-021).
         b.Property(e => e.IsActive).HasDefaultValue(true).HasSentinel(true);
     }
 }
@@ -98,7 +98,7 @@ internal sealed class DocumentTemplateConfiguration : IEntityTypeConfiguration<D
         b.ToTable("document_templates");
         b.HasIdentityAndUid();
         b.HasStamps();
-        b.HasIndex(x => x.NameEs).IsUnique();
+        // Unique ignoring case: an expression index on lower(…) made in the CaseInsensitiveNames migration (D-021).
         // One default checklist per scope.
         b.HasIndex(x => x.Scope).IsUnique().HasFilter("is_default").HasDatabaseName("ux_document_templates_default");
         b.HasMany(x => x.Items).WithOne().HasForeignKey(i => i.TemplateId).HasPrincipalKey(x => x.Uid).OnDelete(DeleteBehavior.Cascade);

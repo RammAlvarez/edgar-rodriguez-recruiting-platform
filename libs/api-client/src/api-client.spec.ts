@@ -49,6 +49,8 @@ describe('ApiClient', () => {
     const invalid = await client.post('/v1/users', {}).catch((e: unknown) => e);
     expect(invalid).toBeInstanceOf(ApiError);
     expect((invalid as ApiError).fieldError('email')).toBe('Introduce un correo válido.');
+    // D-026: the message is the field's, not the generic title
+    expect((invalid as ApiError).message).toBe('Introduce un correo válido.');
 
     const denied = await client.get('/v1/users').catch((e: unknown) => e);
     expect((denied as ApiError).status).toBe(403);

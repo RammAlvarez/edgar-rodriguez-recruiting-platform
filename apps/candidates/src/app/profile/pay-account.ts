@@ -56,6 +56,7 @@ const TYPES: readonly { value: BankAccountType; label: string; hint: string }[] 
                 <mat-option [value]="t.value">{{ t.label }}</mat-option>
               }
             </mat-select>
+            <mat-error>{{ s.msg('accountType') }}</mat-error>
           </mat-form-field>
           <mat-form-field>
             <mat-label>Número</mat-label>

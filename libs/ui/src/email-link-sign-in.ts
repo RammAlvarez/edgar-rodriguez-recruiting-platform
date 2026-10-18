@@ -93,14 +93,21 @@ export class EmailLinkSignIn implements OnInit {
     });
   }
 
-  private complete(email?: string): Promise<void> {
-    return this.run(async () => {
+  private async complete(email?: string): Promise<void> {
+    await this.run(async () => {
       await this.auth.completeSignIn(location.href, email);
       await this.router.navigateByUrl('/');
     });
+    // A used or expired link: the button sends a new one to the same email instead of retrying the dead link (D-030).
+    if (this.error()) {
+      this.completing.set(false);
+      const known = email ?? this.auth.rememberedEmail();
+      if (known) this.form.controls.email.setValue(known);
+    }
   }
 
   private async run(work: () => Promise<void>): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(true);
     this.error.set(null);
     try {

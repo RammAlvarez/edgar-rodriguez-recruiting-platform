@@ -99,6 +99,7 @@ interface Duplicate {
             <mat-form-field>
               <mat-label>Apellido materno</mat-label>
               <input matInput formControlName="lastNameMaternal" autocomplete="off" />
+              <mat-error>{{ s.msg('person.lastNameMaternal') }}</mat-error>
             </mat-form-field>
             <mat-form-field>
               <mat-label>CURP</mat-label>
@@ -164,6 +165,7 @@ interface Duplicate {
         <mat-form-field>
           <mat-label>Comentarios</mat-label>
           <textarea matInput formControlName="comments" rows="3"></textarea>
+          <mat-error>{{ s.msg('comments') }}</mat-error>
         </mat-form-field>
         @if (s.alert()) {
           <p class="form-alert" role="alert">{{ s.alert() }}</p>

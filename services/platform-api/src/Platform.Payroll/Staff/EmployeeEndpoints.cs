@@ -277,7 +277,7 @@ public static class EmployeeEndpoints
                 if (previous.TerminatedAt is not { } terminated)
                     return ApiResults.Conflict(NotTerminated);
                 if (r.HiredAt <= terminated)
-                    return ApiResults.Validation(new Dictionary<string, string[]> { ["hiredAt"] = [$"El reingreso es posterior a la baja ({StaffRules.Date(terminated)})."] });
+                    return ApiResults.Validation(new Dictionary<string, string[]> { ["hiredAt"] = [$"El reingreso debe ser posterior a la baja ({StaffRules.Date(terminated)})."] });
                 if (await Assignment(db, ctx, r.PayrollGroupId, r.PositionId, ct) is { } bad)
                     return bad;
                 if (await db.Set<Employee>().AnyAsync(x => x.PersonId == previous.PersonId && x.PayrollGroupId == r.PayrollGroupId && x.TerminatedAt == null, ct))

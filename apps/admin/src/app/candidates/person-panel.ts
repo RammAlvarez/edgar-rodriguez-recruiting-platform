@@ -47,6 +47,7 @@ const digits = (n: number, message: string) => z.string().trim().regex(new RegEx
               <mat-option [value]="g.value">{{ g.label }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('gender') }}</mat-error>
         </mat-form-field>
         <mat-slide-toggle formControlName="isForeign">Extranjero</mat-slide-toggle>
         <h3 class="section-title">Contacto y domicilio</h3>
@@ -68,10 +69,12 @@ const digits = (n: number, message: string) => z.string().trim().regex(new RegEx
               <mat-option [value]="src.value">{{ src.label }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('source') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Observaciones</mat-label>
           <textarea matInput formControlName="notes" rows="2"></textarea>
+          <mat-error>{{ s.msg('notes') }}</mat-error>
         </mat-form-field>
         @if (s.alert()) {
           <p class="form-alert" role="alert">{{ s.alert() }}</p>

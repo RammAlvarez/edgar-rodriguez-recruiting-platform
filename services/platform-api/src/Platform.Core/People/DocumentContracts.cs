@@ -56,6 +56,20 @@ public static class DocumentFiles
         ["image/png"] = "png",
     };
 
+    public const string NotAFile = "El archivo no es un PDF, JPG o PNG válido; vuelve a guardarlo o tómale una foto.";
+
+    /// <summary>
+    /// The first bytes of a PDF, JPG or PNG. The declared type is the browser's guess from the name; an executable renamed
+    /// <c>.pdf</c> has the type but not the signature (D-027).
+    /// </summary>
+    public static bool HasSignature(string contentType, ReadOnlySpan<byte> head) => contentType switch
+    {
+        "application/pdf" => head.StartsWith("%PDF-"u8),
+        "image/jpeg" => head.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8, 0xFF]),
+        "image/png" => head.StartsWith((ReadOnlySpan<byte>)[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+        _ => false,
+    };
+
     /// <summary><c>people/&lt;person uid&gt;/&lt;CODE&gt;/</c> (DATA_MODEL §3.10); the object name is a new uuid, never the user's file name.</summary>
     public static string KeyPrefix(Guid personId, string documentTypeCode) => $"people/{personId}/{documentTypeCode}/";
 
@@ -87,7 +101,7 @@ internal sealed class PresignUploadRequestValidator : AbstractValidator<PresignU
         RuleFor(r => r.ContentType).Must(DocumentFiles.Extensions.ContainsKey)
             .WithMessage("Sube un PDF, JPG o PNG.");
         RuleFor(r => r.SizeBytes).InclusiveBetween(1, DocumentFiles.MaxBytes).WithMessage("El archivo debe pesar como máximo 10 MB.");
-        RuleFor(r => r.FileName).NotEmpty().WithMessage("Falta el nombre del archivo.").MaximumLength(255);
+        RuleFor(r => r.FileName).NotEmpty().WithMessage("Falta el nombre del archivo.").MaximumLength(255).WithMessage("Admite hasta 255 caracteres.");
     }
 }
 
@@ -95,8 +109,8 @@ internal sealed class ConfirmDocumentRequestValidator : AbstractValidator<Confir
 {
     public ConfirmDocumentRequestValidator()
     {
-        RuleFor(r => r.StorageKey).NotEmpty().MaximumLength(300);
-        RuleFor(r => r.OriginalFilename).NotEmpty().WithMessage("Falta el nombre del archivo.").MaximumLength(255);
+        RuleFor(r => r.StorageKey).NotEmpty().WithMessage("Este campo es obligatorio.").MaximumLength(300).WithMessage("Admite hasta 300 caracteres.");
+        RuleFor(r => r.OriginalFilename).NotEmpty().WithMessage("Falta el nombre del archivo.").MaximumLength(255).WithMessage("Admite hasta 255 caracteres.");
         RuleFor(r => r.ExpiresAt).GreaterThanOrEqualTo(r => r.IssuedAt).When(r => r.IssuedAt is not null && r.ExpiresAt is not null)
             .WithMessage("La fecha de vencimiento es anterior a la de expedición.");
     }
@@ -105,5 +119,5 @@ internal sealed class ConfirmDocumentRequestValidator : AbstractValidator<Confir
 internal sealed class RejectDocumentRequestValidator : AbstractValidator<RejectDocumentRequest>
 {
     public RejectDocumentRequestValidator() =>
-        RuleFor(r => r.Reason).NotEmpty().WithMessage("Indica el motivo del rechazo; la persona lo verá.").MaximumLength(300);
+        RuleFor(r => r.Reason).NotEmpty().WithMessage("Indica el motivo del rechazo; la persona lo verá.").MaximumLength(300).WithMessage("Admite hasta 300 caracteres.");
 }

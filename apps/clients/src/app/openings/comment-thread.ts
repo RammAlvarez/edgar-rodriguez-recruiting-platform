@@ -93,6 +93,7 @@ export class CommentThread {
 
   async send(): Promise<void> {
     if (this.form.invalid) return;
+    if (this.busy()) return;
     this.busy.set(true);
     this.error.set(null);
     try {

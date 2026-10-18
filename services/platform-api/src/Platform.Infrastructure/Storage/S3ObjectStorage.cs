@@ -104,6 +104,21 @@ public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisp
         }
     }
 
+    public async Task<byte[]> ReadPrefixAsync(StorageBucket bucket, string key, int count, CancellationToken cancellationToken)
+    {
+        using var response = await _client.GetObjectAsync(new GetObjectRequest
+        {
+            BucketName = Name(bucket),
+            Key = key,
+            ByteRange = new ByteRange(0, count - 1),
+        }, cancellationToken);
+        var buffer = new byte[count];
+        var read = 0;
+        while (read < count && await response.ResponseStream.ReadAsync(buffer.AsMemory(read, count - read), cancellationToken) is var n and > 0)
+            read += n;
+        return buffer[..read];
+    }
+
     public Task DeleteAsync(StorageBucket bucket, string key, CancellationToken cancellationToken) =>
         _client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = Name(bucket), Key = key }, cancellationToken);
 

@@ -77,7 +77,7 @@ public sealed class PeopleTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal("Ya existe una persona con esa CURP: PÉREZ LÓPEZ JUAN CARLOS.", await DetailOf(sameCurp));
 
         var sameRfc = await admin.PostAsJsonAsync("/v1/people", NewPerson(curp: null));
-        Assert.Equal("Ya existe una persona con esa RFC: PÉREZ LÓPEZ JUAN CARLOS.", await DetailOf(sameRfc));
+        Assert.Equal("Ya existe una persona con ese RFC: PÉREZ LÓPEZ JUAN CARLOS.", await DetailOf(sameRfc));
     }
 
     [Fact]

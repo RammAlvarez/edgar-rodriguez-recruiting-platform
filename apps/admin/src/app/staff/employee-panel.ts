@@ -100,6 +100,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
               <mat-form-field>
                 <mat-label>Apellido materno</mat-label>
                 <input matInput formControlName="lastNameMaternal" autocomplete="off" />
+                <mat-error>{{ s.msg('person.lastNameMaternal') }}</mat-error>
               </mat-form-field>
               <mat-form-field>
                 <mat-label>CURP</mat-label>
@@ -211,6 +212,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
                       <mat-option [value]="t.value">{{ t.label }}</mat-option>
                     }
                   </mat-select>
+                  <mat-error>{{ s.msg('bankAccount.accountType') }}</mat-error>
                 </mat-form-field>
               </div>
               <mat-form-field>
@@ -222,6 +224,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
               <mat-form-field>
                 <mat-label>Titular (si no es el empleado)</mat-label>
                 <input matInput formControlName="holderName" autocomplete="off" />
+                <mat-error>{{ s.msg('bankAccount.holderName') }}</mat-error>
               </mat-form-field>
             </div>
           }

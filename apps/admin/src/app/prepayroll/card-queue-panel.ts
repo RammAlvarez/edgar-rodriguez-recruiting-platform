@@ -318,6 +318,7 @@ export class CardQueuePanel {
   }
 
   private async run(work: () => Promise<void>): Promise<void> {
+    if (this.busy()) return;
     this.busy.set(true);
     try {
       await work();

@@ -20,6 +20,9 @@ export interface PasswordAuthProvider extends AuthProvider {
 
 const MESSAGES: Record<string, string> = {
   'auth/invalid-credential': 'El correo o la contraseña no son correctos.',
+  // Without email-enumeration protection (the emulator, older projects) Firebase names the two cases apart; say the same.
+  'auth/wrong-password': 'El correo o la contraseña no son correctos.',
+  'auth/user-not-found': 'El correo o la contraseña no son correctos.',
   'auth/invalid-email': 'Introduce un correo válido.',
   'auth/user-disabled': 'Tu cuenta está desactivada. Contacta al administrador.',
   'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
@@ -62,6 +65,8 @@ export function createFirebaseAuth(config: RuntimeConfig): PasswordAuthProvider 
       try {
         await sendPasswordResetEmail(auth, email);
       } catch (e) {
+        // An unknown email gets the same «Te enviamos un enlace…» as a known one: the answer never tells who has an account.
+        if ((e as { code?: string }).code === 'auth/user-not-found') return;
         throw toSignInError(e);
       }
     },

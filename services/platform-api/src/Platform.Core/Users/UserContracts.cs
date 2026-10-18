@@ -55,8 +55,8 @@ internal static class UserRules
         Func<T, UserRole> role, Func<T, Guid?> clientId, Func<T, IReadOnlyList<GrantDto>?> grants)
     {
         v.RuleFor(r => email(r)).NotEmpty().WithMessage("Introduce un correo válido.").EmailAddress()
-            .WithMessage("Introduce un correo válido.").MaximumLength(120).OverridePropertyName("email");
-        v.RuleFor(r => name(r)).NotEmpty().WithMessage("El nombre es obligatorio.").MaximumLength(120).OverridePropertyName("displayName");
+            .WithMessage("Introduce un correo válido.").MaximumLength(120).WithMessage("Admite hasta 120 caracteres.").OverridePropertyName("email");
+        v.RuleFor(r => name(r)).NotEmpty().WithMessage("El nombre es obligatorio.").MaximumLength(120).WithMessage("Admite hasta 120 caracteres.").OverridePropertyName("displayName");
         v.RuleFor(r => role(r)).IsInEnum().OverridePropertyName("role");
         v.RuleFor(r => clientId(r)).NotNull().When(r => role(r) == UserRole.Client)
             .WithMessage("Elige el cliente al que pertenece el usuario.").OverridePropertyName("clientId");

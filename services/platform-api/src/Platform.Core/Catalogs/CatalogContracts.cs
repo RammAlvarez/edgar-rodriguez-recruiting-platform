@@ -96,7 +96,7 @@ internal sealed class ZoneRequestValidator : AbstractValidator<ZoneRequest>
     public ZoneRequestValidator()
     {
         RuleFor(r => r.NameEs).Name();
-        RuleFor(r => r.State).NotEmpty().WithMessage("El estado es obligatorio.").MaximumLength(60);
+        RuleFor(r => r.State).NotEmpty().WithMessage("El estado es obligatorio.").MaximumLength(60).WithMessage("Admite hasta 60 caracteres.");
     }
 }
 

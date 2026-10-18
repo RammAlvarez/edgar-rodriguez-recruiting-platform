@@ -53,7 +53,7 @@ internal sealed class NewContactFieldsValidator : AbstractValidator<NewContactFi
 {
     public NewContactFieldsValidator()
     {
-        RuleFor(r => r.FullName).NotEmpty().WithMessage("El nombre del contacto es obligatorio.").MaximumLength(120);
+        RuleFor(r => r.FullName).NotEmpty().WithMessage("El nombre del contacto es obligatorio.").MaximumLength(120).WithMessage("Admite hasta 120 caracteres.");
         RuleFor(r => r.Email).OptionalEmail();
         RuleFor(r => r.Phone).OptionalMobile();
     }
@@ -83,7 +83,7 @@ internal sealed class ContactRequestValidator : AbstractValidator<ContactRequest
 {
     public ContactRequestValidator()
     {
-        RuleFor(r => r.FullName).NotEmpty().WithMessage("El nombre del contacto es obligatorio.").MaximumLength(120);
+        RuleFor(r => r.FullName).NotEmpty().WithMessage("El nombre del contacto es obligatorio.").MaximumLength(120).WithMessage("Admite hasta 120 caracteres.");
         RuleFor(r => r.Email).OptionalEmail();
         RuleFor(r => r.Phone).OptionalMobile();
         RuleFor(r => r.JobTitle).OptionalText(80);
@@ -94,7 +94,7 @@ internal sealed class SiteRequestValidator : AbstractValidator<SiteRequest>
 {
     public SiteRequestValidator()
     {
-        RuleFor(r => r.Name).NotEmpty().WithMessage("El nombre del sitio es obligatorio.").MaximumLength(120);
+        RuleFor(r => r.Name).NotEmpty().WithMessage("El nombre del sitio es obligatorio.").MaximumLength(120).WithMessage("Admite hasta 120 caracteres.");
         RuleFor(r => r.PostalCode).OptionalPostalCode();
         RuleFor(r => r.Street).OptionalText(120);
         RuleFor(r => r.ExtNumber).OptionalText(20);

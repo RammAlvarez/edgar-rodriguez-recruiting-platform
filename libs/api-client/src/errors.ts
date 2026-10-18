@@ -47,7 +47,11 @@ export async function toApiError(response: Response): Promise<ApiError> {
     // not a problem-details body
   }
   const problem = (body ?? {}) as { detail?: string; title?: string; errors?: Record<string, string[]> };
-  const fallback = response.status === 400 ? (problem.title ?? 'Revisa los campos marcados') : response.status === 429 ? RATE_LIMITED : FALLBACK;
+  // A 400's message is its first field error when it has one: a toast (a stage move, a dialog that already closed) then
+  // says what to fix instead of «Revisa los campos marcados» (D-026). Forms still put each error on its field.
+  const firstField = Object.values(problem.errors ?? {}).flat()[0];
+  const fallback =
+    response.status === 400 ? (firstField ?? problem.title ?? 'Revisa los campos marcados') : response.status === 429 ? RATE_LIMITED : FALLBACK;
   const retryAfter = response.status === 429 ? Number.parseInt(response.headers.get('Retry-After') ?? '', 10) : Number.NaN;
   return new ApiError(response.status, problem.detail ?? fallback, problem.errors ?? {}, Number.isNaN(retryAfter) ? null : retryAfter);
 }

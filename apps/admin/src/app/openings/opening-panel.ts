@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, type ValidatorFn, Validators } from '@angular/forms';
 import { MatAutocomplete, MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { MatButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
@@ -30,6 +30,10 @@ const today = () => {
 };
 
 /** «Nueva vacante» / «Editar vacante» (SPEC §4.1, ARCHITECTURE §9 2a): every BD_VACANTES field, the status is never asked. */
+/** A whole number from 1 (the API reads an integer: `1.5` would come back as an unreadable body). */
+const headcount: ValidatorFn = (c) =>
+  Number.isInteger(Number(c.value)) && Number(c.value) >= 1 ? null : { message: 'Indica cuántas vacantes (1 o más).' };
+
 @Component({
   selector: 'app-opening-panel',
   imports: [
@@ -71,6 +75,7 @@ const today = () => {
               <mat-option [value]="z.id">{{ z.nameEs }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('zoneId') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Puesto</mat-label>
@@ -100,11 +105,13 @@ const today = () => {
               <mat-option [value]="b">{{ b }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('benefits') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Otras prestaciones</mat-label>
           <input matInput formControlName="otherBenefits" autocomplete="off" />
           <mat-hint>Separadas por coma</mat-hint>
+          <mat-error>{{ s.msg('otherBenefits') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Horario</mat-label>
@@ -119,6 +126,7 @@ const today = () => {
             }
           </mat-select>
           <mat-hint>Bancos con los que paga el cliente</mat-hint>
+          <mat-error>{{ s.msg('paymentBankIds') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Nivel de estudios</mat-label>
@@ -128,6 +136,7 @@ const today = () => {
               <mat-option [value]="e.id">{{ e.nameEs }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('educationLevelId') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Años de experiencia</mat-label>
@@ -137,6 +146,7 @@ const today = () => {
         <mat-form-field>
           <mat-label>Experiencia requerida</mat-label>
           <textarea matInput formControlName="requiredExperience" rows="2"></textarea>
+          <mat-error>{{ s.msg('requiredExperience') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Sexo</mat-label>
@@ -146,11 +156,13 @@ const today = () => {
             }
           </mat-select>
           <mat-hint>Solo interno; nunca se muestra al cliente</mat-hint>
+          <mat-error>{{ s.msg('genderRequirement') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Edad</mat-label>
           <input matInput formControlName="ageRange" autocomplete="off" placeholder="25-45" />
           <mat-hint>Solo interno</mat-hint>
+          <mat-error>{{ s.msg('ageRange') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Prioridad</mat-label>
@@ -159,6 +171,7 @@ const today = () => {
               <mat-option [value]="p.value">{{ p.label }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('priority') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Reclutador líder</mat-label>
@@ -183,14 +196,17 @@ const today = () => {
               <mat-option [value]="t.id">{{ t.nameEs }}</mat-option>
             }
           </mat-select>
+          <mat-error>{{ s.msg('documentTemplateId') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Fecha de solicitud</mat-label>
           <input matInput type="date" formControlName="requestedAt" />
+          <mat-error>{{ s.msg('requestedAt') }}</mat-error>
         </mat-form-field>
         <mat-form-field>
           <mat-label>Observaciones</mat-label>
           <textarea matInput formControlName="notes" rows="3"></textarea>
+          <mat-error>{{ s.msg('notes') }}</mat-error>
         </mat-form-field>
         <mat-slide-toggle formControlName="visibleToClient">Visible en el portal del cliente</mat-slide-toggle>
         @if (s.alert()) {
@@ -228,7 +244,7 @@ export class OpeningPanel {
     clientId: [{ value: this.o?.clientId ?? this.data.clientId ?? null, disabled: !!this.data.clientId }, Validators.required],
     zoneId: [this.o?.zoneId ?? null],
     positionName: [this.o?.positionName ?? '', [Validators.required, Validators.maxLength(120)]],
-    headcountRequested: [this.o ? Number(this.o.headcountRequested) : 1, [Validators.required, Validators.min(1)]],
+    headcountRequested: [this.o ? Number(this.o.headcountRequested) : 1, [Validators.required, headcount]],
     monthlySalary: [this.o?.monthlySalary ?? '', zodValidator(decimalString())],
     benefits: [this.o?.benefits ?? ([] as string[])],
     otherBenefits: [''],

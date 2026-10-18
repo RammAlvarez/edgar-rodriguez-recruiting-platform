@@ -65,6 +65,11 @@ public sealed class CatalogTests(ApiFactory factory) : ApiTest(factory)
         var duplicate = await admin.PostAsJsonAsync("/v1/catalogs/zones", new { nameEs = "Monterrey", state = "Nuevo León" });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
         Assert.Equal("Ya existe una zona con ese nombre en ese estado.", await DetailOf(duplicate));
+        // D-021: names are unique whatever their capitals.
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/v1/catalogs/zones", new { nameEs = "MONTERREY", state = "Nuevo León" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PostAsJsonAsync("/v1/catalogs/benefits", new { nameEs = "Bono de asistencia" })).StatusCode);
+        var benefit = await admin.PostAsJsonAsync("/v1/catalogs/benefits", new { nameEs = "bono DE ASISTENCIA" });
+        Assert.Equal("Ya existe una prestación con ese nombre.", await DetailOf(benefit));
 
         var missing = await admin.PutAsJsonAsync($"/v1/catalogs/zones/{Guid.NewGuid()}", new { nameEs = "X", state = "Y" });
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);

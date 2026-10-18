@@ -95,10 +95,15 @@ export class PayingAccountPanel {
   readonly s = new PanelState(this.form);
 
   constructor() {
+    // Fill the form once, when the stored account arrives. A save refused with 400 reloads the account too (the API's
+    // X-Invalidates); patching again would put the stored values over what the user typed and clear the server's
+    // messages before they show (D-029).
+    let filled = false;
     effect(() => {
       const a = this.account.value();
-      if (a)
-        this.form.patchValue({ name: a.name, holderName: a.holderName, holderRfc: a.holderRfc, chargeLegend: a.chargeLegend, creditLegend: a.creditLegend });
+      if (!a || filled) return;
+      filled = true;
+      this.form.patchValue({ name: a.name, holderName: a.holderName, holderRfc: a.holderRfc, chargeLegend: a.chargeLegend, creditLegend: a.creditLegend });
     });
   }
 

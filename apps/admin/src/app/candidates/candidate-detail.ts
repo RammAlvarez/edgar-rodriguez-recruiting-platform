@@ -392,7 +392,7 @@ export class CandidateDetail {
   }
 
   async reject(d: ChecklistDocument): Promise<void> {
-    const reason = await prompt(this.dialog, { title: 'Rechazar documento', label: 'Motivo', confirm: 'Rechazar', kind: 'text', destructive: true });
+    const reason = await prompt(this.dialog, { title: 'Rechazar documento', label: 'Motivo', confirm: 'Rechazar', kind: 'text', destructive: true, maxLength: 300 });
     if (reason) await this.attempt(() => this.people.reject(d.id, reason), 'Documento rechazado');
   }
 
