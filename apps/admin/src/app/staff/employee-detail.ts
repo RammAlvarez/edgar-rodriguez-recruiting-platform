@@ -17,6 +17,7 @@ import { ACCOUNT_TYPE, ATTENDANCE, EMPLOYEE_STATUS, hourlyText, PERIOD_STATUS_LA
 import { AttendanceRepository, EmployeesRepository } from '../data/payroll-repositories';
 import { PeopleRepository } from '../data/recruiting-repositories';
 import { CatalogsRepository } from '../data/repositories';
+import { PersonPanel, type PersonPanelData } from '../candidates/person-panel';
 import { prompt } from '../openings/prompt-dialog';
 import { AccountPanel, type AccountPanelData } from './account-panel';
 import { AssignmentPanel, type AssignmentPanelData } from './assignment-panel';
@@ -103,7 +104,10 @@ import { StatusPanel, type StatusPanelData } from './status-panel';
                 }
               </section>
               <section class="card">
-                <div class="card-head"><h2>Persona</h2></div>
+                <div class="card-head">
+                  <h2>Persona</h2>
+                  <button matButton type="button" (click)="editPerson(e)">Editar</button>
+                </div>
                 <dl>
                   <dt>CURP</dt><dd class="mono">{{ e.curp ?? '—' }}</dd>
                   <dt>RFC</dt><dd class="mono">{{ e.rfc ?? '—' }}</dd>
@@ -374,6 +378,16 @@ export class EmployeeDetail {
       employee: e,
       terminationReasons: this.options.value()?.terminationReasons ?? [],
     });
+  }
+
+  /** The person's identity, contact and address (the card alta needs CURP, RFC and the address): the candidate's panel. */
+  async editPerson(e: EmployeeDetailDto): Promise<void> {
+    try {
+      const person = await this.people.get(e.personId);
+      openSidePanel<PersonPanel, PersonPanelData>(this.dialog, PersonPanel, { person });
+    } catch (err) {
+      this.snack.open(err instanceof ApiError ? err.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+    }
   }
 
   rehire(e: EmployeeDetailDto): void {

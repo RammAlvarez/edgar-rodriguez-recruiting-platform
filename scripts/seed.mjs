@@ -24,6 +24,7 @@
 //       vacation, incapacidad or baja already holds are refused and skipped), closed to Revisión by the lock job; 39 paid and
 //       uploaded, 40 paid with its file not uploaded, so the Resumen de pago has both; and the gate: Costo de nómina for ECOVIA
 //       over 38–41 has one row per week equal to its prenómina grid, or the seed fails. Skipped once Semana 39 exists.
+import { setTimeout as sleep } from 'node:timers/promises';
 import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
 import { GOLDEN, SEM38, sem38Rows, sem38Week } from './lib/sem38.mjs';
 import { addDays, candidatos as sampleCandidates, clients as sampleClients, empleados as sampleEmployees, payrollGroups as samplePayrollGroups, puestos as samplePositions, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
@@ -63,13 +64,22 @@ async function signInInEmulator({ email, password }) {
   return body.idToken;
 }
 
-/** `/v1` as the owner; a 409 (already there) is fine on a re-run. */
+/** `/v1` as the owner; a 409 (already there) is fine on a re-run. A 429 (PLAN D92: 600 per minute per staff user, and
+ *  the seed writes thousands of attendance days) waits out the API's `Retry-After` and sends the request again. */
 async function api(token, method, path, payload) {
-  const response = await fetch(`${env.API_URL}${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: payload === undefined ? undefined : JSON.stringify(payload),
-  });
+  let response;
+  for (;;) {
+    response = await fetch(`${env.API_URL}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: payload === undefined ? undefined : JSON.stringify(payload),
+    });
+    if (response.status !== 429) break;
+    const seconds = Number(response.headers.get('Retry-After')) || 60;
+    await response.body?.cancel();
+    console.log(`request limit reached, waiting ${seconds} s…`);
+    await sleep(seconds * 1000);
+  }
   const body = await response.json().catch(() => ({}));
   if (!response.ok && response.status !== 409) throw new Error(`${method} ${path} failed (${response.status}): ${JSON.stringify(body)}`);
   return { status: response.status, body };

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, type MatDialog, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatError, MatFormField, MatLabel } from '@angular/material/form-field';
@@ -27,7 +27,7 @@ export interface PromptData {
       @if (data.body) {
         <p>{{ data.body }}</p>
       }
-      <form (ngSubmit)="ok()" id="prompt-form" novalidate>
+      <form [formGroup]="form" (ngSubmit)="ok()" id="prompt-form" novalidate>
         <mat-form-field class="field">
           <mat-label>{{ data.label }}</mat-label>
           @if (data.kind === 'date') {
@@ -54,6 +54,8 @@ export class PromptDialog {
   readonly data = inject<PromptData>(MAT_DIALOG_DATA);
   readonly ref = inject(MatDialogRef<PromptDialog, string | null>);
   readonly value = new FormControl(this.data.initial ?? '', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] });
+  /** The group gives the <form> its FormGroupDirective: without one, ngSubmit never fires and the browser submits the page. */
+  readonly form = new FormGroup({ value: this.value });
 
   ok(): void {
     this.value.markAsTouched();

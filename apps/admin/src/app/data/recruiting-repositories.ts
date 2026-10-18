@@ -20,6 +20,7 @@ import type {
   OpeningOptionDto,
   OpeningRequest,
   PersonDocumentDto,
+  PersonDto,
   PersonSummaryDto,
   PresignUploadResponse,
   RecruiterDetailDto,
@@ -182,6 +183,10 @@ export class PeopleRepository {
 
   search(text: string): Promise<PersonSummaryDto[]> {
     return this.api.get('/v1/people', { search: text });
+  }
+
+  get(id: string): Promise<PersonDto> {
+    return this.api.get(`/v1/people/${id}`);
   }
 
   /** Resolves to undefined while the person is not known yet; call `reload()` once it is. */

@@ -61,6 +61,11 @@ export class PayrollGroupsRepository {
     return liveQuery(() => this.api.get<PayrollGroupListItemDto[]>('/v1/payroll/groups', { clientId: clientId() }), ['payroll-groups']);
   }
 
+  /** Every group the grant reaches, with its active puestos and employees (Clientes (nómina)'s two tables). */
+  all() {
+    return liveQuery(() => this.api.get<PayrollGroupListItemDto[]>('/v1/payroll/groups'), ['payroll-groups', 'employees']);
+  }
+
   detail(id: () => string) {
     return liveQuery(() => this.api.get<PayrollGroupDetailDto>(`/v1/payroll/groups/${id()}`), ['payroll-groups']);
   }
@@ -111,7 +116,7 @@ export class EmployeesRepository {
   }
 
   detail(id: () => string) {
-    return liveQuery(() => this.api.get<EmployeeDetailDto>(`/v1/employees/${id()}`), ['employees', 'card-requests']);
+    return liveQuery(() => this.api.get<EmployeeDetailDto>(`/v1/employees/${id()}`), ['employees', 'card-requests', 'people']);
   }
 
   options() {

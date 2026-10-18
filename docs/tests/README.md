@@ -24,7 +24,7 @@ release. Each run is written up as `YYYY-MM-DD-NN-happy.md`, `-forms.md` or `-e2
 
 | Run | Check | Result |
 |---|---|---|
-| — | 4.1 HAPPY — one pass over every process | not run yet |
+| [2026-10-17-13](2026-10-17-13-happy.md) | 4.1 HAPPY — one pass over every process | 25 steps pass after fixing D-014 – D-017; plan wording corrected; 390 px checked |
 | — | 4.2 FORMS — stress test of every form | not run yet |
 | — | 4.3 E2E — one week of work | not run yet |
 
@@ -45,3 +45,7 @@ release. Each run is written up as `YYYY-MM-DD-NN-happy.md`, `-forms.md` or `-e2
 | D-011 | 2026-10-16-08 | The grid's Cuenta column read «A nombre de NOE ALANIS TREVINO» for the employee's own account: the holder was compared with the name accents included. | fixed — `PrepayrollQueries.SameName` ignores order, case and accents; test `The_holder_is_the_employee_whatever_the_order_case_or_accents` |
 | D-012 | 2026-10-16-08 | «Nueva incidencia» showed an empty Empleado list: `/v1/payroll/incidents/employees` answered 500 (EF cannot sort after projecting into the record). | fixed — sorted before the projection; the pickers are asserted in `PrepayrollTests` |
 | D-013 | 2026-10-16-11 | Two writes for the same person and period at once (a capture and an incidencia) recomputed the same prenómina line together; the second answered 500 (DbUpdateConcurrencyException). Found by the 500-employee load run. | fixed — a transaction-scoped advisory lock per line in one global order (`Prepayrolls.RecomputeAsync`, `EnsureLinesAsync`); `RecomputeConcurrencyTests` |
+| D-014 | 2026-10-17-13 | `npm run seed` on a fresh database stopped partway (the attendance unlocks after the S8 supervisor) with 429 on `/v1/attendance/unlock`: D92's 600 requests per minute per staff user is below the seed's pace (thousands of attendance days). | fixed — the seed waits out `Retry-After` and repeats the request (`scripts/seed.mjs`); a fresh seed takes about five minutes |
+| D-015 | 2026-10-17-13 | An employee given «Alta de empleado» directly could not get a card: the Banorte alta asks for CURP, RFC, correo and domicilio, and «Corregir en Personal» led to a Persona card with no way to edit them. | fixed — «Editar» on the Persona card opens the «Datos personales» panel (`staff/employee-detail.ts`); the view reloads on the `people` tag |
+| D-016 | 2026-10-17-13 | Clientes (nómina) still had the S7 placeholder: «Sin proyectos activos» and 0 groups / 0 employees / «Sin proyecto» for every client, ECOVIA's 113 employees included. | fixed — counts from `/v1/payroll/groups` (`clients/payroll-clients-page.ts`); table 1 lists Cliente, grupos, Puestos, Empleados activos. ARCHITECTURE 3f's «Próximo corte» and «Período en curso» are still open |
+| D-017 | 2026-10-17-13 | «Marcar como contratado» reloaded the page and saved nothing; so did every motivo prompt (No apto, Descartado, Rechazar documento, Pausar / Cancelar vacante) and the note's hyperlink: the dialog's `<form>` had `(ngSubmit)` without a form directive, so the browser submitted it. | fixed — a `FormGroup` on the form (`openings/prompt-dialog.ts`); `prompt-dialog.spec.ts` fails without it |

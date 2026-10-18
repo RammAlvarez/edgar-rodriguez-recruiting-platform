@@ -161,6 +161,11 @@ curl -X POST -H "X-Internal-Secret: $INTERNAL_SECRET" http://localhost:5080/inte
 # attendance-lock · period-roll · status-roll · document-expiry · notifications-digest
 ```
 
+A fresh database without touching the owner's `platform`: create `platform_<run>` in the Postgres container with
+`db/init/roles.sql.inc` (as `db/init/10-roles.sh` does), `npm run db:migrate` with `MIGRATIONS_DATABASE_URL` and
+`DATABASE_URL` pointing at it, start the API with that `DATABASE_URL`, then `npm run seed` with the same variable. The seed
+waits out the request limit (D92) whenever it hits it, so a fresh seed takes about five minutes.
+
 Quoted text is the exact UI text. Where a step says «the field's error», the run records the message shown; it must be in
 Spanish, name the problem, and sit under the field (never a raw status code or an English message).
 
@@ -176,14 +181,16 @@ ECOVIA weeks so it does not wait on the new hire.
 2. **Users.** *Usuarios* → «Invitar usuario» «Prueba Asistencia», Administrador, only *Asistencia*, «Solo para el cliente»
    HFC → toast «Invitación enviada a …»; the API log has the password link. Open it in a private window, set the password →
    the sidebar shows only Calendario and Asistencia. Back as the owner: the row shows the last access.
-3. **Catalogs.** *Catálogos*: add a Prestación «Vales de despensa» and a Tipo de documento «Carta de recomendación» (vigencia
-   365) → both listed; «Agregar festivos de ley» for next year adds them once.
+3. **Catalogs.** *Catálogos*: add a Prestación «Bono de asistencia» and a Tipo de documento «Constancia médica» (vence,
+   vigencia 365) → both listed (the seed already has «Vales de despensa» and «Cartas de recomendación»: adding one again →
+   «Ya existe una prestación con ese nombre.»); «Agregar festivos de ley 2026» → «Los festivos de ley 2026 ya estaban en el
+   catálogo» (the seed loads this year and next), nothing added.
 4. **Clients.** «Nuevo cliente» *HAPPY SA* with RFC, contacto principal and celular → «Cliente creado»; Sitios → «Nuevo
    sitio» with zona and CP → «Sitio guardado»; Contactos → «Nuevo contacto» with an `@local.test` email → «Invitar al portal»
    → «Con acceso al portal» and a Cliente user in *Usuarios*.
 5. **Vacante.** *Vacantes* → «Nueva vacante» HAPPY SA / Auxiliar de limpieza / 2, sueldo, prestaciones (incl. the new one),
-   documentos requeridos, «Visible en el portal del cliente» on → «Vacante creada», *Abierta*, also under the client's
-   Vacantes tab.
+   documentos requeridos, Sexo and Edad (internal), «Visible en el portal del cliente» on → «Vacante creada», *Abierta*,
+   also under the client's Vacantes tab.
 6. **Recruiter.** *Reclutadores* → Mónica Soto → «Asignar vacante» HAPPY as Líder → «Ver como reclutador»: the vacante in Mis
    vacantes → «Salir».
 7. **Candidate.** Pipeline → «Nuevo candidato» (new person, `happy.candidata@local.test`, fuente, sueldo ofrecido) → the card
@@ -194,21 +201,30 @@ ECOVIA weeks so it does not wait on the new hire.
 9. **Staff.** *Personal* → «Alta de empleado» in HFC with a CLABE → the detail; second «Alta de empleado» without account +
    «Solicitar tarjeta» Banorte → «Tarjeta solicitada · Banorte». On the first: Horario (a weekly schedule), «Cambiar estatus»
    → Vacaciones tomorrow … +2 → the pill; *Calendario* week shows it.
-10. **Attendance.** *Asistencia* today → HFC site → «Todos presentes», one Falta, Guardar → «n/n». Yesterday → «Cambiar» one
-    person with a reason → the new value.
+10. **Attendance.** *Asistencia* today → an open site (HFC closes at 20:00, ECOVIA at 23:59; after that the day shows «Este
+    día ya cerró») → «Todos presentes» (fills the people without a capture), one Falta, Guardar → «Asistencia guardada ·
+    n persona(s)», «n/n». A closed day → «Cambiar» one person with a reason → «Día corregido: el cambio quedó registrado»
+    and the new value.
 11. **Incidencias.** «Nueva incidencia» Tiempo extra doble 2 h on an ECOVIA employee of Semana 41, and a Descuento → both
     listed.
 12. **Prenómina.** ECOVIA Semana 41 → the incidencia's row moved; a SUELDO cell → desglose → «Ajustar celda» with a reason →
     the total moves by the difference; Excel downloads. Semana 38 → «Pagar» → «Generar archivos de pago» → Pagada; the Azteca
     file downloads; «Marcar subido al banco».
-13. **Cards.** Tarjetas → Por solicitar → Banorte → the person of step 9 → sucursal → «Generar alta» → file; «Marcar subido» →
-    «Tarjeta recibida» with a valid 16-digit number → their principal account.
-14. **Payroll clients.** *Clientes (nómina)* → HAPPY SA → «Nuevo grupo de nómina» (semanal, corte domingo) → a puesto with
-    tarifas → «Tarifas guardadas»; Bonos y conceptos → «Conceptos guardados».
+13. **Cards.** Tarjetas → Por solicitar → Banorte → the person of step 9 → sucursal → «Revisar» lists what the bank needs
+    (CURP, correo, calle, número, colonia, CP, RFC; calle without punctuation) → «Corregir en Personal» → Persona →
+    «Editar» → fill them → «Datos actualizados» → «Revisar» clean → «Generar alta» → «Alta Banorte generada: 1 persona» and
+    the file; Lotes → «Marcar subido al banco» → «Tarjeta recibida» with a valid 16-digit number → «… la tarjeta ·NNNN es su
+    cuenta principal».
+14. **Payroll clients.** *Clientes (nómina)*: «Clientes con proyectos activos» lists ECOVIA, HFC and HEB with their groups,
+    puestos and active employees (HFC counts step 9's two altas), *Activo* in «Todos los clientes»; HAPPY SA → «Nuevo grupo»
+    (semanal, corte domingo) → «Grupo … guardado»; «Nuevo puesto» with tarifas → «Puesto guardado»; Bonos y conceptos →
+    «Conceptos guardados».
 15. **Payroll reports.** Costo de nómina ECOVIA 38–41 → Semana 38 $334,654.83 and the Semana 41 total equal to step 12's grid;
     Rotación shows step 9's alta; Tarjetas y cuentas the card of step 13.
-16. **Bell and MFA.** The bell has the unread items (invitation, document, period in review); open one → read. Mi cuenta →
-    activar verificación en dos pasos → recovery codes; sign out and in → the code is asked.
+16. **Bell and MFA.** The owner's bell has the unread items (periods in review, días sin captura); open one → it opens its
+    screen and the count drops by one. (The welcome item goes to the invited user, «documento subido» to the vacante's
+    recruiter.) Verificación en dos pasos → «Generar código QR» → the code → recovery codes; sign out and in → the code is
+    asked.
 
 **B. Candidates app (:4301)**
 17. Link for `happy.candidata@local.test` → aviso de privacidad → accept → Mi perfil.
@@ -221,11 +237,12 @@ ECOVIA weeks so it does not wait on the new hire.
 22. The vacante: the candidate (initials until Apto); post a comment → in the thread and in Comentarios.
 
 **D. Admin close-out (owner)**
-23. The candidate detail shows the CURP / birth date from step 18 and the card; the documents *Entregado* → Validar both;
-    the bell has «documento subido»; «Comentarios del cliente» has step 22's comment.
-24. Move to Apto → the client sees the full name and documentos % (reload :4302); move to Contratado with today's fecha de
-    ingreso → «1 de 2 cubiertas»; «Convertir en empleado» into HAPPY SA's group → the bank pre-filled from step 18 →
-    «Ver empleado».
+23. The candidate detail shows the CURP, RFC, address and birth date from step 18; the documents *Entregado* → Validar both
+    → *Validado*; Mónica has «… subió Identificación oficial» in her bell; «Comentarios del cliente» has step 22's comment.
+24. Move to Apto → the client sees the full name, sueldo ofrecido, entrevista and documentos % (reload :4302); «Mover a
+    Contratado» with today's fecha de ingreso → «… 1 de 2 cubiertas»; «Convertir en empleado» offers only HAPPY SA's group
+    and says «Ya tiene cuenta principal; no se solicita tarjeta» → Convertir → the employee, with step 18's card as
+    *Principal*.
 25. 390 px: one screen of each app (Prenómina, Mi perfil, the client's vacante) has no page-wide horizontal scroll.
 
 ### 4.2 FORMS — stress test of every form
