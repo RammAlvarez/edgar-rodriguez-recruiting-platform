@@ -1,3 +1,37 @@
+<div class="frame">
+  <mat-toolbar class="toolbar">
+    @if (compact()) {
+      <button matIconButton type="button" aria-label="Menú" matTooltip="Menú" (click)="nav.toggle()">
+        <mat-icon fontSet="material-symbols-outlined">menu</mat-icon>
+      </button>
+    }
+    <mat-icon class="brand" fontSet="material-symbols-outlined">badge</mat-icon>
+    <span class="title">Plataforma de Reclutamiento y Prenómina</span>
+    <span class="spacer"></span>
+    <ui-refresh-button />
+    @if (staff()) {
+      <app-notification-bell />
+    }
+    <button matIconButton type="button" [matMenuTriggerFor]="userMenu" aria-label="Cuenta" matTooltip="Cuenta">
+      <mat-icon fontSet="material-symbols-outlined">account_circle</mat-icon>
+    </button>
+    <mat-menu #userMenu="matMenu" xPosition="before">
+      <div class="user-label">{{ userLabel() }}</div>
+      <mat-divider />
+      <a mat-menu-item routerLink="/perfil">
+        <mat-icon fontSet="material-symbols-outlined">person</mat-icon>
+        <span>Mi perfil</span>
+      </a>
+      <a mat-menu-item routerLink="/verificacion">
+        <mat-icon fontSet="material-symbols-outlined">shield_lock</mat-icon>
+        <span>Verificación en dos pasos</span>
+      </a>
+      <button mat-menu-item type="button" (click)="signOut()">
+        <mat-icon fontSet="material-symbols-outlined">logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </button>
+    </mat-menu>
+  </mat-toolbar>
 <mat-sidenav-container class="shell">
   <mat-sidenav #nav [mode]="compact() ? 'over' : 'side'" [opened]="!compact()" class="sidenav">
     <mat-nav-list>
@@ -23,34 +57,6 @@
   </mat-sidenav>
 
   <mat-sidenav-content>
-    <mat-toolbar class="toolbar">
-      @if (compact()) {
-        <button matIconButton type="button" aria-label="Menú" matTooltip="Menú" (click)="nav.toggle()">
-          <mat-icon fontSet="material-symbols-outlined">menu</mat-icon>
-        </button>
-      }
-      <span class="title">Plataforma de Reclutamiento y Prenómina</span>
-      <span class="spacer"></span>
-      <ui-refresh-button />
-      @if (staff()) {
-        <app-notification-bell />
-      }
-      <button matIconButton type="button" [matMenuTriggerFor]="userMenu" aria-label="Cuenta" matTooltip="Cuenta">
-        <mat-icon fontSet="material-symbols-outlined">account_circle</mat-icon>
-      </button>
-      <mat-menu #userMenu="matMenu" xPosition="before">
-        <div class="user-label">{{ userLabel() }}</div>
-        <mat-divider />
-        <a mat-menu-item routerLink="/verificacion">
-          <mat-icon fontSet="material-symbols-outlined">shield_lock</mat-icon>
-          <span>Verificación en dos pasos</span>
-        </a>
-        <button mat-menu-item type="button" (click)="signOut()">
-          <mat-icon fontSet="material-symbols-outlined">logout</mat-icon>
-          <span>Cerrar sesión</span>
-        </button>
-      </mat-menu>
-    </mat-toolbar>
     @if (covering(); as c) {
       <div class="cover-banner" role="status">
         <mat-icon fontSet="material-symbols-outlined">visibility</mat-icon>
@@ -63,3 +69,4 @@
     </main>
   </mat-sidenav-content>
 </mat-sidenav-container>
+</div>

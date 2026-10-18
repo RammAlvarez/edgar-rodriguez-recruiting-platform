@@ -25,7 +25,15 @@ export const WORKED: readonly AttendanceStatus[] = ['present', 'partial', 'rest_
 /** Short chip text for a phone screen. */
 export const CHIP: Partial<Record<AttendanceStatus, string>> = {
   present: 'Presente',
-  partial: 'Incompleto',
+  partial: 'Parcial',
   absent: 'Falta',
   rest_day: 'Descanso',
+};
+
+/** Icons of the chips (Material Symbols Outlined, as the prototype's capture buttons). */
+export const CHIP_ICON: Partial<Record<AttendanceStatus, string>> = {
+  present: 'check',
+  partial: 'timelapse',
+  absent: 'close',
+  rest_day: 'bedtime',
 };

@@ -80,13 +80,14 @@ const COMPLETE = 100;
       <div class="table-card">
         <table>
           <thead>
-            <tr><th>Nombre</th><th>Cliente</th><th>Puesto</th><th>Turno</th><th>Ingreso</th><th>Estatus</th><th class="num">Documentos</th><th></th></tr>
+            <tr><th>Nombre</th><th>Cliente</th><th>Grupo de nómina</th><th>Puesto</th><th>Turno</th><th>Ingreso</th><th>Estatus</th><th>Documentos</th><th></th></tr>
           </thead>
           <tbody>
             @for (e of rows(); track e.id) {
               <tr class="clickable" (click)="open(e)">
                 <td class="name">{{ e.fullName }}</td>
-                <td>{{ e.clientName }}<span class="muted"> · {{ e.groupName }}</span></td>
+                <td>{{ e.clientName }}</td>
+                <td>{{ e.groupName }}</td>
                 <td>{{ e.positionName }}</td>
                 <td>{{ e.shift }}</td>
                 <td class="nowrap">{{ e.hiredAt | dateKey }}</td>
@@ -96,7 +97,12 @@ const COMPLETE = 100;
                     <div class="muted dates">{{ e.status === 'active' ? label[p.status] + ' ' : '' }}{{ range(p.startDate, p.endDate) }}</div>
                   }
                 </td>
-                <td class="num" [class.incomplete]="+e.documentsCompleteness < 100">{{ percent(e) }} %</td>
+                <td [class.incomplete]="+e.documentsCompleteness < 100">
+                  <div class="docs">
+                    <mat-progress-bar mode="determinate" [value]="+percent(e)" aria-label="Documentos" />
+                    <span>{{ percent(e) }} %</span>
+                  </div>
+                </td>
                 <td class="quick" (click)="$event.stopPropagation()">
                   @if (e.cardRequest; as r) {
                     <span class="pill">Tarjeta solicitada · {{ bank[r.bank] }}</span>
@@ -112,7 +118,7 @@ const COMPLETE = 100;
               </tr>
             } @empty {
               @if (list.value()) {
-                <tr class="empty-row"><td colspan="8">Sin empleados con estos filtros.</td></tr>
+                <tr class="empty-row"><td colspan="9">Sin empleados con estos filtros.</td></tr>
               }
             }
           </tbody>
@@ -138,6 +144,19 @@ const COMPLETE = 100;
     }
     .name {
       font-weight: 500;
+    }
+    .docs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      mat-progress-bar {
+        width: 72px;
+      }
+      span {
+        min-width: 3ch;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
     }
     .nowrap {
       white-space: nowrap;

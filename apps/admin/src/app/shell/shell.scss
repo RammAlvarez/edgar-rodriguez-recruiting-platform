@@ -1,26 +1,54 @@
-.shell {
+.frame {
+  display: flex;
+  flex-direction: column;
   height: 100%;
 }
 
+// Toolbar across the top, sidenav and content below it (prototype layout).
+.shell {
+  flex: 1;
+  min-height: 0;
+}
+
+// Design system sidenav: 256px, 12px inset, square edge, 52px pills (density -1), label-large.
 .sidenav {
-  width: 280px;
+  --mat-sidenav-container-width: 256px;
+  --mat-sidenav-container-shape: 0;
+  --mat-list-list-item-one-line-container-height: 52px;
+  --mat-list-list-item-label-text-font: var(--mat-sys-label-large-font);
+  --mat-list-list-item-label-text-weight: 500;
+  --mat-list-list-item-label-text-tracking: var(--mat-sys-label-large-tracking);
+  --mat-list-list-item-label-text-color: var(--mat-sys-on-surface-variant);
+  --mat-list-list-item-leading-icon-color: var(--mat-sys-on-surface-variant);
+  --mat-list-list-item-leading-icon-start-space: 16px;
+  --mat-list-list-item-leading-icon-end-space: 12px;
+  --mat-list-active-indicator-shape: 9999px;
+  width: 256px;
+  box-sizing: border-box;
+  padding: 12px;
   background: var(--mat-sys-surface-container-low);
   border-right: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
 }
 
 .section {
-  margin: 16px 16px 4px 16px;
+  margin: 0;
+  padding: 16px 16px 8px;
   font: var(--mat-sys-title-small);
+  letter-spacing: var(--mat-sys-title-small-tracking);
   color: var(--mat-sys-on-surface-variant);
 }
 
 .toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  flex: none;
   gap: 4px;
   background: var(--mat-sys-surface);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.brand {
+  color: var(--mat-sys-primary);
+  margin-right: 4px;
 }
 
 .title {
@@ -43,7 +71,7 @@
 // «Ver como reclutador»: persistent while covering (SPEC §4.4).
 .cover-banner {
   position: sticky;
-  top: 64px;
+  top: 0;
   z-index: 1;
   display: flex;
   align-items: center;

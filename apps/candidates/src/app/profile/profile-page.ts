@@ -21,6 +21,8 @@ interface Field {
   readonly mono?: boolean;
   readonly autocomplete?: string;
   readonly inputmode?: string;
+  /** Spans both columns of the form. */
+  readonly full?: boolean;
 }
 
 /**
@@ -44,7 +46,7 @@ interface Field {
         <form class="panel-form" [formGroup]="form" (ngSubmit)="save(p)" novalidate>
           <h3 class="section-title">Identidad</h3>
           @for (f of identity; track f.name) {
-            <mat-form-field>
+            <mat-form-field [class.full]="f.full">
               <mat-label>{{ f.label }}</mat-label>
               <input matInput [formControlName]="f.name" [type]="f.type ?? 'text'" [class.mono]="f.mono"
                      [attr.autocomplete]="f.autocomplete ?? 'off'" [attr.inputmode]="f.inputmode ?? null" />
@@ -55,13 +57,13 @@ interface Field {
             </mat-form-field>
           }
           <h3 class="section-title">Contacto</h3>
-          <mat-form-field>
+          <mat-form-field class="full">
             <mat-label>Correo</mat-label>
             <input matInput [value]="p.email ?? ''" readonly />
             <mat-hint>Es el correo con el que entras; para cambiarlo, pídeselo a tu reclutador</mat-hint>
           </mat-form-field>
           @for (f of contact; track f.name) {
-            <mat-form-field>
+            <mat-form-field [class.full]="f.full">
               <mat-label>{{ f.label }}</mat-label>
               <input matInput [formControlName]="f.name" [type]="f.type ?? 'text'"
                      [attr.autocomplete]="f.autocomplete ?? 'off'" [attr.inputmode]="f.inputmode ?? null" />
@@ -82,7 +84,21 @@ interface Field {
   `,
   styles: `
     .narrow {
-      max-width: 560px;
+      max-width: 720px;
+    }
+    // Two columns from tablet up, as the prototype's profile; phones keep one.
+    @media (min-width: 600px) {
+      .panel-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 16px;
+        .full,
+        .section-title,
+        .form-alert,
+        .save {
+          grid-column: 1 / -1;
+        }
+      }
     }
     .save {
       align-self: stretch;
@@ -96,7 +112,7 @@ export class ProfilePage {
   readonly profile = this.portal.profile();
 
   readonly identity: readonly Field[] = [
-    { name: 'firstNames', label: 'Nombre(s)', autocomplete: 'given-name' },
+    { name: 'firstNames', label: 'Nombre(s)', full: true, autocomplete: 'given-name' },
     { name: 'lastNamePaternal', label: 'Apellido paterno', autocomplete: 'family-name' },
     { name: 'lastNameMaternal', label: 'Apellido materno' },
     { name: 'curp', label: 'CURP', mono: true, hint: 'Tu fecha de nacimiento se toma de la CURP' },
@@ -107,7 +123,7 @@ export class ProfilePage {
   ];
   readonly contact: readonly Field[] = [
     { name: 'mobilePhone', label: 'Celular', type: 'tel', hint: '10 dígitos', autocomplete: 'tel-national', inputmode: 'numeric' },
-    { name: 'street', label: 'Calle', autocomplete: 'address-line1' },
+    { name: 'street', label: 'Calle', full: true, autocomplete: 'address-line1' },
     { name: 'extNumber', label: 'Número' },
     { name: 'neighborhood', label: 'Colonia' },
     { name: 'postalCode', label: 'Código postal', autocomplete: 'postal-code', inputmode: 'numeric' },

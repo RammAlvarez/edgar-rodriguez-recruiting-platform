@@ -78,6 +78,7 @@ export const routes: Routes = [
         data: { title: item.label, icon: item.icon, workspace: item.path.startsWith('mis-') },
         title: item.label,
       })),
+      { path: 'perfil', loadComponent: () => import('./profile/profile-page').then((m) => m.ProfilePage), title: 'Mi perfil' },
       {
         path: 'clientes/:id',
         loadComponent: () => import('./clients/client-detail').then((m) => m.ClientDetail),

@@ -113,7 +113,7 @@ import { prompt } from './prompt-dialog';
           <div class="kpi"><div class="label">Días abierta</div><div class="value">{{ o.daysOpen }}</div></div>
           <div class="kpi"><div class="label">Sueldo mensual</div><div class="value">{{ o.monthlySalary | money: true }}</div></div>
         </div>
-        <mat-tab-group animationDuration="0ms">
+        <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
           <mat-tab label="Pipeline">
             <div class="tab-actions">
               @if (o.status === 'open' || o.status === 'in_progress') {

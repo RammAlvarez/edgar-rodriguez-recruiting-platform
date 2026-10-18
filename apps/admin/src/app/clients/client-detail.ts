@@ -48,7 +48,7 @@ import { SitePanel, type SitePanelData } from './site-panel';
           <div class="kpi"><div class="label">Contactos</div><div class="value">{{ c.contacts.length }}</div></div>
           <div class="kpi"><div class="label">Sitios</div><div class="value">{{ c.sites.length }}</div></div>
         </div>
-        <mat-tab-group animationDuration="0ms">
+        <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
           <mat-tab label="Vacantes">
             <div class="tab-actions">
               <button matButton="filled" type="button" (click)="newOpening()">

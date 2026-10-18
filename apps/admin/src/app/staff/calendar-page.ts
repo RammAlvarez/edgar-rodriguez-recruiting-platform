@@ -286,7 +286,7 @@ function isoWeekday(d: DateKey): number {
 })
 export class CalendarPage {
   readonly today = todayKey();
-  readonly view = signal<View>('day');
+  readonly view = signal<View>('month');
   readonly anchor = signal<DateKey>(this.today);
   readonly clientId = signal<string | null>(null);
   readonly attendance = ATTENDANCE;

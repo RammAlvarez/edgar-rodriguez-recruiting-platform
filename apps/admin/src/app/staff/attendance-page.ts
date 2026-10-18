@@ -15,7 +15,7 @@ import { openSidePanel } from '@platform/ui';
 import type { AttendanceEntryDto, AttendanceStatus } from '../data/api-types';
 import { ATTENDANCE } from '../data/payroll-labels';
 import { AttendanceRepository } from '../data/payroll-repositories';
-import { CAPTURE_STATUSES, CHIP, QUICK_STATUSES, WORKED } from './attendance-labels';
+import { CAPTURE_STATUSES, CHIP, CHIP_ICON, QUICK_STATUSES, WORKED } from './attendance-labels';
 import { UnlockPanel, type UnlockPanelData } from './unlock-panel';
 
 interface Draft {
@@ -38,6 +38,7 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
   template: `
     <div class="page narrow">
       <header class="page-header"><h1>Asistencia</h1></header>
+      <div class="top">
       <div class="when">
         <button matIconButton type="button" (click)="setDate(addDays(date(), -1))" aria-label="Día anterior">
           <mat-icon fontSet="material-symbols-outlined">chevron_left</mat-icon>
@@ -61,6 +62,10 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
           }
         </mat-select>
       </mat-form-field>
+      </div>
+      @if (siteStat(); as st) {
+        <p class="info"><mat-icon fontSet="material-symbols-outlined">fact_check</mat-icon><strong>Capturados {{ st.captured }}/{{ st.expected }}</strong></p>
+      }
       @if (sites.value()?.length === 0) {
         <p class="list-empty">Nadie programado este día en tus sitios.</p>
       }
@@ -82,7 +87,7 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
           </p>
         } @else {
           <div class="bulk">
-            <button matButton="outlined" type="button" (click)="all(d.holiday ? 'holiday_worked' : 'present')" [disabled]="!editable().length">
+            <button matButton="filled" type="button" (click)="all(d.holiday ? 'holiday_worked' : 'present')" [disabled]="!editable().length">
               <mat-icon fontSet="material-symbols-outlined">done_all</mat-icon>{{ d.holiday ? 'Todos festivo laborado' : 'Todos presentes' }}
             </button>
             @if (d.others.length) {
@@ -120,9 +125,9 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
                 <div class="chips" role="radiogroup" [attr.aria-label]="'Asistencia de ' + e.fullName">
                   @for (s of quick; track s) {
                     <button type="button" class="chip" role="radio" [class.on]="draft(e)?.status === s" [attr.aria-checked]="draft(e)?.status === s"
-                      (click)="set(e, s)">{{ chip[s] }}</button>
+                      (click)="set(e, s)"><mat-icon fontSet="material-symbols-outlined">{{ icon[s] }}</mat-icon>{{ chip[s] }}</button>
                   }
-                  <button type="button" class="chip" [class.on]="isMore(e)" [matMenuTriggerFor]="more">{{ isMore(e) ? label[draft(e)!.status].label : 'Más' }}</button>
+                  <button type="button" class="chip" [class.on]="isMore(e)" [matMenuTriggerFor]="more"><mat-icon fontSet="material-symbols-outlined">more_horiz</mat-icon>{{ isMore(e) ? label[draft(e)!.status].label : 'Más' }}</button>
                   <mat-menu #more="matMenu">
                     @for (s of moreStatuses; track s) {
                       <button mat-menu-item type="button" (click)="set(e, s)">{{ label[s].label }}</button>
@@ -162,20 +167,37 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
   `,
   styles: `
     .narrow {
-      max-width: 760px;
+      max-width: 1100px;
+    }
+    .top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
     }
     .when {
       display: flex;
       align-items: center;
       gap: 4px;
-      margin-bottom: 12px;
       .date {
         width: 180px;
       }
     }
     .site {
-      width: 100%;
-      margin-bottom: 12px;
+      flex: 1;
+      min-width: 240px;
+      max-width: 360px;
+    }
+    .info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 12px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
     }
     .banner {
       display: flex;
@@ -221,24 +243,40 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
         font-weight: 500;
       }
     }
+    // Segmented toggle group (prototype): one outlined pill, icon + label per option.
     .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+      display: inline-flex;
+      flex-wrap: nowrap;
+      overflow: hidden;
+      border: 1px solid var(--mat-sys-outline);
+      border-radius: 9999px;
     }
     .chip {
       all: unset;
       box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       min-height: 36px;
-      padding: 6px 12px;
-      border-radius: 18px;
-      border: 1px solid var(--mat-sys-outline);
+      padding: 0 16px;
+      border-right: 1px solid var(--mat-sys-outline);
       font: var(--mat-sys-label-large);
+      white-space: nowrap;
       cursor: pointer;
+      &:last-child {
+        border-right: 0;
+      }
+      mat-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+      }
+      &:hover {
+        background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+      }
       &.on {
         background: var(--mat-sys-secondary-container);
         color: var(--mat-sys-on-secondary-container);
-        border-color: transparent;
       }
       &:focus-visible {
         outline: 2px solid var(--mat-sys-primary);
@@ -287,6 +325,7 @@ export class AttendancePage {
   readonly today = todayKey();
   readonly label = ATTENDANCE;
   readonly chip = CHIP;
+  readonly icon = CHIP_ICON;
   readonly quick = QUICK_STATUSES;
   readonly moreStatuses = CAPTURE_STATUSES.filter((s) => !QUICK_STATUSES.includes(s));
   readonly addDays = addDaysToKey;
@@ -294,6 +333,7 @@ export class AttendancePage {
   readonly date = signal<DateKey>(isDateKey(this.params.get('date')) ? (this.params.get('date') as DateKey) : this.today);
   readonly siteId = signal<string | null>(this.params.get('site'));
   readonly sites = this.repo.sites(() => this.date());
+  readonly siteStat = computed(() => (this.sites.value() ?? []).find((s) => s.siteId === this.siteId()) ?? null);
   readonly day = this.repo.day(() => ({ siteId: this.siteId(), date: this.date() }));
   readonly drafts = signal(new Map<string, Draft>());
   /** Employees added from «Agregar» who have no schedule here (shown until saved). */

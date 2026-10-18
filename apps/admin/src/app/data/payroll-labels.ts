@@ -1,10 +1,11 @@
 import type { AttendanceStatus, BankAccountType, EmployeeStatus, LinePaymentState, ManualPaymentMethod, PaymentState, PeriodStatus, PeriodType, RegistrationBank } from './api-types';
+import type { PillTone } from './pill-tone';
 
 /** Status pill text and tone (design system): Activo neutral-positive, Baja negative, the rest neutral. */
-export const EMPLOYEE_STATUS: Record<EmployeeStatus, { label: string; tone: '' | 'positive' | 'negative' }> = {
+export const EMPLOYEE_STATUS: Record<EmployeeStatus, { label: string; tone: PillTone }> = {
   active: { label: 'Activo', tone: 'positive' },
-  vacation: { label: 'Vacaciones', tone: '' },
-  sick_leave: { label: 'Incapacidad', tone: '' },
+  vacation: { label: 'Vacaciones', tone: 'tonal' },
+  sick_leave: { label: 'Incapacidad', tone: 'tertiary' },
   suspended: { label: 'Suspendido', tone: 'negative' },
   terminated: { label: 'Baja', tone: 'negative' },
 };
@@ -55,7 +56,7 @@ export function weekdaysText(days: readonly number[]): string {
 }
 
 /** The attendance a calendar entry already has (S8 adds capture; S7 writes only status periods). */
-export const ATTENDANCE: Record<AttendanceStatus, { label: string; tone: '' | 'positive' | 'negative' }> = {
+export const ATTENDANCE: Record<AttendanceStatus, { label: string; tone: PillTone }> = {
   present: { label: 'Presente', tone: 'positive' },
   partial: { label: 'Parcial', tone: '' },
   absent: { label: 'Falta', tone: 'negative' },
@@ -82,21 +83,21 @@ export function hoursText(value: string | number): string {
   return String(Number(value));
 }
 
-export const PERIOD_STATUS: Record<PeriodStatus, { label: string; tone: '' | 'positive' | 'negative' }> = {
+export const PERIOD_STATUS: Record<PeriodStatus, { label: string; tone: PillTone }> = {
   capturing: { label: 'En captura', tone: '' },
   in_review: { label: 'En revisión', tone: 'negative' },
   paid: { label: 'Pagado', tone: 'positive' },
 };
 
 /** «Estado de pago» (SPEC §5.5): before payment, whether the line can be paid; once paid, what its files did with it. */
-export const PAYMENT_STATE: Record<PaymentState | LinePaymentState, { label: string; tone: '' | 'positive' | 'negative' }> = {
+export const PAYMENT_STATE: Record<PaymentState | LinePaymentState, { label: string; tone: PillTone }> = {
   ready: { label: 'Lista', tone: 'positive' },
   card_requested: { label: 'Tarjeta en trámite', tone: '' },
   missing_account: { label: 'Sin cuenta', tone: 'negative' },
   invalid_account: { label: 'Cuenta inválida', tone: 'negative' },
   nothing_due: { label: 'Sin pago', tone: '' },
   pending: { label: 'En archivo', tone: '' },
-  paid: { label: 'Pagado', tone: 'positive' },
+  paid: { label: 'Pagado', tone: 'primary' },
   rejected: { label: 'Rechazado', tone: 'negative' },
   paid_manually: { label: 'Pagado fuera de archivo', tone: 'positive' },
 };

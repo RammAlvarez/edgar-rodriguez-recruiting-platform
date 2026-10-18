@@ -39,18 +39,22 @@ export function conversion(r: Pick<RecruiterSummaryDto, 'candidatesPresented' | 
       <div class="cards">
         @for (r of recruiters.value() ?? []; track r.id) {
           <button type="button" class="card" (click)="go(r.id)">
-            <div class="name">
-              {{ r.displayName }}
-              @if (!r.isActive) {
-                <span class="pill">Inactivo</span>
-              }
+            <div class="head">
+              <span class="avatar" aria-hidden="true">{{ initials(r.displayName) }}</span>
+              <div class="who">
+                <div class="name">
+                  {{ r.displayName }}
+                  @if (!r.isActive) {
+                    <span class="pill">Inactivo</span>
+                  }
+                </div>
+                <div class="muted">{{ r.openingsAssigned }} {{ +r.openingsAssigned === 1 ? 'vacante asignada' : 'vacantes asignadas' }}</div>
+              </div>
             </div>
-            <div class="muted">{{ r.email }}</div>
             <div class="stats">
-              <div><span class="value">{{ r.openingsAssigned }}</span><span class="label">Vacantes asignadas</span></div>
               <div><span class="value">{{ r.candidatesPresented }}</span><span class="label">Presentados</span></div>
               <div><span class="value">{{ r.candidatesHired }}</span><span class="label">Contratados</span></div>
-              <div><span class="value">{{ conversion(r) }}</span><span class="label">% conversión</span></div>
+              <div><span class="value conv">{{ conversion(r) }}</span><span class="label">Conversión</span></div>
             </div>
           </button>
         } @empty {
@@ -82,6 +86,22 @@ export function conversion(r: Pick<RecruiterSummaryDto, 'candidatesPresented' | 
         outline: 2px solid var(--mat-sys-primary);
       }
     }
+    .head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar {
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+      font: var(--mat-sys-label-large);
+    }
     .name {
       display: flex;
       align-items: center;
@@ -90,7 +110,8 @@ export function conversion(r: Pick<RecruiterSummaryDto, 'candidatesPresented' | 
     }
     .stats {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
+      text-align: center;
       gap: 8px;
       margin-top: 12px;
       div {
@@ -100,6 +121,9 @@ export function conversion(r: Pick<RecruiterSummaryDto, 'candidatesPresented' | 
       .value {
         font: var(--mat-sys-title-large);
         font-variant-numeric: tabular-nums;
+      }
+      .conv {
+        color: var(--mat-sys-primary);
       }
       .label {
         font: var(--mat-sys-label-small);
@@ -114,6 +138,15 @@ export class RecruitersPage {
   private readonly session = inject(Session);
   readonly recruiters = inject(RecruitersRepository).list();
   readonly conversion = conversion;
+
+  initials(name: string): string {
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]!.toUpperCase())
+      .join('');
+  }
   /** Inviting is Usuarios' job: only with that grant. */
   readonly canInvite = this.session.hasGrant('users');
 

@@ -10,3 +10,4 @@ export * from './top-nav-shell';
 export * from './side-panel';
 export * from './forms';
 export * from './material';
+export * from './theme';

@@ -33,7 +33,7 @@ import { TemplatePanel, type TemplatePanelData } from './template-panel';
         <p class="form-alert" role="alert">{{ e.message }}</p>
       }
       @if (catalogs.value(); as c) {
-        <mat-tab-group animationDuration="0ms" [selectedIndex]="tab()" (selectedIndexChange)="tab.set($event)">
+        <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" [selectedIndex]="tab()" (selectedIndexChange)="tab.set($event)">
           @for (def of defs; track def.key) {
             <mat-tab [label]="def.label">
               <div class="tab-actions">

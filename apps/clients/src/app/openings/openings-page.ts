@@ -28,11 +28,10 @@ import { ClientPortal, countOf, FUNNEL, OPENING_STATUS, type ClientOpeningDto } 
               <h2>{{ o.displayName }}</h2>
               <span class="pill" [class]="status(o).tone">{{ status(o).label }}</span>
             </div>
-            <div class="muted">{{ o.zoneName ?? '' }}@if (o.zoneName) { · }{{ o.daysOpen }} días abierta</div>
-            <div class="progress">
-              <strong>{{ o.hired }} de {{ o.headcountRequested }}</strong> contratados
-              <div class="bar"><span [style.width.%]="filled(o)"></span></div>
-            </div>
+            <div class="line"><strong>{{ o.hired }} de {{ o.headcountRequested }} contratados</strong> · {{ o.daysOpen }} días abierta</div>
+            @if (o.leadRecruiterName) {
+              <div class="muted">Reclutador líder: {{ o.leadRecruiterName }}@if (o.leadRecruiterPhone) { · {{ o.leadRecruiterPhone }} }</div>
+            }
             <div class="funnel" aria-label="Candidatos por etapa">
               @for (f of funnel; track f.stage) {
                 <div class="step">
@@ -41,12 +40,6 @@ import { ClientPortal, countOf, FUNNEL, OPENING_STATUS, type ClientOpeningDto } 
                 </div>
               }
             </div>
-            @if (o.leadRecruiterName) {
-              <div class="lead">
-                <mat-icon fontSet="material-symbols-outlined">support_agent</mat-icon>
-                <span>{{ o.leadRecruiterName }}@if (o.leadRecruiterPhone) { · {{ o.leadRecruiterPhone }} }</span>
-              </div>
-            }
           </a>
         } @empty {
           @if (openings.value()) {
@@ -90,23 +83,16 @@ import { ClientPortal, countOf, FUNNEL, OPENING_STATUS, type ClientOpeningDto } 
         font: var(--mat-sys-title-medium);
       }
     }
-    .progress .bar {
-      height: 6px;
-      margin-top: 4px;
-      border-radius: 3px;
-      background: var(--mat-sys-surface-container-highest);
-      span {
-        display: block;
-        height: 100%;
-        border-radius: 3px;
-        background: var(--mat-sys-primary);
-      }
-    }
     .funnel {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 4px;
       text-align: center;
+      .step {
+        padding: 6px 4px;
+        border-radius: 8px;
+        background: var(--mat-sys-surface-container);
+      }
       .count {
         font: var(--mat-sys-title-medium);
       }
@@ -114,12 +100,6 @@ import { ClientPortal, countOf, FUNNEL, OPENING_STATUS, type ClientOpeningDto } 
         font: var(--mat-sys-label-small);
         color: var(--mat-sys-on-surface-variant);
       }
-    }
-    .lead {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--mat-sys-on-surface-variant);
     }
   `,
 })
@@ -130,9 +110,5 @@ export class OpeningsPage {
 
   status(o: ClientOpeningDto) {
     return OPENING_STATUS[o.status];
-  }
-
-  filled(o: ClientOpeningDto): number {
-    return Math.min(100, (Number(o.hired) / Number(o.headcountRequested)) * 100);
   }
 }

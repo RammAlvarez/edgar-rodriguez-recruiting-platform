@@ -140,7 +140,7 @@ import { StageMove } from './stage-move';
             </section>
           </div>
           <div class="right">
-            <mat-tab-group animationDuration="0ms">
+            <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
               <mat-tab label="Documentos">
                 @if (checklist.value(); as list) {
                   <ui-document-checklist [checklist]="list" [canReview]="true" [uploading]="uploading()"

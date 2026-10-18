@@ -156,7 +156,7 @@ import { DATE_MODE, monthEnd, monthStart, PAYROLL_REPORTS, payrollPreset, type P
       }
     }
     .selector {
-      flex: 0 0 260px;
+      flex: 0 0 288px;
       box-sizing: border-box;
       padding: 8px;
       border: 1px solid var(--mat-sys-outline-variant);

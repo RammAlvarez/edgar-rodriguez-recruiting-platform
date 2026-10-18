@@ -1,4 +1,5 @@
 import type { components } from '@platform/shared';
+import type { PillTone } from './pill-tone';
 
 type S = components['schemas'];
 // NonNullable: the OpenAPI document adds null to an enum's schema when some property using it is nullable.
@@ -11,11 +12,11 @@ export type Gender = NonNullable<S['Gender']>;
 export type OpeningEventKind = NonNullable<S['OpeningEventKind']>;
 
 /** Pill text and tone: positive = done, negative = stopped, neutral otherwise (design system status pills). */
-export const OPENING_STATUS: Record<OpeningStatus, { label: string; tone: '' | 'positive' | 'negative' }> = {
-  open: { label: 'Abierta', tone: '' },
-  in_progress: { label: 'En proceso', tone: '' },
-  filled: { label: 'Cubierta', tone: 'positive' },
-  paused: { label: 'Pausada', tone: 'negative' },
+export const OPENING_STATUS: Record<OpeningStatus, { label: string; tone: PillTone }> = {
+  open: { label: 'Abierta', tone: 'primary' },
+  in_progress: { label: 'En proceso', tone: 'tonal' },
+  filled: { label: 'Cubierta', tone: 'tertiary' },
+  paused: { label: 'Pausada', tone: '' },
   cancelled: { label: 'Cancelada', tone: 'negative' },
 };
 
@@ -24,14 +25,14 @@ export const PRIORITY: Record<OpeningPriority, string> = { high: 'Alta', medium:
 /** Kanban column order (SPEC §4.3). */
 export const STAGES: readonly CandidateStage[] = ['new', 'contacted', 'interview', 'suitable', 'not_suitable', 'hired', 'discarded'];
 
-export const STAGE: Record<CandidateStage, { label: string; tone: '' | 'positive' | 'negative' }> = {
+export const STAGE: Record<CandidateStage, { label: string; tone: PillTone }> = {
   new: { label: 'Nuevo', tone: '' },
-  contacted: { label: 'Contactado', tone: '' },
-  interview: { label: 'Entrevista', tone: '' },
+  contacted: { label: 'Contactado', tone: 'tonal' },
+  interview: { label: 'Entrevista', tone: 'tertiary' },
   suitable: { label: 'Apto', tone: 'positive' },
   not_suitable: { label: 'No apto', tone: 'negative' },
-  hired: { label: 'Contratado', tone: 'positive' },
-  discarded: { label: 'Descartado', tone: 'negative' },
+  hired: { label: 'Contratado', tone: 'primary' },
+  discarded: { label: 'Descartado', tone: '' },
 };
 
 export const SOURCES: readonly { value: CandidateSource; label: string }[] = [

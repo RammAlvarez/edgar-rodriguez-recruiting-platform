@@ -27,7 +27,8 @@
 
 @mixin theme($density: -1) {
   html {
-    color-scheme: light dark;
+    // Light by default; ThemeService (libs/ui/src/theme.ts) sets Oscuro / Automático inline.
+    color-scheme: light;
     @include mat.theme(
       (
         color: (
@@ -165,6 +166,11 @@
     table {
       width: 100%;
     }
+    // One line per cell; a wide table scrolls inside its card (prototype) instead of wrapping.
+    th,
+    td {
+      white-space: nowrap;
+    }
     tr.clickable {
       cursor: pointer;
       &:hover {
@@ -189,9 +195,22 @@
     font: var(--mat-sys-label-medium);
     background: var(--mat-sys-surface-container-high);
     color: var(--mat-sys-on-surface-variant);
+    // Tones of the prototype's status pills: positive = primary-container, primary = filled, tonal = secondary-container.
     &.positive {
       background: var(--mat-sys-primary-container);
       color: var(--mat-sys-on-primary-container);
+    }
+    &.primary {
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+    }
+    &.tonal {
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+    &.tertiary {
+      background: var(--mat-sys-tertiary-container);
+      color: var(--mat-sys-on-tertiary-container);
     }
     &.negative {
       background: var(--mat-sys-error-container);
@@ -293,7 +312,7 @@
   .kanban {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(200px, 1fr);
+    grid-auto-columns: minmax(220px, 1fr);
     gap: 12px;
     overflow-x: auto;
     padding-bottom: 8px;
@@ -302,15 +321,25 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    min-height: 120px;
+    min-height: 360px;
     padding: 8px;
     border-radius: 12px;
     background: var(--mat-sys-surface-container-low);
     .column-title {
       display: flex;
+      align-items: center;
       justify-content: space-between;
       padding: 4px 4px 0;
       font: var(--mat-sys-title-small);
+      // Count chip (prototype): a small tonal badge.
+      .muted {
+        min-width: 20px;
+        padding: 0 6px;
+        border-radius: 8px;
+        background: var(--mat-sys-surface-container-highest);
+        font: var(--mat-sys-label-small);
+        text-align: center;
+      }
     }
   }
   .kanban-card {

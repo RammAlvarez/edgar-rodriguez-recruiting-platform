@@ -61,7 +61,7 @@ import { StatusPanel, type StatusPanelData } from './status-panel';
           }
         </header>
 
-        <mat-tab-group animationDuration="0ms">
+        <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
           <mat-tab label="Datos">
             <div class="grid">
               <section class="card">
