@@ -2696,9 +2696,8 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Uid")
                         .HasName("ak_positions_uid");
 
-                    b.HasIndex("PayrollGroupId", "Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_positions_payroll_group_id_name");
+                    b.HasIndex("PayrollGroupId")
+                        .HasDatabaseName("ix_positions_payroll_group_id");
 
                     b.ToTable("positions", "platform");
                 });

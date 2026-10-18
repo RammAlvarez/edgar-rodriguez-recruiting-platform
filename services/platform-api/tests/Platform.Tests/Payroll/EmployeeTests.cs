@@ -34,7 +34,7 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
         var detail = await BodyOf(await _owner.PostAsJsonAsync($"/v1/payroll/groups/{_group}/positions",
             PayrollGroupTests.NewPosition("Supervisor", "585.71", Day(_today.AddYears(-1)))));
         var positions = detail.GetProperty("positions").EnumerateArray().ToDictionary(p => p.GetProperty("name").GetString()!, p => p.GetProperty("id").GetGuid());
-        (_validador, _supervisor) = (positions["VALIDADOR"], positions["SUPERVISOR"]);
+        (_validador, _supervisor) = (positions["Validador"], positions["Supervisor"]);
     }
 
     private object Alta(Guid personId, string? cardBank = "banorte", Guid? candidateId = null, int hiredDaysAgo = 100) => new
@@ -85,7 +85,7 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(HttpStatusCode.Conflict, (await _owner.PostAsJsonAsync("/v1/employees", Alta(ana.Uid))).StatusCode);
         var row = (await BodyOf(await _owner.GetAsync("/v1/employees"))).EnumerateArray().Single();
         Assert.False(row.GetProperty("hasAccount").GetBoolean());
-        Assert.Equal("VALIDADOR", row.GetProperty("positionName").GetString());
+        Assert.Equal("Validador", row.GetProperty("positionName").GetString());
         var queue = await BodyOf(await _owner.GetAsync("/v1/card-requests"));
         var queued = Assert.Single(queue.EnumerateArray());
         Assert.Equal(row.GetProperty("fullName").GetString(), queued.GetProperty("fullName").GetString());
@@ -258,7 +258,7 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
             new { payrollGroupId = _group, positionId = _supervisor, shift = "C/NOCHE", hiredAt = Day(_today.AddDays(1)), cardBank = "banregio" });
         var again = await BodyOf(rehire);
         Assert.NotEqual(employee, again.GetProperty("id").GetGuid());
-        Assert.Equal("SUPERVISOR", again.GetProperty("positionName").GetString());
+        Assert.Equal("Supervisor", again.GetProperty("positionName").GetString());
         Assert.Equal("banregio", again.GetProperty("cardRequest").GetProperty("bank").GetString());
         Assert.Equal(2, await WithDb(db => db.Set<Employee>().CountAsync(e => e.PersonId == person)));
     }
@@ -303,7 +303,7 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
         var employee = await Hire((await WithDb(db => db.AddPerson())).Uid);
         var moved = await BodyOf(await _owner.PostAsJsonAsync($"/v1/employees/{employee}/assignment",
             new { payrollGroupId = _group, positionId = _supervisor, shift = "C/NOCHE" }));
-        Assert.Equal("SUPERVISOR", moved.GetProperty("positionName").GetString());
+        Assert.Equal("Supervisor", moved.GetProperty("positionName").GetString());
         Assert.Equal("585.71", moved.GetProperty("rates").GetProperty("dailySalaryPocket").GetString());
 
         var audit = await WithDb(db => db.Set<AuditEntry>().Where(a => a.TableName == "employees" && a.Action == AuditAction.Update).SingleAsync());

@@ -30,7 +30,7 @@ public sealed class DemoPathTests(ApiFactory factory) : ApiTest(factory)
 
         // 2. «Nuevo candidato» on «HEB – Auxiliar de limpieza» → validate two documents → completeness changes → a note.
         var option = Assert.Single((await BodyOf(await admin.GetAsync("/v1/openings/options"))).EnumerateArray());
-        Assert.Equal("HEB – AUXILIAR DE LIMPIEZA", option.GetProperty("displayName").GetString());
+        Assert.Equal("HEB – Auxiliar de limpieza", option.GetProperty("displayName").GetString());
         var candidate = await BodyOf(await admin.PostAsJsonAsync("/v1/candidates", CandidateTests.NewCandidate(vacanteId)));
         var candidateId = candidate.GetProperty("id").GetGuid();
         var personId = candidate.GetProperty("person").GetProperty("id").GetGuid();

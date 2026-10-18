@@ -59,7 +59,7 @@ public sealed class PayrollGroupTests(ApiFactory factory) : ApiTest(factory)
         var id = group.GetProperty("id").GetGuid();
         var withPosition = await BodyOf(await owner.PostAsJsonAsync($"/v1/payroll/groups/{id}/positions", NewPosition()));
         var position = withPosition.GetProperty("positions").EnumerateArray().Single();
-        Assert.Equal("VALIDADOR", position.GetProperty("name").GetString());
+        Assert.Equal("Validador", position.GetProperty("name").GetString());
         Assert.Equal("428.57", position.GetProperty("current").GetProperty("dailySalaryPocket").GetString());
 
         Assert.Equal(HttpStatusCode.Conflict, (await owner.PostAsJsonAsync($"/v1/payroll/groups/{id}/positions", NewPosition("validador"))).StatusCode);
@@ -151,5 +151,20 @@ public sealed class PayrollGroupTests(ApiFactory factory) : ApiTest(factory)
         var staffOnly = await As(UserRole.Administrator, PermissionModule.PayrollStaff);
         Assert.Equal(HttpStatusCode.Forbidden, (await staffOnly.GetAsync("/v1/payroll/groups")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await (await As(UserRole.Recruiter)).GetAsync("/v1/payroll/groups")).StatusCode);
+    }
+
+    // E2E run: puestos are shown exactly as typed; two spellings of one name in a group are still one puesto.
+    [Fact]
+    public async Task A_puesto_keeps_the_capitals_typed_and_two_spellings_are_one_name()
+    {
+        var owner = await AsOwner();
+        var ecovia = await WithDb(db => db.AddClient("ECOVIA"));
+        var id = (await BodyOf(await owner.PostAsJsonAsync("/v1/payroll/groups", NewGroup(ecovia.Uid)))).GetProperty("id").GetGuid();
+        var created = await BodyOf(await owner.PostAsJsonAsync($"/v1/payroll/groups/{id}/positions", NewPosition("Operador  de limpieza")));
+        Assert.Equal("Operador de limpieza", created.GetProperty("positions").EnumerateArray().Single().GetProperty("name").GetString());
+
+        var again = await owner.PostAsJsonAsync($"/v1/payroll/groups/{id}/positions", NewPosition("OPERADOR DE LIMPIEZA"));
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+        Assert.Equal(GroupEndpoints.PositionTaken, await DetailOf(again));
     }
 }

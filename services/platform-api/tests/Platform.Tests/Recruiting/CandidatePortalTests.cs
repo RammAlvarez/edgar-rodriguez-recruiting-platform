@@ -287,7 +287,7 @@ public sealed class CandidatePortalTests(ApiFactory factory) : ApiTest(factory)
         var me = AsEmail(email);
 
         var app = Assert.Single((await BodyOf(await me.GetAsync("/v1/candidate-portal/applications"))).EnumerateArray());
-        Assert.Equal("HEB – AUXILIAR DE LIMPIEZA", app.GetProperty("openingName").GetString());
+        Assert.Equal("HEB – Auxiliar de limpieza", app.GetProperty("openingName").GetString());
         Assert.Equal("received", app.GetProperty("step").GetString());
         Assert.Equal("in_process", app.GetProperty("outcome").GetString());
         Assert.Equal("Mónica Soto", app.GetProperty("recruiterName").GetString());
@@ -326,9 +326,9 @@ public sealed class CandidatePortalTests(ApiFactory factory) : ApiTest(factory)
         var (candidateId, _) = await Capture(email);
 
         var sent = Assert.Single(Factory.Email.To(email));
-        Assert.Equal("Tu postulación: HEB – AUXILIAR DE LIMPIEZA", sent.Subject);
+        Assert.Equal("Tu postulación: HEB – Auxiliar de limpieza", sent.Subject);
         Assert.Contains("http://localhost:4301", sent.Text, StringComparison.Ordinal);
-        Assert.Contains("Te registramos en el proceso de la vacante HEB – AUXILIAR DE LIMPIEZA. Te acompaña Mónica Soto.", sent.Text, StringComparison.Ordinal);
+        Assert.Contains("Te registramos en el proceso de la vacante HEB – Auxiliar de limpieza. Te acompaña Mónica Soto.", sent.Text, StringComparison.Ordinal);
         Assert.Contains("Hola Rosa:", sent.Text, StringComparison.Ordinal);
 
         var resent = await BodyOf(await _admin.PostAsync($"/v1/candidates/{candidateId}/invitation", null));

@@ -82,7 +82,7 @@ public sealed class ClientPortalTests(ApiFactory factory) : ApiTest(factory)
         var raw = await (await _heb.GetAsync("/v1/client-portal/openings")).Content.ReadAsStringAsync();
         var card = Assert.Single(JsonDocument.Parse(raw).RootElement.EnumerateArray());
 
-        Assert.Equal("HEB – AUXILIAR DE LIMPIEZA", card.GetProperty("displayName").GetString());
+        Assert.Equal("HEB – Auxiliar de limpieza", card.GetProperty("displayName").GetString());
         Assert.Equal("in_progress", card.GetProperty("status").GetString());
         Assert.Equal(3, card.GetProperty("headcountRequested").GetInt32());
         Assert.Equal(0, card.GetProperty("hired").GetInt32());
@@ -158,7 +158,7 @@ public sealed class ClientPortalTests(ApiFactory factory) : ApiTest(factory)
 
         var feed = (await BodyOf(await _heb.GetAsync("/v1/client-portal/comments"))).EnumerateArray().ToList();
         Assert.Equal("¿Pueden venir el lunes?", feed[0].GetProperty("body").GetString());
-        Assert.Equal("HEB – AUXILIAR DE LIMPIEZA", feed[0].GetProperty("openingName").GetString());
+        Assert.Equal("HEB – Auxiliar de limpieza", feed[0].GetProperty("openingName").GetString());
         Assert.DoesNotContain(feed, c => c.GetProperty("body").GetString()!.StartsWith("Interno", StringComparison.Ordinal));
 
         Assert.Contains("body", (await ErrorsOf(await _heb.PostAsJsonAsync($"/v1/client-portal/openings/{_opening}/comments", new { body = "  " }))).Keys);

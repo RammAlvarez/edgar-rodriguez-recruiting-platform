@@ -37,7 +37,8 @@ internal sealed class PositionConfiguration : IEntityTypeConfiguration<Position>
         b.HasIdentityAndUid();
         b.HasStamps();
         b.Property(p => p.IsActive).HasDefaultValue(true).HasSentinel(true);
-        b.HasIndex(p => new { p.PayrollGroupId, p.Name }).IsUnique();
+        // Unique by name whatever its capitals: the expression index ux_positions_group_name (the migration), which EF cannot model.
+        b.HasIndex(p => p.PayrollGroupId);
         b.HasOne<PayrollGroup>().WithMany().HasForeignKey(p => p.PayrollGroupId).HasPrincipalKey(g => g.Uid).OnDelete(DeleteBehavior.Restrict);
     }
 }

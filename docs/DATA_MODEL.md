@@ -290,7 +290,7 @@ Catalog rows are deactivated (`is_active`), never deleted, so past records keep 
 | requested_at | date NOT NULL default today | FECHA_SOLICITUD |
 | client_id | uuid FK clients | |
 | zone_id | uuid FK zones | |
-| position_name | text NOT NULL | PUESTO (free text, autocompleted from positions_catalog) |
+| position_name | text NOT NULL | PUESTO (free text, autocompleted from positions_catalog), stored as typed with single spaces (PLAN D99) |
 | headcount_requested | int CHECK > 0 | VACANTES_SOLICITADAS |
 | monthly_salary | numeric(12,2) | |
 | benefits | text[] | from catalog + free text |
@@ -502,7 +502,7 @@ A client × scheme, e.g. *ECOVIA — Validadores 12 h*.
 
 ### 5.2 `positions` (per group) and `position_rates`
 
-`positions(id, uid, payroll_group_id, name, is_active)` — VALIDADOR, SUPERVISOR; unique per group. The rates live in their history (PLAN E12), so an employee's `position_id` never moves when they change:
+`positions(id, uid, payroll_group_id, name, is_active)` — VALIDADOR, SUPERVISOR, shown as typed (PLAN D99); unique per group ignoring capitals (`ux_positions_group_name` on `payroll_group_id, lower(name)`). The rates live in their history (PLAN E12), so an employee's `position_id` never moves when they change:
 
 | Column | Type | Notes |
 |---|---|---|

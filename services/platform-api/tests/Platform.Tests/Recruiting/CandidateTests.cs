@@ -66,7 +66,7 @@ public sealed class CandidateTests(ApiFactory factory) : ApiTest(factory)
         Assert.Contains("candidates", response.Headers.GetValues("X-Invalidates").Single().Split(','));
         var c = await BodyOf(response);
         Assert.Equal("PÉREZ LÓPEZ JUAN CARLOS", c.GetProperty("person").GetProperty("fullName").GetString());
-        Assert.Equal("HEB – AUXILIAR DE LIMPIEZA", c.GetProperty("openingName").GetString());
+        Assert.Equal("HEB – Auxiliar de limpieza", c.GetProperty("openingName").GetString());
         Assert.Equal("new", c.GetProperty("stage").GetString());
         Assert.Equal("Mónica Soto", c.GetProperty("recruiterName").GetString());
         Assert.False(c.GetProperty("canConvertToEmployee").GetBoolean());

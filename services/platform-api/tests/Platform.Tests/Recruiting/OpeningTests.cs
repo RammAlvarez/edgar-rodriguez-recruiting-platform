@@ -53,7 +53,7 @@ public sealed class OpeningTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("openings", response.Headers.GetValues("X-Invalidates").Single().Split(','));
         var o = await BodyOf(response);
-        Assert.Equal("HEB – AUXILIAR DE LIMPIEZA", o.GetProperty("displayName").GetString());
+        Assert.Equal("HEB – Auxiliar de limpieza", o.GetProperty("displayName").GetString());
         Assert.Equal("open", o.GetProperty("status").GetString());
         Assert.Equal("Mónica Soto", o.GetProperty("leadRecruiterName").GetString());
         var lead = Assert.Single(o.GetProperty("recruiters").EnumerateArray());
@@ -74,11 +74,11 @@ public sealed class OpeningTests(ApiFactory factory) : ApiTest(factory)
         await admin.PostAsJsonAsync("/v1/openings", NewOpening(heb.Uid, position: "auxiliar  de limpieza", requestedAt: "2026-10-09"));
 
         var names = (await BodyOf(await admin.GetAsync("/v1/openings"))).EnumerateArray().Select(o => o.GetProperty("displayName").GetString());
-        Assert.Equal(["HEB – AUXILIAR DE LIMPIEZA · 09/10/2026", "HEB – AUXILIAR DE LIMPIEZA · 02/10/2026"], names);
+        Assert.Equal(["HEB – auxiliar de limpieza · 09/10/2026", "HEB – Auxiliar de limpieza · 02/10/2026"], names);
 
         await admin.PostAsJsonAsync($"/v1/openings/{first}/status", new { status = "cancelled", reason = "El cliente ya no la necesita" });
         var after = (await BodyOf(await admin.GetAsync("/v1/openings?status=open"))).EnumerateArray().Single();
-        Assert.Equal("HEB – AUXILIAR DE LIMPIEZA", after.GetProperty("displayName").GetString());
+        Assert.Equal("HEB – auxiliar de limpieza", after.GetProperty("displayName").GetString());
     }
 
     [Fact]
@@ -249,5 +249,17 @@ public sealed class OpeningTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(new SystemClock().Today().ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), copy.GetProperty("requestedAt").GetString());
         Assert.Empty(copy.GetProperty("recruiters").EnumerateArray());
         Assert.Equal("9500.00", copy.GetProperty("monthlySalary").GetString());
+    }
+
+    // E2E run: the puesto is shown exactly as typed (only the spaces are tidied).
+    [Fact]
+    public async Task The_puesto_is_kept_exactly_as_typed()
+    {
+        var heb = await WithDb(db => db.AddClient("HEB"));
+        var admin = await AsOwner();
+        var id = await IdOf(await admin.PostAsJsonAsync("/v1/openings", NewOpening(heb.Uid, position: "  Operador   de Limpieza  ")));
+        var opening = await BodyOf(await admin.GetAsync($"/v1/openings/{id}"));
+        Assert.Equal(("Operador de Limpieza", "HEB – Operador de Limpieza"),
+            (opening.GetProperty("positionName").GetString(), opening.GetProperty("displayName").GetString()));
     }
 }

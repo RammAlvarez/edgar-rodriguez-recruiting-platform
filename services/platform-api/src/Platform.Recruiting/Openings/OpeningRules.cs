@@ -101,9 +101,8 @@ public static class OpeningRules
         o.Notes = r.Notes.Clean();
     }
 
-    /// <summary>Puestos are written as in the client's files: uppercase, single spaces.</summary>
-    public static string PositionName(string value) =>
-        string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
+    /// <summary>Puestos are shown exactly as typed (owner, 2026-10-18): only the spaces are tidied.</summary>
+    public static string PositionName(string value) => string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     /// <summary>
     /// Adds the recruiter as apoyo when not assigned yet (Actividad «Asignada a … como apoyo»). <paramref name="log"/> is false

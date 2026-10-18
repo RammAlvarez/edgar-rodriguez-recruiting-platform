@@ -193,7 +193,7 @@ public static class GroupEndpoints
 
     private static void Apply(PayrollGroup g, PayrollGroupRequest r)
     {
-        g.Name = PositionName(r.Name);
+        g.Name = GroupName(r.Name);
         g.PeriodType = r.PeriodType;
         g.CutoffWeekday = r.CutoffWeekday;
         g.ShiftHours = r.ShiftHours;
@@ -206,9 +206,11 @@ public static class GroupEndpoints
         g.IsActive = r.IsActive;
     }
 
-    /// <summary>Group and puesto names as the Excel writes them: uppercase, single spaces («VALIDADORES 12 HRS»).</summary>
-    private static string PositionName(string value) =>
-        string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
+    /// <summary>Group names as the Excel writes them: uppercase, single spaces («VALIDADORES 12 HRS»).</summary>
+    private static string GroupName(string value) => PositionName(value).ToUpperInvariant();
+
+    /// <summary>Puestos are shown exactly as typed (owner, 2026-10-18): only the spaces are tidied.</summary>
+    private static string PositionName(string value) => string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     private static async Task<List<PayrollGroupListItemDto>> List(DbContext db, IQueryable<PayrollGroup> q, CancellationToken ct)
     {
