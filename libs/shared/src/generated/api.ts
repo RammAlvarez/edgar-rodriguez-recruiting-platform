@@ -2371,6 +2371,7 @@ export type components = {
             record: null | components["schemas"]["AttendanceRecordDto"];
             locked: boolean;
             statusPeriod: null | string;
+            laterStatus: null | string;
         };
         AttendanceEntryRequest: {
             /** Format: uuid */
@@ -4443,6 +4444,8 @@ export type components = {
             endDate: DateKey | null;
             reason: null | string;
             reference: null | string;
+            /** @default false */
+            confirmPaidDays: boolean;
         };
         StatutoryHolidaysRequest: {
             /** Format: int32 */
@@ -4552,6 +4555,8 @@ export type components = {
             /** Format: date */
             endDate: DateKey;
             reference: null | string;
+            /** @default false */
+            confirmPaidDays: boolean;
         };
         UpdateUserRequest: {
             email: string;

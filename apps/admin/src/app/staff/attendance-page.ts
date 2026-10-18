@@ -110,6 +110,9 @@ const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
                 <span class="pill" [class]="e.record ? label[e.record.status!].tone : 'negative'">
                   {{ e.record ? label[e.record.status!].label + hoursText(e.record.status!, e.record.hoursWorked) : 'Sin captura' }}
                 </span>
+                @if (e.laterStatus) {
+                  <span class="muted later">Estatus registrado después del pago: {{ e.laterStatus }}</span>
+                }
                 @if (d.canUnlock) {
                   <button matButton type="button" (click)="unlock(e)">Cambiar</button>
                 }
@@ -305,7 +308,7 @@ export class AttendancePage {
       .filter((o) => this.added().includes(o.employeeId))
       .map((o): AttendanceEntryDto => ({
         employeeId: o.employeeId, fullName: o.fullName, positionName: o.positionName, shiftHours: d.entries[0]?.shiftHours ?? '8',
-        startTime: null, endTime: null, scheduled: false, record: null, locked: false, statusPeriod: null,
+        startTime: null, endTime: null, scheduled: false, record: null, locked: false, statusPeriod: null, laterStatus: null,
       }));
     return [...d.entries, ...extra];
   });

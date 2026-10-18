@@ -50,11 +50,15 @@ public sealed record UpdateEmployeeRequest(string Shift, decimal? DailySalaryPoc
 /// <summary>«Cambio de cliente / puesto»: from now on (the change is kept in the audit trail, PLAN D82).</summary>
 public sealed record AssignmentRequest(Guid PayrollGroupId, Guid PositionId, string Shift);
 
-/// <summary>«Cambiar estatus» (SPEC §5.1): Vacaciones, Incapacidad, Suspensión or Baja.</summary>
-public sealed record StatusPeriodRequest(EmployeeStatus Status, DateOnly StartDate, DateOnly? EndDate, string? Reason, string? Reference);
+/// <summary>
+/// «Cambiar estatus» (SPEC §5.1): Vacaciones, Incapacidad, Suspensión or Baja. When it covers days of a period already paid it is
+/// refused with a notice (field <c>confirmPaidDays</c>) until <see cref="ConfirmPaidDays"/> says the user saw it (PLAN D95).
+/// </summary>
+public sealed record StatusPeriodRequest(EmployeeStatus Status, DateOnly StartDate, DateOnly? EndDate, string? Reason, string? Reference,
+    bool ConfirmPaidDays = false);
 
 /// <summary>The estimated end of an incapacidad (or any period) moved; the attendance days follow.</summary>
-public sealed record UpdateStatusPeriodRequest(DateOnly EndDate, string? Reference);
+public sealed record UpdateStatusPeriodRequest(DateOnly EndDate, string? Reference, bool ConfirmPaidDays = false);
 
 /// <summary>«Reingreso» after a baja: a new employment.</summary>
 public sealed record RehireRequest(Guid PayrollGroupId, Guid PositionId, string Shift, DateOnly HiredAt, RegistrationBank? CardBank);

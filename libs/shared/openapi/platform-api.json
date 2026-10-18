@@ -9337,7 +9337,8 @@
           "scheduled",
           "record",
           "locked",
-          "statusPeriod"
+          "statusPeriod",
+          "laterStatus"
         ],
         "type": "object",
         "properties": {
@@ -9387,6 +9388,12 @@
             "type": "boolean"
           },
           "statusPeriod": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "laterStatus": {
             "type": [
               "null",
               "string"
@@ -17979,6 +17986,10 @@
               "null",
               "string"
             ]
+          },
+          "confirmPaidDays": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -18461,6 +18472,10 @@
               "null",
               "string"
             ]
+          },
+          "confirmPaidDays": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

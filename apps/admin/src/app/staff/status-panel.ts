@@ -4,12 +4,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-toggle';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatError, MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { ApiError } from '@platform/api-client';
 import { type DateKey, formatDateKey, todayKey } from '@platform/shared';
+import { confirm } from '@platform/ui';
 import type { EmployeeDetailDto, EmployeeStatus } from '../data/api-types';
 import { PERIOD_STATUS_LABEL } from '../data/payroll-labels';
 import { EmployeesRepository } from '../data/payroll-repositories';
@@ -142,6 +144,7 @@ export class StatusPanel {
   readonly ref = inject(MatDialogRef<StatusPanel>);
   private readonly employees = inject(EmployeesRepository);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   readonly e = this.data.employee;
   readonly label = PERIOD_STATUS_LABEL;
   readonly format = formatDateKey;
@@ -190,16 +193,30 @@ export class StatusPanel {
     return this.s.run(async () => {
       const v = this.form.getRawValue();
       const text = (x: string) => (x.trim() === '' ? null : x.trim());
-      if (choice === 'reactivate') await this.employees.endStatus(this.e.id, this.current()!.id);
-      else if (this.editingCurrent()) await this.employees.updateStatus(this.e.id, this.current()!.id, v.endDate as DateKey, text(v.reference));
-      else
-        await this.employees.addStatus(this.e.id, {
+      const send = (confirmPaidDays: boolean) => {
+        if (choice === 'reactivate') return this.employees.endStatus(this.e.id, this.current()!.id);
+        if (this.editingCurrent()) {
+          return this.employees.updateStatus(this.e.id, this.current()!.id, v.endDate as DateKey, text(v.reference), confirmPaidDays);
+        }
+        return this.employees.addStatus(this.e.id, {
           status: choice,
           startDate: v.startDate as DateKey,
           endDate: choice === 'terminated' ? null : ((text(v.endDate) as DateKey | null) ?? null),
           reason: text(v.reason),
           reference: text(v.reference),
+          confirmPaidDays,
         });
+      };
+      try {
+        await send(false);
+      } catch (e) {
+        // Days of a period already paid (PLAN D95): the pay does not change; the user confirms having seen it.
+        const notice = e instanceof ApiError ? e.fieldError('confirmPaidDays') : undefined;
+        if (!notice) throw e;
+        const ok = await confirm(this.dialog, { title: 'Hay días ya pagados', body: `${notice} ¿Registrarlo de todos modos?`, confirm: 'Registrar' });
+        if (!ok) return;
+        await send(true);
+      }
       this.snack.open(choice === 'reactivate' ? `${this.e.fullName} está Activo` : 'Estatus guardado', undefined, { duration: 4000 });
       this.ref.close(true);
     });

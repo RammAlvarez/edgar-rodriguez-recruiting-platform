@@ -10,6 +10,7 @@ using Platform.Core.Http;
 using Platform.Core.People;
 using Platform.Core.Users;
 using Platform.Payroll.Groups;
+using Platform.Payroll.Periods;
 
 namespace Platform.Payroll.Staff;
 
@@ -21,10 +22,11 @@ public sealed record AttendanceRecordDto(Guid Id, DateOnly WorkDate, AttendanceS
 /// <summary>
 /// One row of the capture roster: an employee expected at the site that day (schedule) or with a record there.
 /// <see cref="Locked"/> = the day's lock moment passed for the employee's group; <see cref="StatusPeriod"/> names a vacation,
-/// incapacidad or suspension that owns the day (read-only here).
+/// incapacidad or suspension that owns the day (read-only here). <see cref="LaterStatus"/> names a vacation, incapacidad, suspension
+/// or baja registered after the day was paid: the record is what was paid and stays on screen, with that note (PLAN D95).
 /// </summary>
 public sealed record AttendanceEntryDto(Guid EmployeeId, string FullName, string PositionName, decimal ShiftHours, TimeOnly? StartTime,
-    TimeOnly? EndTime, bool Scheduled, AttendanceRecordDto? Record, bool Locked, string? StatusPeriod);
+    TimeOnly? EndTime, bool Scheduled, AttendanceRecordDto? Record, bool Locked, string? StatusPeriod, string? LaterStatus);
 
 public sealed record EmployeePickDto(Guid EmployeeId, string FullName, string PositionName);
 
@@ -261,6 +263,10 @@ public static class AttendanceEndpoints
         var periods = await db.Set<EmployeeStatusPeriod>().AsNoTracking()
             .Where(p => ids.Contains(p.EmployeeId) && p.StartDate <= date && (p.EndDate == null || p.EndDate >= date)).ToListAsync(ct);
         var holiday = await db.Set<Holiday>().Where(h => h.Date == date).Select(h => h.NameEs).FirstOrDefaultAsync(ct);
+        var groupIds = employees.Select(x => x.e.PayrollGroupId).Distinct().ToList();
+        var paidAt = await db.Set<PayrollPeriod>().AsNoTracking()
+            .Where(p => groupIds.Contains(p.PayrollGroupId) && p.Status == PeriodStatus.Paid && p.StartDate <= date && p.EndDate >= date)
+            .ToDictionaryAsync(p => p.PayrollGroupId, p => p.PaidAt, ct);
 
         var entries = employees.Where(x => ids.Contains(x.e.Uid))
             .Select(x =>
@@ -268,9 +274,15 @@ public static class AttendanceEndpoints
                 var schedule = expected.FirstOrDefault(s => s.EmployeeId == x.e.Uid);
                 var record = records.GetValueOrDefault(x.e.Uid);
                 var period = periods.FirstOrDefault(p => p.EmployeeId == x.e.Uid);
+                // A paid day keeps what was paid: its record shows, not a status that does not own it; and says so when the status was
+                // registered after the payment.
+                var paid = paidAt.TryGetValue(x.e.PayrollGroupId, out var at);
+                var overlaid = period is not null && record is not null && record.StatusPeriodId != period.Uid && paid;
+                var later = overlaid && period!.CreatedAt > at;
                 return new AttendanceEntryDto(x.e.Uid, x.FullName, x.Position, x.g.ShiftHours, schedule?.StartTime, schedule?.EndTime,
                     schedule is not null, record is null ? null : Dto(record, record.ClientSiteId is { } s ? siteNames.GetValueOrDefault(s) : null),
-                    AttendanceRules.IsLocked(x.g, date, now), period is null ? null : StaffRules.Label(period.Status));
+                    AttendanceRules.IsLocked(x.g, date, now), period is null || overlaid ? null : StaffRules.Label(period.Status),
+                    later ? StaffRules.Label(period!.Status) : null);
             })
             .OrderBy(x => x.StartTime).ThenBy(x => x.FullName, StringComparer.Ordinal).ToList();
         var others = employees.Where(x => !ids.Contains(x.e.Uid) && x.e.HiredAt <= date && (x.e.TerminatedAt == null || x.e.TerminatedAt > date))

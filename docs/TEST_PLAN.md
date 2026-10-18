@@ -401,10 +401,12 @@ the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a n
 29. «Generar archivos de pago» → Pagada, nothing editable; the Azteca file (one row per payment, total = «en este archivo»)
     and the cuentas frecuentes file (only unregistered accounts) download.
 30. «Marcar subido al banco» → rows Pagado; mark the third-party row Rechazado with motivo; fecha de depósito.
-31. Tarjetas → Banorte → «Generar alta» (sucursal) → file with NOMINATIVA and no card number → «Marcar subido» → «Tarjeta
-    recibida» → principal account. Back in the week → «Archivo de pendientes» → a file with that person and the rejected
-    row only → subido.
-32. Freeze: Asistencia «Cambiar» on L0+2 → «El período de ese día ya se pagó…»; a Baja or incidencia dated in the week → refused.
+31. Tarjetas → Banorte (the seeded person waiting, since E's request ended with the baja) → «Generar alta» (sucursal) → file with
+    NOMINATIVA and no card number → «Marcar subido» → «Tarjeta recibida» → principal account. Back in the week → «Generar archivo
+    de pendientes» → a file with the rejected row only (Delta) → subido.
+32. Freeze: Asistencia «Cambiar» on L0+2 → «El período de ese día ya se pagó…»; an incidencia dated in the week → accepted as a *Retroactivo* paid in the next period (origin «Semana 41»); a Baja or status
+    period dated in the week → «Hay días ya pagados» asks to confirm (cancel saves nothing), then it is accepted and the days already paid stay
+    as paid (the grid and the Asistencia report do not change; the day view reads «Estatus registrado después del pago: Vacaciones»).
 
 **Live week (D0) — the hire joins**
 33. Mónica: c1 → Apto (client sees the full name) → Contratado, fecha de ingreso D0 → «1 de 2 cubiertas»; «Convertir en

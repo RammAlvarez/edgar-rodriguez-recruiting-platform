@@ -122,6 +122,18 @@ public static class StaffRules
         return dates;
     }
 
+    /// <summary>The days of <paramref name="from"/> … <paramref name="to"/> that belong to a paid period of the employee's group.</summary>
+    public static async Task<List<DateOnly>> PaidDaysAsync(DbContext db, Guid employeeId, DateOnly from, DateOnly to, CancellationToken ct) =>
+        [.. (await PaidDatesAsync(db, employeeId, from, to, ct)).Where(d => d >= from && d <= to).Order()];
+
+    /// <summary>
+    /// What the user must confirm when a status period covers days already paid (PLAN D95): the days stay paid as they were, and
+    /// the way to adjust the pay is a retroactivo.
+    /// </summary>
+    public static string PaidDaysNotice(IReadOnlyList<DateOnly> days) =>
+        $"{(days.Count == 1 ? $"El {Date(days[0])} ya se pagó" : $"{days.Count} días ({Date(days[0])} – {Date(days[^1])}) ya se pagaron")}. "
+        + "El pago no cambia; si hay que ajustarlo, usa un retroactivo en Incidencias.";
+
     /// <summary>The puesto's rates valid on <paramref name="date"/>.</summary>
     public static Task<PositionRate?> PositionRatesOn(DbContext db, Guid positionId, DateOnly date, CancellationToken ct) =>
         db.Set<PositionRate>().AsNoTracking()

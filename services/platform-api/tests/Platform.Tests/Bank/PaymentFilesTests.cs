@@ -284,9 +284,21 @@ public sealed class PaymentFilesTests(ApiFactory factory) : ApiTest(factory)
         });
         Assert.Equal(AttendanceRules.PaidPeriod, await DetailOf(unlock));
 
-        // Vacaciones from the 16th: the paid days stay as paid, the next week's are written.
-        var vacation = await _owner.PostAsJsonAsync($"/v1/employees/{w.Employees["DORA"]}/status",
-            new { status = "vacation", startDate = "2026-09-16", endDate = "2026-09-20", reason = (string?)null, reference = (string?)null });
+        // Vacaciones from the 16th cover two paid days: it asks to be confirmed (PLAN D95), then the paid days stay as paid and the
+        // next week's are written.
+        var request = (bool confirm) => new
+        {
+            status = "vacation",
+            startDate = "2026-09-16",
+            endDate = "2026-09-20",
+            reason = (string?)null,
+            reference = (string?)null,
+            confirmPaidDays = confirm,
+        };
+        var notice = (await ErrorsOf(await _owner.PostAsJsonAsync($"/v1/employees/{w.Employees["DORA"]}/status", request(false))))["confirmPaidDays"][0];
+        Assert.Equal("2 días (16/09/2026 – 17/09/2026) ya se pagaron. El pago no cambia; si hay que ajustarlo, usa un retroactivo en Incidencias.", notice);
+        Assert.Empty(await WithDb(db => db.Set<EmployeeStatusPeriod>().Where(p => p.EmployeeId == w.Employees["DORA"]).ToListAsync()));
+        var vacation = await _owner.PostAsJsonAsync($"/v1/employees/{w.Employees["DORA"]}/status", request(true));
         Assert.True(vacation.IsSuccessStatusCode, await vacation.Content.ReadAsStringAsync());
         var days = await WithDb(db => db.Set<AttendanceRecord>().Where(a => a.EmployeeId == w.Employees["DORA"] && a.WorkDate >= new DateOnly(2026, 9, 16))
             .OrderBy(a => a.WorkDate).Select(a => a.Status).ToListAsync());

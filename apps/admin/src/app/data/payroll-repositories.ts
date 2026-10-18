@@ -148,8 +148,8 @@ export class EmployeesRepository {
     return this.api.post(`/v1/employees/${id}/status`, body);
   }
 
-  updateStatus(id: string, periodId: string, endDate: DateKey, reference: string | null): Promise<EmployeeDetailDto> {
-    return this.api.put(`/v1/employees/${id}/status/${periodId}`, { endDate, reference });
+  updateStatus(id: string, periodId: string, endDate: DateKey, reference: string | null, confirmPaidDays: boolean): Promise<EmployeeDetailDto> {
+    return this.api.put(`/v1/employees/${id}/status/${periodId}`, { endDate, reference, confirmPaidDays });
   }
 
   endStatus(id: string, periodId: string): Promise<EmployeeDetailDto> {

@@ -192,6 +192,8 @@ public static class EmployeeEndpoints
                 var end = r.Status == EmployeeStatus.Terminated ? null : r.EndDate;
                 if (await Overlap(db, id, null, r.StartDate, end, ct) is { } other)
                     return ApiResults.Conflict(StaffRules.Overlaps(other));
+                if (!r.ConfirmPaidDays && await StaffRules.PaidDaysAsync(db, id, r.StartDate, end ?? DateOnly.MaxValue, ct) is { Count: > 0 } paid)
+                    return ApiResults.Validation(new Dictionary<string, string[]> { ["confirmPaidDays"] = [StaffRules.PaidDaysNotice(paid)] });
 
                 var period = new EmployeeStatusPeriod
                 {
@@ -229,6 +231,9 @@ public static class EmployeeEndpoints
                 if (await Overlap(db, id, periodId, period.StartDate, r.EndDate, ct) is { } other)
                     return ApiResults.Conflict(StaffRules.Overlaps(other));
                 var previous = period.EndDate!.Value;
+                if (r.EndDate > previous && !r.ConfirmPaidDays
+                    && await StaffRules.PaidDaysAsync(db, id, previous.AddDays(1), r.EndDate, ct) is { Count: > 0 } paid)
+                    return ApiResults.Validation(new Dictionary<string, string[]> { ["confirmPaidDays"] = [StaffRules.PaidDaysNotice(paid)] });
                 period.EndDate = r.EndDate;
                 period.Reference = r.Reference.Clean()?.ToUpperInvariant() ?? period.Reference;
                 if (r.EndDate < previous)
