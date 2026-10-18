@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Platform.Core.Users;
 
 namespace Platform.Infrastructure.Persistence;
@@ -19,6 +20,15 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
         typeof(Platform.Payroll.Staff.Employee).Assembly, // Platform.Payroll
         typeof(Platform.Bank.Payments.PaymentBatch).Assembly, // Platform.Bank
     ];
+
+    /// <summary>
+    /// Npgsql only writes offset 0 to <c>timestamptz</c>: a date-time a client sent as «-06:00» was a 500 (E2E run, D-031). Every
+    /// <see cref="DateTimeOffset"/> is stored as the same instant in UTC.
+    /// </summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+        configurationBuilder.Properties<DateTimeOffset>().HaveConversion<UtcDateTimeOffsetConverter>();
+
+    private sealed class UtcDateTimeOffsetConverter() : ValueConverter<DateTimeOffset, DateTimeOffset>(v => v.ToUniversalTime(), v => v);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

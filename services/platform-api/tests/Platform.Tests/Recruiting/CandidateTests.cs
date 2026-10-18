@@ -236,4 +236,22 @@ public sealed class CandidateTests(ApiFactory factory) : ApiTest(factory)
         Assert.Contains("interviewerId", (await ErrorsOf(await _admin.PostAsJsonAsync($"/v1/candidates/{id}/interviews",
             new { scheduledAt = "2026-10-22T16:00:00Z", interviewerId = client.Uid, location = (string?)null, outcome = "pending", notes = (string?)null }))).Keys);
     }
+
+    // E2E run (D-031): an offset other than Z reached Npgsql, which only writes UTC, and answered 500.
+    [Fact]
+    public async Task A_date_time_with_an_offset_is_stored_as_the_same_instant()
+    {
+        await Arrange();
+        var id = (await Capture(_admin)).GetProperty("id").GetGuid();
+
+        var interview = await BodyOf(await _admin.PostAsJsonAsync($"/v1/candidates/{id}/interviews", new
+        {
+            scheduledAt = "2026-10-19T10:00:00-06:00",
+            interviewerId = _monica.Uid,
+            location = (string?)null,
+            outcome = "pending",
+            notes = (string?)null,
+        }));
+        Assert.Equal(new DateTimeOffset(2026, 10, 19, 16, 0, 0, TimeSpan.Zero), interview.GetProperty("scheduledAt").GetDateTimeOffset());
+    }
 }
