@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { uploadToPresignedUrl } from '@platform/api-client';
 import { API_CLIENT, liveQuery } from '@platform/ui';
 import type {
+  ExpiringDocumentDto,
   AssignmentRole,
   CandidateDetailDto,
   CandidateInvitationResultDto,
@@ -231,5 +232,15 @@ export class PeopleRepository {
 
   url(documentId: string, download: boolean): Promise<{ url: string }> {
     return this.api.get(`/v1/documents/${documentId}/url`, download ? { download: 'true' } : undefined);
+  }
+}
+
+/** Inicio: the documents about to expire (the counts come from the lists the other screens read). */
+@Injectable({ providedIn: 'root' })
+export class DashboardRepository {
+  private readonly api = inject(API_CLIENT);
+
+  expiringDocuments() {
+    return liveQuery(() => this.api.get<ExpiringDocumentDto[]>('/v1/dashboard/expiring-documents'), ['people']);
   }
 }

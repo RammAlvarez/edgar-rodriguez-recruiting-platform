@@ -9,6 +9,7 @@ import { ALL_NAV_ITEMS, homePath } from './shell/navigation';
 
 /** Screens delivered so far (S11); the other sections keep the «próxima entrega» placeholder. */
 const SCREENS: Record<string, () => Promise<Type<unknown>>> = {
+  inicio: () => import('./dashboard/dashboard-page').then((m) => m.DashboardPage),
   vacantes: () => import('./openings/openings-page').then((m) => m.OpeningsPage),
   'mis-vacantes': () => import('./openings/openings-page').then((m) => m.OpeningsPage),
   candidatos: () => import('./candidates/candidates-page').then((m) => m.CandidatesPage),

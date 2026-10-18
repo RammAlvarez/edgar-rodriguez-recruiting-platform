@@ -24,6 +24,7 @@ export type InviteResultDto = S['InviteResultDto'];
 export type InviteUserRequest = S['InviteUserRequest'];
 export type UpdateUserRequest = S['UpdateUserRequest'];
 export type StatutoryHolidaysResult = S['StatutoryHolidaysResult'];
+export type ExpiringDocumentDto = S['ExpiringDocumentDto'];
 export type OpeningListItemDto = S['OpeningListItemDto'];
 export type OpeningDetailDto = S['OpeningDetailDto'];
 export type OpeningOptionDto = S['OpeningOptionDto'];

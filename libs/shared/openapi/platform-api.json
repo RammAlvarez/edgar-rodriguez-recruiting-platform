@@ -5637,6 +5637,29 @@
         }
       }
     },
+    "/v1/dashboard/expiring-documents": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "GetExpiringDocuments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpiringDocumentDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/payroll/groups": {
       "get": {
         "tags": [
@@ -12459,6 +12482,36 @@
           "terminated"
         ]
       },
+      "ExpiringDocumentDto": {
+        "required": [
+          "documentId",
+          "personId",
+          "fullName",
+          "documentTypeName",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "documentTypeName": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "FunnelLossDto": {
         "required": [
           "outcome",
@@ -18838,6 +18891,9 @@
     },
     {
       "name": "RecruitingReports"
+    },
+    {
+      "name": "Dashboard"
     },
     {
       "name": "Payroll groups"
