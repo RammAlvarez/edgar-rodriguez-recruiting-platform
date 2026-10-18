@@ -101,6 +101,21 @@ export const PAYMENT_STATE: Record<PaymentState | LinePaymentState, { label: str
   paid_manually: { label: 'Pagado fuera de archivo', tone: 'positive' },
 };
 
+/**
+ * The title of a grid column. Columns keep the client's workbook names (they are also the keys of the cells), but the partial-hours one
+ * names the group's own turno: «SOBRE 12 HORAS» is ECOVIA's, an 8-hour group reads «SOBRE 8 HORAS» (same rule as the Excel).
+ */
+export function columnTitle(column: string, shiftHours: string): string {
+  return column.endsWith('SOBRE 12 HORAS') ? `${column.slice(0, -'12 HORAS'.length)}${Number(shiftHours)} HORAS` : column;
+}
+
+/** How a line was paid outside the bank files. */
+export const MANUAL_PAYMENT_METHODS: readonly { value: ManualPaymentMethod; label: string }[] = [
+  { value: 'cash', label: 'Efectivo' },
+  { value: 'check', label: 'Cheque' },
+  { value: 'other', label: 'Otro' },
+];
+
 /** The concepts an incidencia may carry (IncidentEndpoints.Concepts): hour ones take hours, the rest an amount. */
 export const INCIDENT_CONCEPTS: readonly { code: string; label: string; byHours: boolean; hint: string }[] = [
   { code: 'OVERTIME', label: 'Horas extra', byHours: true, hint: 'Al costo por hora' },

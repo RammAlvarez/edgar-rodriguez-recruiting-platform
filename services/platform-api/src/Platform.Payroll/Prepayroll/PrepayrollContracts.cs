@@ -45,9 +45,10 @@ public sealed record PrepayrollRowDto(Guid LineId, Guid EmployeeId, string FullN
 /// <summary>
 /// The period's prenómina (SPEC §5.5). <see cref="Footers"/> = Σ of the cells shown in each column (D76: for display, they
 /// are not what is paid); <see cref="TotalNet"/> = Σ TOTAL NETO A PAGAR, the amount paid; <see cref="TotalNetExact"/> = Σ of
-/// the exact nets (D41).
+/// the exact nets (D41). <see cref="ShiftHours"/> = the group's hours per turno, which the title of the partial-hours column names
+/// (<see cref="PrepayrollLabels.ColumnTitle"/>).
 /// </summary>
-public sealed record PrepayrollGridDto(PayrollPeriodDto Period, string? ScheduleDescription, bool Editable, IReadOnlyList<string> Columns,
+public sealed record PrepayrollGridDto(PayrollPeriodDto Period, string? ScheduleDescription, decimal ShiftHours, bool Editable, IReadOnlyList<string> Columns,
     IReadOnlyList<PrepayrollRowDto> Rows, IReadOnlyList<decimal> Footers, decimal TotalNet, decimal TotalNetExact);
 
 public sealed record LineItemDto(string Code, string Name, string Column, ConceptKind Kind, decimal Quantity, decimal UnitValue,

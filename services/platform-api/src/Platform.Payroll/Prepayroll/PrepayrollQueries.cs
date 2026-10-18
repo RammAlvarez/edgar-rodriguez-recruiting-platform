@@ -47,7 +47,8 @@ public static class PrepayrollQueries
         var period = (await Periods(db, groups, db.Set<PayrollPeriod>().Where(p => p.Uid == periodId), ct)).SingleOrDefault();
         if (period is null)
             return null;
-        var schedule = await db.Set<PayrollGroup>().Where(g => g.Uid == period.GroupId).Select(g => g.ScheduleDescription).SingleAsync(ct);
+        var group = await db.Set<PayrollGroup>().Where(g => g.Uid == period.GroupId).Select(g => new { g.ScheduleDescription, g.ShiftHours }).SingleAsync(ct);
+        var schedule = group.ScheduleDescription;
         var lines = await db.Set<PrepayrollLine>().AsNoTracking().Include(l => l.Items).Where(l => l.PayrollPeriodId == periodId)
             .Join(db.Set<Employee>(), l => l.EmployeeId, e => e.Uid, (l, e) => new { l, e.PersonId })
             .Join(db.Set<Person>(), x => x.PersonId, p => p.Uid, (x, p) => new { x.l, x.PersonId, p.FullName })
@@ -65,7 +66,7 @@ public static class PrepayrollQueries
                 x.l.TotalNet, x.l.TotalNetExact, x.l.Comments, x.l.Items.Any(it => it.Source == ItemSource.Manual), payments[x.l.EmployeeId]))
             .ToList();
         var footers = columns.Select((_, c) => rows.Sum(r => r.Amounts[c] ?? 0)).ToList();
-        return new PrepayrollGridDto(period, schedule, period.Status != PeriodStatus.Paid, columns, rows, footers,
+        return new PrepayrollGridDto(period, schedule, group.ShiftHours, period.Status != PeriodStatus.Paid, columns, rows, footers,
             rows.Sum(r => r.TotalNet), rows.Sum(r => r.TotalNetExact));
     }
 

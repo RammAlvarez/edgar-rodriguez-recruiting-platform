@@ -16381,6 +16381,7 @@
         "required": [
           "period",
           "scheduleDescription",
+          "shiftHours",
           "editable",
           "columns",
           "rows",
@@ -16398,6 +16399,11 @@
               "null",
               "string"
             ]
+          },
+          "shiftHours": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "type": "string",
+            "format": "decimal"
           },
           "editable": {
             "type": "boolean"

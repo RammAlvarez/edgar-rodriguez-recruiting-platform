@@ -33,7 +33,7 @@ public sealed class PrepayrollFiles : IPrepayrollFiles
         sheet.Cell("F4").SetValue(heading.DateRange);
 
         const int first = 2; // column B
-        var headers = Leading.Concat(grid.Columns).Append("TOTAL NETO A PAGAR").Append("COMENTARIOS").ToList();
+        var headers = Leading.Concat(grid.Columns.Select(c => PrepayrollLabels.ColumnTitle(c, grid.ShiftHours))).Append("TOTAL NETO A PAGAR").Append("COMENTARIOS").ToList();
         for (var c = 0; c < headers.Count; c++)
         {
             var cell = sheet.Cell(5, first + c);

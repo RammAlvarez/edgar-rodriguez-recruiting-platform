@@ -4044,6 +4044,8 @@ export type components = {
         PrepayrollGridDto: {
             period: components["schemas"]["PayrollPeriodDto"];
             scheduleDescription: null | string;
+            /** Format: decimal */
+            shiftHours: Decimal;
             editable: boolean;
             columns: string[];
             rows: components["schemas"]["PrepayrollRowDto"][];

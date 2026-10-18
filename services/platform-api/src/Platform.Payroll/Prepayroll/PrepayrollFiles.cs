@@ -38,6 +38,15 @@ public static class PrepayrollLabels
     private static readonly string[] Months =
         ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
 
+    /// <summary>
+    /// The title a column shows. The columns keep the client's workbook names (they are also the keys of the cells), but the partial-hours
+    /// one names the group's own turno — «SOBRE 12 HORAS» is ECOVIA's; an 8-hour group reads «SOBRE 8 HORAS» (E2E run).
+    /// </summary>
+    public static string ColumnTitle(string column, decimal shiftHours) =>
+        column.EndsWith("SOBRE 12 HORAS", StringComparison.Ordinal)
+            ? column[..^"12 HORAS".Length] + $"{shiftHours.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} HORAS"
+            : column;
+
     /// <summary>«SEMANA N° 38» / «QUINCENA N° 19».</summary>
     public static string Period(bool weekly, int number) => $"{(weekly ? "SEMANA" : "QUINCENA")} N° {number}";
 

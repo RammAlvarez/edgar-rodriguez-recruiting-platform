@@ -124,8 +124,11 @@ public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisp
 
     private string Name(StorageBucket bucket) => bucket == StorageBucket.Documents ? settings.DocumentsBucket : settings.ExportsBucket;
 
-    private static string AsciiFileName(string name) =>
-        new(name.Select(c => c is >= ' ' and <= '~' && c is not '"' and not '\\' ? c : '_').ToArray());
+    /// <summary>The plain name old clients read: accents drop to their letter («OPERACIÓN» → «OPERACION»), anything else non-ASCII is `_`.</summary>
+    public static string AsciiFileName(string name) =>
+        new(name.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .Select(c => c is >= ' ' and <= '~' && c is not '"' and not '\\' ? c : '_').ToArray());
 
     public void Dispose() => _client.Dispose();
 }

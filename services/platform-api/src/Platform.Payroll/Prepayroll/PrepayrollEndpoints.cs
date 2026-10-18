@@ -226,7 +226,7 @@ public static partial class PrepayrollEndpoints
             PeriodStatus.InReview => "En revisión",
             _ => "Pagado",
         };
-        var totals = grid.Columns.Select((c, i) => new ReportRow([ReportCell.Text(c), ReportCell.Money(grid.Footers[i])]))
+        var totals = grid.Columns.Select((c, i) => new ReportRow([ReportCell.Text(PrepayrollLabels.ColumnTitle(c, grid.ShiftHours)), ReportCell.Money(grid.Footers[i])]))
             .Append(new ReportRow([ReportCell.Text("TOTAL NETO A PAGAR"), ReportCell.Money(grid.TotalNet)], Emphasis: true))
             .ToList();
         var states = grid.Rows.GroupBy(r => r.Payment.State).OrderBy(g => g.Key)

@@ -11,7 +11,7 @@ import { ApiError } from '@platform/api-client';
 import { formatDateKey } from '@platform/shared';
 import { confirm, openSidePanel, Session } from '@platform/ui';
 import type { PayrollPeriodDto, PrepayrollExport, PrepayrollRowDto } from '../data/api-types';
-import { money, PAYMENT_STATE, PERIOD_STATUS, periodLabel } from '../data/payroll-labels';
+import { columnTitle, money, PAYMENT_STATE, PERIOD_STATUS, periodLabel } from '../data/payroll-labels';
 import { PrepayrollRepository } from '../data/payroll-repositories';
 import { CardQueuePanel } from './card-queue-panel';
 import { LinePanel, type LinePanelData } from './line-panel';
@@ -111,7 +111,7 @@ const ACCOUNT_TYPE_SHORT = { own_account: 'Cuenta', debit_card: 'Tarjeta', clabe
                 <th class="num">SD IMSS</th>
                 <th class="num">SD bolsillo</th>
                 @for (c of g.columns; track c) {
-                  <th class="num">{{ c }}</th>
+                  <th class="num">{{ title(c, g.shiftHours) }}</th>
                 }
                 <th class="num total">Total neto a pagar</th>
                 <th>Comentarios</th>
@@ -303,6 +303,7 @@ export class PrepayrollPage {
 
   readonly status = PERIOD_STATUS;
   readonly payment = PAYMENT_STATE;
+  readonly title = columnTitle;
   readonly accountType = ACCOUNT_TYPE_SHORT;
   readonly money = money;
 
