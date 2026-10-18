@@ -26,7 +26,7 @@ release. Each run is written up as `YYYY-MM-DD-NN-happy.md`, `-forms.md` or `-e2
 |---|---|---|
 | [2026-10-17-13](2026-10-17-13-happy.md) | 4.1 HAPPY — one pass over every process | 25 steps pass after fixing D-014 – D-017; plan wording corrected; 390 px checked |
 | [2026-10-17-14](2026-10-17-14-forms.md) | 4.2 FORMS — stress test of every form | every form of the three apps; D-018 – D-030 found and fixed, D-028 closed as not needed; plan wording corrected; j / k / l sampled |
-| — | 4.3 E2E — one week of work | not run yet |
+| [2026-10-18-15](2026-10-18-15-e2e.md) | 4.3 E2E — one week of work | 39 steps pass after fixing D-031; plan corrected (period of L0, Incompleto, baja and freeze rules); six observations for the owner; the festivo cases not run |
 
 ## Defects
 
@@ -62,3 +62,4 @@ release. Each run is written up as `YYYY-MM-DD-NN-happy.md`, `-forms.md` or `-e2
 | D-028 | 2026-10-17-14 | No screen captures a document's expedición or vencimiento (uploads send both empty), so an INE or a carta de antecedentes never gets its fecha de vigencia and the expiry job cannot flag them. | won't fix — the owner decided it is not needed (2026-10-17); dates come only from a type's default vigencia |
 | D-029 | 2026-10-17-14 | Cuenta de cargo: a refused save showed nothing and put the stored values back over what was typed (the 400 invalidates the account, and the panel refilled the form on every reload). | fixed — the form is filled once (`prepayroll/paying-account-panel.ts`) |
 | D-030 | 2026-10-17-14 | Candidates and Clients «Entrar»: a used or expired link said «Pide uno nuevo» but offered only «Entrar», which retried the dead link. | fixed — the button becomes «Enviar enlace» with the email filled (`libs/ui/src/email-link-sign-in.ts`) |
+| D-031 | 2026-10-18-15 | A date-time sent with an offset other than Z (`-06:00`) was a 500: Npgsql only writes UTC to `timestamptz`. | fixed — `PlatformDbContext` stores every `DateTimeOffset` as UTC; test `A_date_time_with_an_offset_…` |

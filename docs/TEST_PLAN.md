@@ -162,7 +162,7 @@ curl -X POST -H "X-Internal-Secret: $INTERNAL_SECRET" http://localhost:5080/inte
 ```
 
 A fresh database without touching the owner's `platform`: create `platform_<run>` in the Postgres container with
-`db/init/roles.sql.inc` (as `db/init/10-roles.sh` does), `npm run db:migrate` with `MIGRATIONS_DATABASE_URL` and
+`db/roles.sql` (as `db/init/10-roles.sh` does), `npm run db:migrate` with `MIGRATIONS_DATABASE_URL` and
 `DATABASE_URL` pointing at it, start the API with that `DATABASE_URL`, then `npm run seed` with the same variable. The seed
 waits out the request limit (D92) whenever it hits it, so a fresh seed takes about five minutes.
 
@@ -344,7 +344,7 @@ the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a n
    Banorte card, one Azteca own account, one paid to a third party as titular), one SUPERVISOR with a CLABE, and one OPERADOR
    **without account** + «Solicitar tarjeta» Banorte (CURP, RFC, address, phone, birth captured). Horario lunes–sábado,
    domingo descanso, at Planta Norte.
-6. Expected: Personal lists the six; Calendario week of L0 shows them; Tarjetas → Por solicitar has one Banorte request.
+6. Expected: Personal lists the six (the no-account one with «Tarjeta solicitada · Banorte»); Calendario week of L0 shows them Lunes–Sábado; Prenómina → Tarjetas → Por solicitar has the seeded people waiting (one Banorte, one Banregio) plus this one. The group is new, so `period-roll` only makes the current and next period: create the period of L0 with `POST /v1/payroll/groups/{id}/periods {"date": L0}` before the first Incidencia (step 13).
 
 **Lunes (L0, via unlock)** — *Asistencia* → L0 → Planta Norte → «Cambiar» per person, motivo «E2E captura L0»:
 7. All present. Recruiting starts: *Vacantes* → «Nueva vacante» E2E LIMPIEZA / Operador de limpieza / 2, líder Mónica, visible
@@ -362,8 +362,8 @@ the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a n
 12. Candidates app as c1: aviso → Mi perfil complete → Mis documentos: INE, comprobante, CURP.
 
 **Jueves (L0+3)**
-13. Present; operador D Incompleto 10 h with 2 h extra in the unlock form. Incidencia: Tiempo extra doble 2 h for operador D on L0+3.
-14. Operador E: «Cambiar estatus» → Baja on L0+3, motivo, «Confirmo la baja…» → L0+4 onward locked as Baja.
+13. Present; operador D Incompleto 6 h with 2 h extra in the unlock form (Incompleto is more than 0 and less than the shift's 8 h). Incidencia: Tiempo extra doble 2 h for operador D on L0+3.
+14. Operador E: «Cambiar estatus» → Baja on L0+3 (the day itself reads Baja; the Presente already captured that day still pays), motivo, «Confirmo la baja…» → L0+4 onward locked as Baja. A baja cancels the person's queued card request (so E leaves Tarjetas → Por solicitar).
 15. Clients app as `e2e.cliente@local.test`: the vacante with c1 as initials; a comment «¿Pueden venir el lunes?».
 
 **Viernes (L0+4)**
@@ -411,10 +411,11 @@ the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a n
 **Live week (D0) — the hire joins**
 33. Mónica: c1 → Apto (client sees the full name) → Contratado, fecha de ingreso D0 → «1 de 2 cubiertas»; «Convertir en
     empleado» into OPERACIÓN (bank from the candidate's own account) → appears in Personal and in today's roster.
-34. Supervisor E2E at 390 px: sidebar Calendario + Asistencia only; Planta Norte today → capture everyone incl. c1 → Guardar;
+34. (If D0 is a Sunday nobody works Lunes–Sábado schedules: give each active person a one-off schedule for D0.) Supervisor E2E at
+    390 px (a 390 px iframe, since the window does not resize): sidebar Calendario + Asistencia only; Planta Norte today → capture everyone incl. c1 → Guardar;
     yesterday → no «Cambiar»; ECOVIA is not offered.
 35. The bell (owner): «falta captura» for any site left without today's capture after the lock time; «documento por vencer»
-    if one was set to expire within the warning window in step 12.
+    if one was set to expire within the warning window in step 12 (the template's 90 days put it out of the window, so set an earlier date or the item is not exercised).
 
 **Reports cross-check**
 36. Costo de nómina, E2E LIMPIEZA, week of L0 → one row equal to the grid's TOTAL NETO A PAGAR.
