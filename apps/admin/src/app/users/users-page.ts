@@ -9,6 +9,7 @@ import { openSidePanel, Session, TimestampPipe } from '@platform/ui';
 import type { UserDto } from '../data/api-types';
 import { ROLE_LABELS } from '../data/labels';
 import { ClientsRepository, UsersRepository } from '../data/repositories';
+import { clientColumn } from './grants';
 import { UserPanel, type UserPanelData } from './user-panel';
 
 /** Administración → Usuarios (SPEC §6): table; a row opens «Editar usuario», the header button «Invitar usuario». */
@@ -51,7 +52,7 @@ import { UserPanel, type UserPanelData } from './user-panel';
           </ng-container>
           <ng-container matColumnDef="client">
             <th mat-header-cell *matHeaderCellDef>Cliente</th>
-            <td mat-cell *matCellDef="let u">{{ u.clientName ?? '—' }}</td>
+            <td mat-cell *matCellDef="let u">{{ clientOf(u) }}</td>
           </ng-container>
           <ng-container matColumnDef="mfa">
             <th mat-header-cell *matHeaderCellDef>MFA</th>
@@ -89,6 +90,10 @@ export class UsersPage {
 
   readonly columns = ['name', 'email', 'role', 'client', 'mfa', 'lastLogin', 'active'];
   readonly rows = computed(() => this.users.value() ?? []);
+
+  clientOf(u: UserDto): string {
+    return clientColumn(u, (id) => this.clients.value()?.find((c) => c.id === id)?.shortName ?? '—');
+  }
 
   roleLabel(u: UserDto): string {
     return ROLE_LABELS[u.role];

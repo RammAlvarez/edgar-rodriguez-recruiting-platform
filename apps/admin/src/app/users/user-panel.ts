@@ -17,7 +17,7 @@ import type { ClientOptionDto, UserDto } from '../data/api-types';
 import { DEFAULT_ADMIN_GRANTS, GRANTS, ROLE_LABELS } from '../data/labels';
 import { MfaRepository } from '../data/mfa-repository';
 import { UsersRepository } from '../data/repositories';
-import { fromGrants, toGrants } from './grants';
+import { accessSummary, fromGrants, toGrants } from './grants';
 
 export interface UserPanelData {
   /** null = «Invitar usuario». */
@@ -84,6 +84,9 @@ export interface UserPanelData {
             <mat-error>{{ msg('clientId') }}</mat-error>
           </mat-form-field>
         }
+        @if (editing && summary) {
+          <p class="access"><strong>Acceso:</strong> {{ summary }}</p>
+        }
         @if (editing) {
           <mat-slide-toggle formControlName="isActive">Activo</mat-slide-toggle>
           <mat-slide-toggle formControlName="mfaRequired">Requerir verificación en dos pasos</mat-slide-toggle>
@@ -143,6 +146,10 @@ export interface UserPanelData {
     mat-slide-toggle {
       margin: 4px 0 12px;
     }
+    .access {
+      margin: 0 0 8px;
+      color: var(--mat-sys-on-surface-variant);
+    }
   `,
 })
 export class UserPanel {
@@ -154,6 +161,10 @@ export class UserPanel {
   private readonly mfa = inject(MfaRepository);
 
   readonly editing = this.data.user !== null;
+  /** What the user can reach and over which clients, as saved (the checkboxes below edit it). */
+  readonly summary = this.data.user
+    ? accessSummary(this.data.user, (id) => this.data.clients.find((c) => c.id === id)?.shortName ?? '—')
+    : null;
   readonly emailLocked = !!this.data.user?.acceptedAt;
   readonly roles = (Object.keys(ROLE_LABELS) as UserRole[]).map((value) => ({ value, label: ROLE_LABELS[value] }));
   readonly grantOptions = GRANTS;
