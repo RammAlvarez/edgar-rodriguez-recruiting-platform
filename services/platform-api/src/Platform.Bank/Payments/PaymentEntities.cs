@@ -35,6 +35,38 @@ public enum PaymentType
     BazTransfer,
 }
 
+/// <summary>Postgres enum <c>manual_payment_method</c>: how a line was paid outside the bank file.</summary>
+public enum ManualPaymentMethod
+{
+    Cash,
+    Check,
+    Other,
+}
+
+/// <summary>
+/// A line paid outside the bank files (cash, cheque, another transfer) once its period is paid: whoever has no account the file
+/// can use — typically someone dismissed before their card arrived — is still paid, and the payment is recorded with who did it
+/// and when. The line's own <see cref="PrepayrollLine.PaymentStatus"/> becomes <c>Paid</c>; <see cref="PreviousStatus"/> is what
+/// it was, so a wrong entry can be undone.
+/// </summary>
+public sealed class ManualPayment : IStamped
+{
+    public long Id { get; set; }
+    public Guid Uid { get; set; } = Guid.CreateVersion7();
+    public Guid PrepayrollLineId { get; set; }
+    public ManualPaymentMethod Method { get; set; }
+    /// <summary>Recibo, folio of the cheque, tracking key…</summary>
+    public string? Reference { get; set; }
+    public DateOnly PaidOn { get; set; }
+    public decimal Amount { get; set; }
+    public PaymentRowStatus PreviousStatus { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+    public Guid? UpdatedBy { get; set; }
+}
+
 /// <summary>
 /// DATA_MODEL §6.1: the account every payment is charged to — MAXIMA REPARACION Y LIMPIEZA SA DE CV at Banco Azteca (SPEC D17,
 /// D24). The number is encrypted like the employees' accounts and only its last four digits are shown.
@@ -121,6 +153,20 @@ public sealed class PaymentBatchRow : IStamped
     public Guid? CreatedBy { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public Guid? UpdatedBy { get; set; }
+}
+
+internal sealed class ManualPaymentConfiguration : IEntityTypeConfiguration<ManualPayment>
+{
+    public void Configure(EntityTypeBuilder<ManualPayment> b)
+    {
+        b.ToTable("manual_payments", t => t.HasCheckConstraint("ck_manual_payments_amount", "amount > 0 AND amount = trunc(amount, 2)"));
+        b.HasIdentityAndUid();
+        b.HasStamps();
+        b.Property(x => x.Reference).HasMaxLength(100);
+        b.Property(x => x.Amount).HasPrecision(12, 2);
+        b.HasIndex(x => x.PrepayrollLineId).IsUnique();
+        b.HasOne<PrepayrollLine>().WithMany().HasForeignKey(x => x.PrepayrollLineId).HasPrincipalKey(l => l.Uid).OnDelete(DeleteBehavior.Restrict);
+    }
 }
 
 internal sealed class PayingAccountConfiguration : IEntityTypeConfiguration<PayingAccount>

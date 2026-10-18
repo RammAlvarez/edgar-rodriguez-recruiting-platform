@@ -308,4 +308,98 @@ public sealed class PaymentFilesTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(PaymentEndpoints.PayingAccountNeedsAllClients,
             await DetailOf(await scoped.PutAsJsonAsync("/v1/payroll/paying-account", PayingAccount())));
     }
+
+    // E2E run: someone dismissed before their card arrived has wages owed and no account; «Pagar fuera de archivo» pays them
+    // once the period is paid, and a wrong entry can be undone.
+    [Fact]
+    public async Task A_line_no_file_can_pay_is_recorded_as_paid_outside_the_files_and_the_entry_can_be_undone()
+    {
+        var w = await ArrangeAsync();
+        var dora = Line(await Panel(w.Period), "DORA").GetProperty("lineId").GetGuid();
+        var url = $"/v1/payroll/payment-lines/{dora}/manual-payment";
+        var cash = new { method = "cash", reference = "Recibo 14", paidOn = "2026-09-18" };
+
+        // Not before the period is paid.
+        Assert.Equal(PaymentEndpoints.NotPaid, await DetailOf(await _owner.PostAsJsonAsync(url, cash)));
+        Assert.Equal(HttpStatusCode.OK, (await _owner.PostAsync($"/v1/payroll/periods/{w.Period}/payment-files", null)).StatusCode);
+
+        var panel = await Panel(w.Period);
+        Assert.Equal((true, false), (Line(panel, "DORA").GetProperty("canPayManually").GetBoolean(), Line(panel, "ANA").GetProperty("canPayManually").GetBoolean()));
+        Assert.Equal(HttpStatusCode.Conflict, (await _owner.PostAsJsonAsync($"/v1/payroll/payment-lines/{Line(panel, "ANA").GetProperty("lineId").GetGuid()}/manual-payment", cash)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await _owner.PostAsJsonAsync(url, new { method = "bitcoin", reference = (string?)null, paidOn = "2026-09-18" })).StatusCode);
+        Assert.Contains("paidOn", (await ErrorsOf(await _owner.PostAsJsonAsync(url, new { method = "cash", reference = (string?)null, paidOn = "2026-09-01" }))).Keys);
+        Assert.Contains("paidOn", (await ErrorsOf(await _owner.PostAsJsonAsync(url, new { method = "cash", reference = (string?)null, paidOn = "2999-01-01" }))).Keys);
+        Assert.Contains("reference", (await ErrorsOf(await _owner.PostAsJsonAsync(url, new { method = "check", reference = new string('x', 101), paidOn = "2026-09-18" }))).Keys);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await _owner.PostAsJsonAsync(url, cash)).StatusCode);
+        panel = await Panel(w.Period);
+        var line = Line(panel, "DORA");
+        Assert.Equal(("paid_manually", false, "cash", "Recibo 14", "2026-09-18"), (line.GetProperty("state").GetString(),
+            line.GetProperty("canPayManually").GetBoolean(), line.GetProperty("manual").GetProperty("method").GetString(),
+            line.GetProperty("manual").GetProperty("reference").GetString(), line.GetProperty("manual").GetProperty("paidOn").GetString()));
+        Assert.Equal(PaymentEndpoints.NotOwed, await DetailOf(await _owner.PostAsJsonAsync(url, cash)));
+        Assert.Equal(PaymentRowStatus.Paid, await WithDb(db => db.Set<PrepayrollLine>().Where(l => l.Uid == dora).Select(l => l.PaymentStatus!.Value).SingleAsync()));
+
+        // The payments report lists it apart, and an account that arrives later does not put her in a file again.
+        var report = await BodyOf(await _owner.GetAsync($"/v1/payroll-reports/payments?periodId={w.Period}"));
+        var summary = report.GetProperty("tables")[0].GetProperty("rows").EnumerateArray()
+            .Single(r => r.GetProperty("cells")[0].GetProperty("display").GetString() == "Pagado fuera de archivo");
+        Assert.Equal(("1", Dec(line.GetProperty("amount"))), (summary.GetProperty("cells")[1].GetProperty("display").GetString(),
+            Dec(summary.GetProperty("cells")[2].GetProperty("value"))));
+        await AddAccount(w.Employees["DORA"], "012", "clabe", Clabe);
+        Assert.Equal(0, (await Panel(w.Period)).GetProperty("payable").GetInt32());
+
+        // Undo: she is owed again (and has an account now, so she is ready for the pending file).
+        Assert.Equal(HttpStatusCode.NoContent, (await _owner.DeleteAsync(url)).StatusCode);
+        Assert.Equal(PaymentEndpoints.NoManualPayment, await DetailOf(await _owner.DeleteAsync(url)));
+        panel = await Panel(w.Period);
+        Assert.Equal(("ready", 1), (Line(panel, "DORA").GetProperty("state").GetString(), panel.GetProperty("payable").GetInt32()));
+        Assert.Equal(PaymentRowStatus.MissingAccount, await WithDb(db => db.Set<PrepayrollLine>().Where(l => l.Uid == dora).Select(l => l.PaymentStatus!.Value).SingleAsync()));
+    }
+
+    // E2E run: a rejected row and the row that paid it again made «Generado en archivos» exceed the period's total.
+    [Fact]
+    public async Task Resumen_de_pago_adds_up_to_the_period_total_after_a_rejection_a_resend_and_a_manual_payment()
+    {
+        var w = await ArrangeAsync();
+        var batch = (await BodyOf(await _owner.PostAsync($"/v1/payroll/periods/{w.Period}/payment-files", null))).GetProperty("batch");
+        var anaRow = batch.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("fullName").GetString()!.EndsWith(" ANA", StringComparison.Ordinal))
+            .GetProperty("id").GetGuid();
+        await _owner.PostAsync($"/v1/payroll/payment-batches/{batch.GetProperty("id").GetGuid()}/uploaded", null);
+        await _owner.PostAsJsonAsync($"/v1/payroll/payment-batch-rows/{anaRow}/reject", new { reason = "Cuenta cancelada" });
+
+        async Task<Dictionary<string, (int People, decimal Amount)>> Summary()
+        {
+            var report = await BodyOf(await _owner.GetAsync($"/v1/payroll-reports/payments?periodId={w.Period}"));
+            return report.GetProperty("tables")[0].GetProperty("rows").EnumerateArray().ToDictionary(r => r.GetProperty("cells")[0].GetProperty("display").GetString()!,
+                r => (int.Parse(r.GetProperty("cells")[1].GetProperty("display").GetString()!, CultureInfo.InvariantCulture), Dec(r.GetProperty("cells")[2].GetProperty("value"))));
+        }
+
+        // Ana is rejected and Dora has no account: the rows add up to the total.
+        var rows = await Summary();
+        var total = rows["Total neto del período"].Amount;
+        Assert.Equal(1, rows["Rechazado por el banco (pendiente de reenviar)"].People);
+        Assert.Equal(1, rows["Por pagar (sin archivo aún)"].People);
+        Assert.Equal(0, rows["Reenviados tras un rechazo (ya incluidos arriba)"].People);
+        decimal Flow(Dictionary<string, (int People, decimal Amount)> r) => r["Pagado por el banco"].Amount + r["Pagado fuera de archivo"].Amount + r["En archivo sin subir"].Amount
+            + r["Rechazado por el banco (pendiente de reenviar)"].Amount + r["Por pagar (sin archivo aún)"].Amount;
+        Assert.Equal(total, Flow(rows));
+
+        // Ana gives a new card and is paid again; Dora is paid in cash.
+        await AddAccount(w.Employees["ANA"], "012", "debit_card", "5555555555554444");
+        var pending = (await BodyOf(await _owner.PostAsync($"/v1/payroll/periods/{w.Period}/payment-files", null))).GetProperty("batch");
+        await _owner.PostAsync($"/v1/payroll/payment-batches/{pending.GetProperty("id").GetGuid()}/uploaded", null);
+        var dora = Line(await Panel(w.Period), "DORA").GetProperty("lineId").GetGuid();
+        Assert.Equal(HttpStatusCode.NoContent, (await _owner.PostAsJsonAsync($"/v1/payroll/payment-lines/{dora}/manual-payment", new { method = "check", reference = "Cheque 8", paidOn = "2026-09-18" })).StatusCode);
+
+        rows = await Summary();
+        Assert.Equal(total, rows["Total neto del período"].Amount);
+        Assert.Equal(total, Flow(rows));
+        Assert.Equal((0, 0), (rows["Rechazado por el banco (pendiente de reenviar)"].People, rows["Por pagar (sin archivo aún)"].People));
+        Assert.Equal(1, rows["Pagado fuera de archivo"].People);
+        Assert.Equal(3, rows["Pagado por el banco"].People);
+        Assert.Equal(1, rows["Reenviados tras un rechazo (ya incluidos arriba)"].People);
+        Assert.DoesNotContain("Generado en archivos", rows.Keys);
+    }
 }

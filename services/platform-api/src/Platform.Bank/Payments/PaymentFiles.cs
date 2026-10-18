@@ -26,7 +26,7 @@ public static class PaymentFiles
 
     /// <summary>A line as the payment panel needs it: the person, the client, and the live principal account.</summary>
     public sealed record Line(PrepayrollLine Entity, string FullName, Guid PersonId, string ClientTag, PersonBankAccount? Account,
-        BankRow? AccountBank, BankRow? SnapshotBank, bool CardRequested);
+        BankRow? AccountBank, BankRow? SnapshotBank, bool CardRequested, ManualPayment? Manual);
 
     /// <summary>Lines whose stored state lets a later file pay them.</summary>
     public static readonly PaymentRowStatus[] Unpaid = [PaymentRowStatus.MissingAccount, PaymentRowStatus.InvalidAccount, PaymentRowStatus.Rejected];
@@ -48,6 +48,8 @@ public static class PaymentFiles
                     && (r.Status == CardRequestStatus.Queued || r.Status == CardRequestStatus.InBatch || r.Status == CardRequestStatus.Uploaded))
                 .Select(r => r.EmployeeId).ToListAsync(ct))
             .ToHashSet();
+        var lineIds = rows.Select(r => r.l.Uid).ToList();
+        var manual = await db.Set<ManualPayment>().AsNoTracking().Where(m => lineIds.Contains(m.PrepayrollLineId)).ToDictionaryAsync(m => m.PrepayrollLineId, ct);
         var tag = await db.Set<PayrollPeriod>().Where(p => p.Uid == periodId)
             .Join(db.Set<PayrollGroup>(), p => p.PayrollGroupId, g => g.Uid, (p, g) => g.ClientId)
             .Join(db.Set<Client>(), id => id, c => c.Uid, (_, c) => c.ShortName).SingleAsync(ct);
@@ -55,7 +57,7 @@ public static class PaymentFiles
             {
                 var account = accounts.GetValueOrDefault(r.PersonId);
                 return new Line(r.l, r.FullName, r.PersonId, ClientTag(tag), account, account is null ? null : banks[account.BankId],
-                    r.l.BankId is { } b ? banks[b] : null, cards.Contains(r.l.EmployeeId));
+                    r.l.BankId is { } b ? banks[b] : null, cards.Contains(r.l.EmployeeId), manual.GetValueOrDefault(r.l.Uid));
             })
             .ToList();
     }
@@ -79,6 +81,7 @@ public static class PaymentFiles
     /// </summary>
     public static LinePaymentState State(Line x, PeriodStatus status) => status != PeriodStatus.Paid
         ? LiveState(x)
+        : x.Manual is not null ? LinePaymentState.PaidManually
         : x.Entity.PaymentStatus is PaymentRowStatus.MissingAccount or PaymentRowStatus.InvalidAccount && LiveState(x) == LinePaymentState.Ready
             ? LinePaymentState.Ready
         : x.Entity.PaymentStatus switch
@@ -90,6 +93,12 @@ public static class PaymentFiles
             PaymentRowStatus.InvalidAccount => LinePaymentState.InvalidAccount,
             _ => x.CardRequested ? LinePaymentState.CardRequested : LinePaymentState.MissingAccount,
         };
+
+    /// <summary>
+    /// A paid period's line still owed (no account, an invalid one, or rejected by the bank) can be recorded as paid outside the files.
+    /// </summary>
+    public static bool CanPayManually(Line x, PeriodStatus status) =>
+        status == PeriodStatus.Paid && x.Manual is null && x.Entity.TotalNet > 0 && x.Entity.PaymentStatus is { } s && Unpaid.Contains(s);
 
     /// <summary>The lines the file that can be generated now would pay.</summary>
     public static IEnumerable<Line> NextFile(IEnumerable<Line> lines, PeriodStatus status) => status switch

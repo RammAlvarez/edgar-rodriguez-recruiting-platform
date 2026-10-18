@@ -418,7 +418,8 @@ public static class EmployeeEndpoints
 
     private static RouteHandlerBuilder Accounts<TBody>(this RouteHandlerBuilder route) where TBody : class =>
         route.Validate<TBody>().Produces<List<BankAccountDto>>().ProducesProblem(StatusCodes.Status404NotFound)
-            .Invalidates(Tag, CardRequestsTag);
+            // A new principal account makes a line payable: the grid and the payment panel (tag of Platform.Bank, which this project cannot see).
+            .Invalidates(Tag, CardRequestsTag, Prepayroll.PrepayrollEndpoints.Tag, "payments");
 
     /// <summary>Saves and recomputes the employee's open prenómina lines in one transaction; a unique violation is a 409.</summary>
     private static async Task<IResult?> Refreshed(DbContext db, Guid employeeId, IClock clock, string conflict, CancellationToken ct)

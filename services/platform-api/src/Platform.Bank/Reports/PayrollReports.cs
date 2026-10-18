@@ -239,19 +239,24 @@ public static class PayrollReports
             var list = amounts.ToList();
             return new([ReportCell.Text(label), ReportCell.Count(list.Count), ReportCell.Money(list.Sum())], emphasis);
         }
-        var uploaded = rows.Where(x => x.Batch.Status != BatchStatus.Generated).ToList();
-        // Owed and in no file: before payment, everyone owed; after, the lines left sin cuenta, inválida or rechazada.
+        // Owed and not paid by any file: before payment, everyone owed; after, the lines rejected, sin cuenta or inválidas.
         var unpaid = states.Where(x => x.Line.Entity.TotalNet > 0 && x.Line.Entity.PaymentStatus is not (PaymentRowStatus.Pending or PaymentRowStatus.Paid))
             .ToList();
+        // The summary is by line, so its rows add up to the period's total (PLAN D97: a row the bank rejected and the file that paid
+        // it again are one person, counted once, where they stand now).
+        var owed = lines.Where(x => x.Entity.TotalNet > 0).ToList();
+        decimal[] Net(IEnumerable<PaymentFiles.Line> xs) => xs.Select(x => x.Entity.TotalNet).ToArray();
+        var resent = lines.Where(x => x.Entity.PaymentStatus != PaymentRowStatus.Rejected
+            && rows.Any(r => r.Row.PrepayrollLineId == x.Entity.Uid && r.Row.Status == PaymentRowStatus.Rejected)).ToList();
         var summary = new List<PayrollReportRowDto>
         {
-            new([ReportCell.Text("Total neto del período"), ReportCell.Count(lines.Count(x => x.Entity.TotalNet > 0)), ReportCell.Money(totalNet)], true),
-            Line("Generado en archivos", rows.Select(x => x.Row.Amount)),
-            Line("Subido al banco", uploaded.Select(x => x.Row.Amount)),
-            Line("Pagado", rows.Where(x => x.Row.Status == PaymentRowStatus.Paid).Select(x => x.Row.Amount)),
-            Line("En archivo sin subir", rows.Where(x => x.Row.Status == PaymentRowStatus.Pending).Select(x => x.Row.Amount)),
-            Line("Rechazado por el banco", rows.Where(x => x.Row.Status == PaymentRowStatus.Rejected).Select(x => x.Row.Amount)),
-            Line("Por pagar (sin archivo aún)", unpaid.Select(x => x.Line.Entity.TotalNet)),
+            new([ReportCell.Text("Total neto del período"), ReportCell.Count(owed.Count), ReportCell.Money(totalNet)], true),
+            Line("Pagado por el banco", Net(owed.Where(x => x.Entity.PaymentStatus == PaymentRowStatus.Paid && x.Manual is null))),
+            Line("Pagado fuera de archivo", Net(owed.Where(x => x.Manual is not null))),
+            Line("En archivo sin subir", Net(owed.Where(x => x.Entity.PaymentStatus == PaymentRowStatus.Pending))),
+            Line("Rechazado por el banco (pendiente de reenviar)", Net(owed.Where(x => x.Entity.PaymentStatus == PaymentRowStatus.Rejected))),
+            Line("Por pagar (sin archivo aún)", Net(owed.Where(x => x.Entity.PaymentStatus is null or PaymentRowStatus.MissingAccount or PaymentRowStatus.InvalidAccount))),
+            Line("Reenviados tras un rechazo (ya incluidos arriba)", Net(resent)),
         };
         var banks = await db.Set<BankRow>().AsNoTracking().GroupBy(b => b.SpeiCode).Select(g => new { g.Key, Name = g.Min(b => b.Name) })
             .ToDictionaryAsync(x => x.Key, x => x.Name!, ct);
@@ -279,11 +284,17 @@ public static class PayrollReports
                     _ => "Cuenta lista: va en el archivo de pendientes",
                 })]))
             .ToList();
+        var manualRows = lines.Where(x => x.Manual is not null).OrderBy(x => x.FullName)
+            .Select(x => new PayrollReportRowDto([ReportCell.Text(x.FullName), ReportCell.Money(x.Manual!.Amount),
+                ReportCell.Text(x.Manual.Method switch { ManualPaymentMethod.Cash => "Efectivo", ManualPaymentMethod.Check => "Cheque", _ => "Otro" }),
+                ReportCell.Text(x.Manual.Reference), ReportCell.Text(Date(x.Manual.PaidOn))]))
+            .ToList();
         return new(PayrollReport.Payments, title, r.Filters,
         [
             new("Resumen", ["Concepto", "Personas", "Importe"], summary),
             new("Por banco receptor y tipo de pago", ["Banco", "Tipo de pago", "Pagos", "Importe"], byBank),
             new("Pendientes y rechazados", ["Empleado", "Importe", "Motivo"], pending),
+            new("Pagados fuera de archivo", ["Empleado", "Importe", "Forma", "Referencia", "Fecha"], manualRows),
         ], p.Period.Status == PeriodStatus.Paid ? null : "El período aún no se paga: aún no hay archivos.");
     }
 

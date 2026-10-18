@@ -1,16 +1,21 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
+import { MatError, MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiError } from '@platform/api-client';
-import { confirm, openSidePanel } from '@platform/ui';
-import type { GeneratedPaymentFilesDto, PaymentBatchDto, PaymentBatchRowDto, PaymentFile, PaymentState } from '../data/api-types';
-import { money, PAYMENT_STATE } from '../data/payroll-labels';
+import { type DateKey, formatDateKey, todayKey } from '@platform/shared';
+import { applyServerErrors, confirm, errorMessage, openSidePanel } from '@platform/ui';
+import type { GeneratedPaymentFilesDto, PaymentBatchDto, PaymentBatchRowDto, PaymentFile, PaymentLineDto, PaymentState } from '../data/api-types';
+import { CatalogsRepository } from '../data/repositories';
+import { MANUAL_PAYMENT_METHODS, money, PAYMENT_STATE } from '../data/payroll-labels';
 import { PaymentsRepository } from '../data/payroll-repositories';
+import { AccountPanel, type AccountPanelData } from '../staff/account-panel';
 import { PayingAccountPanel } from './paying-account-panel';
 
 export interface PaymentPanelData {
@@ -28,7 +33,7 @@ const BATCH_STATUS = { generated: 'Generado', uploaded_to_bank: 'Subido al banco
  */
 @Component({
   selector: 'app-payment-panel',
-  imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatHint, MatInput],
+  imports: [ReactiveFormsModule, MatDialogTitle, MatDialogContent, MatDialogActions, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatHint, MatError, MatInput, MatSelect, MatOption],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>Pagar · {{ data.label }}</h2>
@@ -102,6 +107,47 @@ const BATCH_STATUS = { generated: 'Generado', uploaded_to_bank: 'Subido al banco
               <span>{{ l.fullName }}</span>
               <span class="num">{{ money(l.amount) }}</span>
               <span class="pill" [class]="state[l.state!].tone">{{ state[l.state!].label }}</span>
+              @if (l.canPayManually) {
+                <button matButton type="button" class="small" (click)="addAccount(l)">Agregar cuenta</button>
+                <button matButton type="button" class="small" (click)="startManual(l)">Pagar fuera de archivo</button>
+              }
+            </div>
+            @if (manualFor() === l.lineId) {
+              <form class="reject" [formGroup]="manualForm" (ngSubmit)="recordManual(l)" novalidate>
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Forma de pago</mat-label>
+                  <mat-select formControlName="method">
+                    @for (m of methods; track m.value) {
+                      <mat-option [value]="m.value">{{ m.label }}</mat-option>
+                    }
+                  </mat-select>
+                  <mat-error>{{ msg('method') }}</mat-error>
+                </mat-form-field>
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Referencia (recibo, folio)</mat-label>
+                  <input matInput formControlName="reference" autocomplete="off" maxlength="100" />
+                  <mat-error>{{ msg('reference') }}</mat-error>
+                </mat-form-field>
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Fecha de pago</mat-label>
+                  <input matInput type="date" formControlName="paidOn" [max]="today" />
+                  <mat-error>{{ msg('paidOn') }}</mat-error>
+                </mat-form-field>
+                <button matButton="filled" type="submit" [disabled]="busy()">Registrar pago</button>
+                <button matButton type="button" (click)="manualFor.set(null)">Cancelar</button>
+              </form>
+            }
+          }
+        }
+
+        @if (manualPaid().length) {
+          <h3>Pagados fuera de archivo</h3>
+          @for (l of manualPaid(); track l.lineId) {
+            <div class="line">
+              <span>{{ l.fullName }}<span class="muted"> · {{ methodLabel(l) }}@if (l.manual?.reference) { · {{ l.manual!.reference }} } · {{ day(l.manual!.paidOn) }}</span></span>
+              <span class="num">{{ money(l.amount) }}</span>
+              <span class="pill positive">Pagado</span>
+              <button matButton type="button" class="small" (click)="undoManual(l)" [disabled]="busy()">Deshacer</button>
             </div>
           }
         }
@@ -282,13 +328,82 @@ export class PaymentPanel {
   readonly busy = signal(false);
   readonly result = signal<GeneratedPaymentFilesDto | null>(null);
   readonly rejecting = signal<string | null>(null);
+  readonly manualFor = signal<string | null>(null);
+  readonly methods = MANUAL_PAYMENT_METHODS;
+  readonly today = todayKey();
+  readonly manualForm = inject(FormBuilder).nonNullable.group({
+    method: ['cash' as 'cash' | 'check' | 'other', Validators.required],
+    reference: [''],
+    paidOn: [todayKey() as string, Validators.required],
+  });
+  private readonly banks = inject(CatalogsRepository).catalogs();
 
   /** Lines owed money that no file has paid yet (and that the file that can be generated now leaves out). */
   readonly waiting = computed(() =>
     (this.panel.value()?.lines ?? []).filter(
-      (l) => !l.inNextFile && ['card_requested', 'missing_account', 'invalid_account', 'rejected'].includes(l.state!),
+      (l) => l.canPayManually || (!l.inNextFile && ['card_requested', 'missing_account', 'invalid_account', 'rejected'].includes(l.state!)),
     ),
   );
+  readonly manualPaid = computed(() => (this.panel.value()?.lines ?? []).filter((l) => l.manual));
+
+  msg(field: 'method' | 'reference' | 'paidOn'): string | null {
+    return errorMessage(this.manualForm.get(field));
+  }
+
+  day(d: string): string {
+    return formatDateKey(d as DateKey);
+  }
+
+  methodLabel(l: PaymentLineDto): string {
+    return MANUAL_PAYMENT_METHODS.find((m) => m.value === l.manual?.method)?.label ?? '';
+  }
+
+  /** «Agregar cuenta»: the same panel as the employee's Cuentas de pago; once saved the line is Lista for the pending file. */
+  addAccount(l: PaymentLineDto): void {
+    openSidePanel<AccountPanel, AccountPanelData>(this.dialog, AccountPanel, {
+      employeeId: l.employeeId,
+      employeeName: l.fullName,
+      banks: (this.banks.value()?.banks ?? []).filter((b) => b.isActive),
+      account: null,
+    });
+  }
+
+  startManual(l: PaymentLineDto): void {
+    this.manualForm.reset({ method: 'cash', reference: '', paidOn: todayKey() });
+    this.manualFor.set(l.lineId);
+  }
+
+  async recordManual(l: PaymentLineDto): Promise<void> {
+    this.manualForm.markAllAsTouched();
+    if (this.manualForm.invalid || this.busy()) return;
+    const v = this.manualForm.getRawValue();
+    this.busy.set(true);
+    try {
+      await this.repo.recordManual(l.lineId, { method: v.method, reference: v.reference.trim() || null, paidOn: v.paidOn as DateKey });
+      this.manualFor.set(null);
+      this.snack.open(`${l.fullName}: pago fuera de archivo registrado`, undefined, { duration: 4000 });
+    } catch (e) {
+      const left = e instanceof ApiError ? applyServerErrors(this.manualForm, e) : [];
+      if (!(e instanceof ApiError) || left.length || !Object.keys(e.fieldErrors).length) {
+        this.snack.open(e instanceof ApiError ? e.message : 'No se pudo completar.', 'Cerrar');
+      }
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async undoManual(l: PaymentLineDto): Promise<void> {
+    const ok = await confirm(this.dialog, {
+      title: 'Deshacer el pago fuera de archivo',
+      body: `${l.fullName} vuelve a quedar pendiente de pago por ${money(l.amount)}.`,
+      confirm: 'Deshacer',
+    });
+    if (!ok) return;
+    await this.run(async () => {
+      await this.repo.undoManual(l.lineId);
+      this.snack.open(`${l.fullName} vuelve a quedar pendiente`, undefined, { duration: 4000 });
+    });
+  }
 
   rowState(r: PaymentBatchRowDto): PaymentState {
     return r.status as PaymentState;

@@ -2098,6 +2098,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/payment-lines/{id}/manual-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RecordManualPayment"];
+        delete: operations["UndoManualPayment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll/periods/{id}/deposit-date": {
         parameters: {
             query?: never;
@@ -3299,7 +3315,21 @@ export type components = {
             thirdPartyHolder: null | string;
         };
         /** @enum {unknown} */
-        LinePaymentState: "ready" | "card_requested" | "missing_account" | "invalid_account" | "nothing_due" | "pending" | "paid" | "rejected";
+        LinePaymentState: "ready" | "card_requested" | "missing_account" | "invalid_account" | "nothing_due" | "pending" | "paid" | "rejected" | "paid_manually";
+        ManualPaymentDto: {
+            method: components["schemas"]["ManualPaymentMethod"];
+            reference: null | string;
+            /** Format: date */
+            paidOn: DateKey;
+        };
+        /** @enum {unknown} */
+        ManualPaymentMethod: "cash" | "check" | "other";
+        ManualPaymentRequest: {
+            method: components["schemas"]["ManualPaymentMethod"];
+            reference: null | string;
+            /** Format: date */
+            paidOn: DateKey;
+        };
         MeDto: {
             /** Format: uuid */
             id: string;
@@ -3663,6 +3693,8 @@ export type components = {
             thirdPartyHolder: null | string;
             needsFrequentAccount: boolean;
             inNextFile: boolean;
+            canPayManually: boolean;
+            manual: null | components["schemas"]["ManualPaymentDto"];
         };
         /** @enum {unknown} */
         PaymentRowStatus: "ready" | "missing_account" | "invalid_account" | "pending" | "paid" | "rejected";
@@ -4716,6 +4748,9 @@ export type LineDayDto = components['schemas']['LineDayDto'];
 export type LineItemDto = components['schemas']['LineItemDto'];
 export type LinePaymentDto = components['schemas']['LinePaymentDto'];
 export type LinePaymentState = components['schemas']['LinePaymentState'];
+export type ManualPaymentDto = components['schemas']['ManualPaymentDto'];
+export type ManualPaymentMethod = components['schemas']['ManualPaymentMethod'];
+export type ManualPaymentRequest = components['schemas']['ManualPaymentRequest'];
 export type MeDto = components['schemas']['MeDto'];
 export type MeRole = components['schemas']['MeRole'];
 export type MfaCodeRequest = components['schemas']['MfaCodeRequest'];
@@ -11132,6 +11167,95 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RecordManualPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UndoManualPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {

@@ -172,7 +172,7 @@ public sealed class PayrollReportTests(ApiFactory factory) : ApiTest(factory)
         var summary = report.GetProperty("tables")[0];
         var byConcept = Rows(summary).ToDictionary(r => Text(summary, r, "Concepto"));
         var generated = Dec(batch.GetProperty("totalAmount"));
-        Assert.Equal((2, generated), ((int)Value(summary, byConcept["Pagado"], "Personas")!, Value(summary, byConcept["Pagado"], "Importe")!.Value));
+        Assert.Equal((2, generated), ((int)Value(summary, byConcept["Pagado por el banco"], "Personas")!, Value(summary, byConcept["Pagado por el banco"], "Importe")!.Value));
         var total = Value(summary, byConcept["Total neto del período"], "Importe")!.Value;
         Assert.Equal(total, generated + Value(summary, byConcept["Por pagar (sin archivo aún)"], "Importe"));
 

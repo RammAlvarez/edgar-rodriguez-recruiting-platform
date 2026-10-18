@@ -50,6 +50,7 @@ public static class PostgresEnums
         Of<Platform.Bank.Payments.BatchStatus>("batch_status"),
         Of<Platform.Bank.Payments.PaymentBatchKind>("payment_batch_kind"),
         Of<Platform.Bank.Payments.PaymentType>("payment_type"),
+        Of<Platform.Bank.Payments.ManualPaymentMethod>("manual_payment_method"),
         Of<Platform.Core.Notifications.NotificationKind>("notification_kind"),
     ];
 

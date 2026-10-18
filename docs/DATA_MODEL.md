@@ -73,7 +73,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | `core` | users, user_permissions, clients, client_contacts, client_sites, people, person_documents, person_bank_accounts, document_types, document_templates, document_template_items, banks, catalogs (zones, positions_catalog, education_levels, benefits, sources, holidays), notifications |
 | `recruiting` | job_openings, job_opening_events, job_opening_recruiters, candidates, candidate_stage_history, candidate_notes, interviews, opening_comments |
 | `payroll` | payroll_groups, positions, payroll_group_concepts, pay_concepts, employees, employee_bank_numbers, card_requests, work_schedules, attendance_records, attendance_unlocks, incidents, payroll_periods, prepayroll_lines, prepayroll_line_items |
-| `bank` | paying_accounts, payment_batches, payment_batch_rows, registration_batches, registration_batch_rows |
+| `bank` | paying_accounts, payment_batches, payment_batch_rows, manual_payments, registration_batches, registration_batch_rows |
 | `audit` | audit_log, data_access_log |
 
 ---
@@ -106,6 +106,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | `registration_bank` | `banorte`, `banregio` |
 | `document_template_scope` | `candidate`, `employee` |
 | `payment_type` | `spei` (1), `tef` (2), `baz_transfer` (3) |
+| `manual_payment_method` | `cash`, `check`, `other` — how a line was paid outside the bank files (PLAN D94) |
 | `notification_kind` | `document_expiring`, `document_uploaded`, `opening_idle`, `attendance_missing`, `period_ready`, `user_invited`, `comment_posted` |
 
 ---
@@ -818,6 +819,18 @@ payment_batch_rows(id, uid, payment_batch_id FK, line_no int, UNIQUE(payment_bat
 ```
 
 Generating a `period_payment` batch (PLAN D86): every line with an amount > 0 and a current principal account gets a row (one `decrypt_account` row in `data_access_log` per person); a row the layout refuses stays out as `invalid_account`; the rows' lines get the account snapshot and `payment_status = pending`, the others `missing_account` (null when nothing is due); the period moves to `paid` with `total_net` = Σ every line. Lines left `missing_account` / `invalid_account` / `rejected` are paid by a later `pending_payment` batch once they have an account. Marking a batch `uploaded_to_bank` sets its rows and lines to `paid` and its `registers_frequent_account` accounts to `is_frequent_account_registered`; a paid row can then be flipped to `rejected` (with a reason) and is re-included by the next `pending_payment` batch as a new row. The `frequent_accounts` kind is not used: the cuentas frecuentes file is the batch's companion (E14).
+
+`manual_payments` (PLAN D94) records a line of a **paid** period that no file can pay — `payment_status` in `missing_account`, `invalid_account` or `rejected`, amount > 0 — as paid outside the files:
+
+```
+manual_payments(id, uid, prepayroll_line_id FK UNIQUE, method manual_payment_method, reference text(100) NULL,
+                paid_on date,                       -- not before the period starts, not in the future
+                amount numeric(12,2) CHECK > 0 AND = trunc(amount, 2),   -- the line's total_net at that moment
+                previous_status payment_row_status, -- restored by «Deshacer»
+                stamps)
+```
+
+Recording sets the line's `payment_status` to `paid` (a column the paid-period freeze lets change); undoing deletes the row and puts `previous_status` back. The payment panel derives the state `paid_manually` from the row.
 
 ### 6.4 `registration_batches` / `registration_batch_rows` (alta masiva files from the card-request queue)
 

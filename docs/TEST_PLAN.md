@@ -395,8 +395,9 @@ the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a n
 27. Exports: Excel, Resumen PDF, Recibos → the Excel's totals = the grid footers.
 
 **Pay**
-28. «Pagar»: five listos (the four + supervisor), the tarjeta-en-trámite one by name, nobody «sin cuenta»; cuenta de cargo by last
-    four digits.
+28. «Pagar»: five listos (the four + supervisor); E, in Baja with no account, by name as «Sin cuenta» (the baja cancelled the card
+    request, so there is no «tarjeta en trámite») with «Agregar cuenta» and «Pagar fuera de archivo» (PLAN D94: record it as cash with
+    a reference → «Pagado fuera de archivo», «Deshacer» brings it back; or add an account → Lista for the pending file); cuenta de cargo by last four digits.
 29. «Generar archivos de pago» → Pagada, nothing editable; the Azteca file (one row per payment, total = «en este archivo»)
     and the cuentas frecuentes file (only unregistered accounts) download.
 30. «Marcar subido al banco» → rows Pagado; mark the third-party row Rechazado with motivo; fecha de depósito.

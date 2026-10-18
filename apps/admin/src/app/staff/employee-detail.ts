@@ -139,6 +139,10 @@ import { StatusPanel, type StatusPanelData } from './status-panel';
                     }
                   </mat-menu>
                 </p>
+              } @else {
+                <p class="banner warn">
+                  Sin cuenta principal. Si se le debe un pago, agrega una cuenta aquí o regístralo como «Pagar fuera de archivo» en Prenómina → Pagar.
+                </p>
               }
             }
             <div class="list-card">

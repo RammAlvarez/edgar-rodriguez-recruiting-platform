@@ -24,6 +24,7 @@ import type {
   EmployeePickDto,
   EmployeeRequest,
   GeneratedPaymentFilesDto,
+  ManualPaymentRequest,
   GeneratedRegistrationDto,
   PayingAccountDto,
   PayrollReport,
@@ -333,6 +334,15 @@ export class PaymentsRepository {
 
   reject(rowId: string, reason: string): Promise<PaymentBatchDto> {
     return this.api.post(`/v1/payroll/payment-batch-rows/${rowId}/reject`, { reason });
+  }
+
+  /** «Pagado fuera de archivo»: cash, cheque or another transfer for a line no file can pay. */
+  recordManual(lineId: string, body: ManualPaymentRequest): Promise<void> {
+    return this.api.post(`/v1/payroll/payment-lines/${lineId}/manual-payment`, body);
+  }
+
+  undoManual(lineId: string): Promise<void> {
+    return this.api.delete(`/v1/payroll/payment-lines/${lineId}/manual-payment`);
   }
 
   setDepositDate(periodId: string, date: string | null): Promise<void> {

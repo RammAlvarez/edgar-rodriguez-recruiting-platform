@@ -37,6 +37,9 @@ public static class PaymentEndpoints
     public const string NotPaid = "El período aún no se paga.";
     public const string AlreadyUploaded = "El archivo ya está marcado como subido al banco.";
     public const string NotUploaded = "Marca primero el archivo como subido al banco.";
+    public const string LineNotFound = "La línea no existe o no es de tus clientes.";
+    public const string NotOwed = "Esta línea ya no está pendiente de pago.";
+    public const string NoManualPayment = "Esta línea no tiene un pago fuera de archivo.";
     public const string RowNotPaid = "Solo se rechaza un pago que el banco recibió.";
     public const string NoFrequentFile = "Este archivo no llevó cuentas frecuentes.";
     public const string PayingAccountNeedsAllClients = "Solo un administrador con Archivos de pago para todos los clientes cambia la cuenta de cargo.";
@@ -268,6 +271,64 @@ public static class PaymentEndpoints
             .WithName("RejectPaymentRow").Produces<PaymentBatchDto>().ProducesValidationProblem().ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, PrepayrollEndpoints.Tag).RequireAccess(Access);
 
+        // «Pagado fuera de archivo»: cash, cheque or another transfer for a line no file can pay (no account, an invalid one, or
+        // rejected by the bank). Only once the period is paid; the line becomes Pagado and the payment is recorded.
+        g.MapPost("/payment-lines/{id:guid}/manual-payment", async (Guid id, ManualPaymentRequest r, DbContext db, RequestContext ctx, IClock clock,
+                CancellationToken ct) =>
+            {
+                var line = await db.Set<PrepayrollLine>().SingleOrDefaultAsync(l => l.Uid == id, ct);
+                if (line is null || await Period(db, ctx, line.PayrollPeriodId, ct) is not { } period)
+                    return ApiResults.NotFound(LineNotFound);
+                if (period.Status != PeriodStatus.Paid)
+                    return ApiResults.Conflict(NotPaid);
+                var errors = new Dictionary<string, string[]>();
+                if (!Enum.IsDefined(r.Method))
+                    errors["method"] = ["Elige cómo se pagó."];
+                var reference = r.Reference.Clean();
+                if (reference is { Length: > 100 })
+                    errors["reference"] = ["La referencia admite hasta 100 caracteres."];
+                if (r.PaidOn < period.StartDate)
+                    errors["paidOn"] = ["El pago no puede ser antes del período."];
+                else if (r.PaidOn > clock.Today())
+                    errors["paidOn"] = ["La fecha de pago no puede ser futura."];
+                if (errors.Count > 0)
+                    return ApiResults.Validation(errors);
+                if (await db.Set<ManualPayment>().AnyAsync(m => m.PrepayrollLineId == id, ct)
+                    || line.TotalNet <= 0 || line.PaymentStatus is not { } status || !PaymentFiles.Unpaid.Contains(status))
+                    return ApiResults.Conflict(NotOwed);
+                db.Add(new ManualPayment
+                {
+                    PrepayrollLineId = id,
+                    Method = r.Method,
+                    Reference = reference,
+                    PaidOn = r.PaidOn,
+                    Amount = line.TotalNet,
+                    PreviousStatus = status,
+                });
+                line.PaymentStatus = PaymentRowStatus.Paid;
+                await db.SaveChangesAsync(ct);
+                return TypedResults.NoContent();
+            })
+            .WithName("RecordManualPayment").Produces(StatusCodes.Status204NoContent).ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
+            .Invalidates(Tag, PrepayrollEndpoints.Tag).RequireAccess(Access);
+
+        // A wrong entry: the line goes back to what it was and is owed again.
+        g.MapDelete("/payment-lines/{id:guid}/manual-payment", async (Guid id, DbContext db, RequestContext ctx, CancellationToken ct) =>
+            {
+                var line = await db.Set<PrepayrollLine>().SingleOrDefaultAsync(l => l.Uid == id, ct);
+                if (line is null || await Period(db, ctx, line.PayrollPeriodId, ct) is null)
+                    return ApiResults.NotFound(LineNotFound);
+                if (await db.Set<ManualPayment>().SingleOrDefaultAsync(m => m.PrepayrollLineId == id, ct) is not { } manual)
+                    return ApiResults.Conflict(NoManualPayment);
+                line.PaymentStatus = manual.PreviousStatus;
+                db.Remove(manual);
+                await db.SaveChangesAsync(ct);
+                return TypedResults.NoContent();
+            })
+            .WithName("UndoManualPayment").Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).Invalidates(Tag, PrepayrollEndpoints.Tag).RequireAccess(Access);
+
         g.MapPut("/periods/{id:guid}/deposit-date", async (Guid id, DepositDateRequest r, DbContext db, RequestContext ctx, CancellationToken ct) =>
             {
                 if (await Period(db, ctx, id, ct) is null)
@@ -381,7 +442,8 @@ public static class PaymentEndpoints
                     : (x.AccountBank?.Name, x.Account?.AccountLast4, x.Account?.AccountType, x.Account?.HolderName);
                 return new PaymentLineDto(x.Entity.Uid, x.Entity.EmployeeId, x.FullName, x.Entity.TotalNet, PaymentFiles.State(x, period.Status), bank,
                     last4, type, holder is not null && !Platform.Core.People.BankAccounts.SameName(holder, x.FullName) ? holder : null,
-                    next.Contains(x.Entity.Uid) && !x.Account!.IsFrequentAccountRegistered, next.Contains(x.Entity.Uid));
+                    next.Contains(x.Entity.Uid) && !x.Account!.IsFrequentAccountRegistered, next.Contains(x.Entity.Uid),
+                    PaymentFiles.CanPayManually(x, period.Status), x.Manual is { } m ? new ManualPaymentDto(m.Method, m.Reference, m.PaidOn) : null);
             })
             .ToList();
         var totals = dtos.GroupBy(d => d.State).OrderBy(g => g.Key)

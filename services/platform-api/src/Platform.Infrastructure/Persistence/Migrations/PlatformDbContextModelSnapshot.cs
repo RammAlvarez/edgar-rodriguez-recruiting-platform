@@ -52,6 +52,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "gender", new[] { "male", "female", "unspecified" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "interview_outcome", new[] { "pending", "attended", "no_show" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "item_source", new[] { "attendance", "incident", "position", "manual" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "manual_payment_method", new[] { "cash", "check", "other" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "notification_kind", new[] { "document_expiring", "document_uploaded", "opening_idle", "attendance_missing", "period_in_review", "user_invited" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_event_kind", new[] { "created", "edited", "status_changed", "recruiter_assigned", "recruiter_removed", "lead_changed" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_priority", new[] { "high", "medium", "low" });
@@ -68,6 +69,82 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Platform.Bank.Payments.ManualPayment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<ManualPaymentMethod>("Method")
+                        .HasColumnType("platform.manual_payment_method")
+                        .HasColumnName("method");
+
+                    b.Property<DateOnly>("PaidOn")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_on");
+
+                    b.Property<Guid>("PrepayrollLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("prepayroll_line_id");
+
+                    b.Property<PaymentRowStatus>("PreviousStatus")
+                        .HasColumnType("platform.payment_row_status")
+                        .HasColumnName("previous_status");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<Guid>("Uid")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_manual_payments");
+
+                    b.HasAlternateKey("Uid")
+                        .HasName("ak_manual_payments_uid");
+
+                    b.HasIndex("PrepayrollLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_manual_payments_prepayroll_line_id");
+
+                    b.ToTable("manual_payments", "platform", t =>
+                        {
+                            t.HasCheckConstraint("ck_manual_payments_amount", "amount > 0 AND amount = trunc(amount, 2)");
+                        });
+                });
 
             modelBuilder.Entity("Platform.Bank.Payments.PayingAccount", b =>
                 {
@@ -4451,6 +4528,17 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_opening_comments_body", "length(body) BETWEEN 1 AND 2000");
                         });
+                });
+
+            modelBuilder.Entity("Platform.Bank.Payments.ManualPayment", b =>
+                {
+                    b.HasOne("Platform.Payroll.Prepayroll.PrepayrollLine", null)
+                        .WithMany()
+                        .HasForeignKey("PrepayrollLineId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_manual_payments_prepayroll_lines_prepayroll_line_id");
                 });
 
             modelBuilder.Entity("Platform.Bank.Payments.PayingAccount", b =>

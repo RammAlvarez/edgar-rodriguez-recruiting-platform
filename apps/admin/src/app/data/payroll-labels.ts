@@ -1,4 +1,4 @@
-import type { AttendanceStatus, BankAccountType, EmployeeStatus, PaymentState, PeriodStatus, PeriodType, RegistrationBank } from './api-types';
+import type { AttendanceStatus, BankAccountType, EmployeeStatus, LinePaymentState, ManualPaymentMethod, PaymentState, PeriodStatus, PeriodType, RegistrationBank } from './api-types';
 
 /** Status pill text and tone (design system): Activo neutral-positive, Baja negative, the rest neutral. */
 export const EMPLOYEE_STATUS: Record<EmployeeStatus, { label: string; tone: '' | 'positive' | 'negative' }> = {
@@ -89,7 +89,7 @@ export const PERIOD_STATUS: Record<PeriodStatus, { label: string; tone: '' | 'po
 };
 
 /** «Estado de pago» (SPEC §5.5): before payment, whether the line can be paid; once paid, what its files did with it. */
-export const PAYMENT_STATE: Record<PaymentState, { label: string; tone: '' | 'positive' | 'negative' }> = {
+export const PAYMENT_STATE: Record<PaymentState | LinePaymentState, { label: string; tone: '' | 'positive' | 'negative' }> = {
   ready: { label: 'Lista', tone: 'positive' },
   card_requested: { label: 'Tarjeta en trámite', tone: '' },
   missing_account: { label: 'Sin cuenta', tone: 'negative' },
@@ -98,6 +98,7 @@ export const PAYMENT_STATE: Record<PaymentState, { label: string; tone: '' | 'po
   pending: { label: 'En archivo', tone: '' },
   paid: { label: 'Pagado', tone: 'positive' },
   rejected: { label: 'Rechazado', tone: 'negative' },
+  paid_manually: { label: 'Pagado fuera de archivo', tone: 'positive' },
 };
 
 /** The concepts an incidencia may carry (IncidentEndpoints.Concepts): hour ones take hours, the rest an amount. */

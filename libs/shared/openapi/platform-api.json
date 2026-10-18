@@ -8479,6 +8479,112 @@
         }
       }
     },
+    "/v1/payroll/payment-lines/{id}/manual-payment": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "RecordManualPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Payments"
+        ],
+        "operationId": "UndoManualPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/payroll/periods/{id}/deposit-date": {
       "put": {
         "tags": [
@@ -13230,8 +13336,62 @@
           "nothing_due",
           "pending",
           "paid",
-          "rejected"
+          "rejected",
+          "paid_manually"
         ]
+      },
+      "ManualPaymentDto": {
+        "required": [
+          "method",
+          "reference",
+          "paidOn"
+        ],
+        "type": "object",
+        "properties": {
+          "method": {
+            "$ref": "#/components/schemas/ManualPaymentMethod"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paidOn": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ManualPaymentMethod": {
+        "enum": [
+          "cash",
+          "check",
+          "other"
+        ]
+      },
+      "ManualPaymentRequest": {
+        "required": [
+          "method",
+          "reference",
+          "paidOn"
+        ],
+        "type": "object",
+        "properties": {
+          "method": {
+            "$ref": "#/components/schemas/ManualPaymentMethod"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paidOn": {
+            "type": "string",
+            "format": "date"
+          }
+        }
       },
       "MeDto": {
         "required": [
@@ -14698,7 +14858,9 @@
           "accountType",
           "thirdPartyHolder",
           "needsFrequentAccount",
-          "inNextFile"
+          "inNextFile",
+          "canPayManually",
+          "manual"
         ],
         "type": "object",
         "properties": {
@@ -14754,6 +14916,19 @@
           },
           "inNextFile": {
             "type": "boolean"
+          },
+          "canPayManually": {
+            "type": "boolean"
+          },
+          "manual": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ManualPaymentDto"
+              }
+            ]
           }
         }
       },

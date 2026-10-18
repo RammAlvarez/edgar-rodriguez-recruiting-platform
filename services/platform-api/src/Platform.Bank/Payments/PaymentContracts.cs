@@ -19,14 +19,23 @@ public enum LinePaymentState
     Pending,
     Paid,
     Rejected,
+    PaidManually,
 }
 
 /// <summary>
 /// A line in the payment panel: the amount and the account it goes to (bank and last four; never the number).
-/// <see cref="InNextFile"/> = the file that can be generated now would pay it.
+/// <see cref="InNextFile"/> = the file that can be generated now would pay it; <see cref="CanPayManually"/> = it can be recorded as
+/// paid outside the files (the period is paid and the line is still owed).
 /// </summary>
 public sealed record PaymentLineDto(Guid LineId, Guid EmployeeId, string FullName, decimal Amount, LinePaymentState State, string? Bank,
-    string? Last4, BankAccountType? AccountType, string? ThirdPartyHolder, bool NeedsFrequentAccount, bool InNextFile);
+    string? Last4, BankAccountType? AccountType, string? ThirdPartyHolder, bool NeedsFrequentAccount, bool InNextFile,
+    bool CanPayManually, ManualPaymentDto? Manual);
+
+/// <summary>How, when and with what reference a line was paid outside the bank files.</summary>
+public sealed record ManualPaymentDto(ManualPaymentMethod Method, string? Reference, DateOnly PaidOn);
+
+/// <summary>«Pagado fuera de archivo»: cash, cheque or another transfer, on the date it was paid.</summary>
+public sealed record ManualPaymentRequest(ManualPaymentMethod Method, string? Reference, DateOnly PaidOn);
 
 public sealed record PaymentStateTotalDto(LinePaymentState State, int Lines, decimal Amount);
 
