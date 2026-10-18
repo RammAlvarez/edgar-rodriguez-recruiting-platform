@@ -146,3 +146,265 @@ Data: `npm run seed` (S12 adds nothing new to the seed but the notifications its
 
 ### Performance and security (S12 hardening)
 500 employees in one group: the prenómina grid, the attendance day, Personal, the payment panel and Costo de nómina each answer in under 2 s on the local stack; findings of the security pass written into the run record.
+
+## 4. Browser checks across the platform
+
+Three runs that cross every slice, run before a release (or after a change that touches more than one slice), each written
+up like the slice runs: `docs/tests/YYYY-MM-DD-NN-happy.md`, `-forms.md`, `-e2e.md`. A failed expectation is a `D-NNN`.
+
+Common data: `npm run seed` on a **fresh database** (as S9–S11): ECOVIA Semana 38 *En revisión*, 39 paid and uploaded, 40
+paid with its file not uploaded, 41 in review; the HEB Cliente user, the ECOVIA supervisor, the cuenta de cargo. Emails go to
+the API log; email links come from the Auth emulator (S5). Jobs are fired by hand, each one safe to repeat (HANDOFF §1):
+
+```
+curl -X POST -H "X-Internal-Secret: $INTERNAL_SECRET" http://localhost:5080/internal/jobs/<name>
+# attendance-lock · period-roll · status-roll · document-expiry · notifications-digest
+```
+
+Quoted text is the exact UI text. Where a step says «the field's error», the run records the message shown; it must be in
+Spanish, name the problem, and sit under the field (never a raw status code or an English message).
+
+### 4.1 HAPPY — one pass over every process
+
+One person, one sitting, about 90 minutes. The order follows the information: admin creates, the candidate answers, the
+client sees, then a short admin close-out that reads what the other two apps wrote. The payroll half runs on the seeded
+ECOVIA weeks so it does not wait on the new hire.
+
+**A. Admin app (owner, edgar@local.test)**
+1. *Entrar* with a wrong password → the error line; with the owner → home. Every sidebar item opens a screen (*Inicio* may
+   still be the «próxima entrega» placeholder); «Actualizar» is in the toolbar.
+2. **Users.** *Usuarios* → «Invitar usuario» «Prueba Asistencia», Administrador, only *Asistencia*, «Solo para el cliente»
+   HFC → toast «Invitación enviada a …»; the API log has the password link. Open it in a private window, set the password →
+   the sidebar shows only Calendario and Asistencia. Back as the owner: the row shows the last access.
+3. **Catalogs.** *Catálogos*: add a Prestación «Vales de despensa» and a Tipo de documento «Carta de recomendación» (vigencia
+   365) → both listed; «Agregar festivos de ley» for next year adds them once.
+4. **Clients.** «Nuevo cliente» *HAPPY SA* with RFC, contacto principal and celular → «Cliente creado»; Sitios → «Nuevo
+   sitio» with zona and CP → «Sitio guardado»; Contactos → «Nuevo contacto» with an `@local.test` email → «Invitar al portal»
+   → «Con acceso al portal» and a Cliente user in *Usuarios*.
+5. **Vacante.** *Vacantes* → «Nueva vacante» HAPPY SA / Auxiliar de limpieza / 2, sueldo, prestaciones (incl. the new one),
+   documentos requeridos, «Visible en el portal del cliente» on → «Vacante creada», *Abierta*, also under the client's
+   Vacantes tab.
+6. **Recruiter.** *Reclutadores* → Mónica Soto → «Asignar vacante» HAPPY as Líder → «Ver como reclutador»: the vacante in Mis
+   vacantes → «Salir».
+7. **Candidate.** Pipeline → «Nuevo candidato» (new person, `happy.candidata@local.test`, fuente, sueldo ofrecido) → the card
+   in Nuevo, the vacante *En proceso*, the API log has «Tu postulación: …». Move to Contactado, Entrevista; Entrevistas →
+   programar with Mónica; a note with a list.
+8. **Recruiting reports.** *Reportes* → Rendimiento por reclutador shows Mónica with one more vacante; Resumen counts the new
+   candidate; Exportar Excel downloads.
+9. **Staff.** *Personal* → «Alta de empleado» in HFC with a CLABE → the detail; second «Alta de empleado» without account +
+   «Solicitar tarjeta» Banorte → «Tarjeta solicitada · Banorte». On the first: Horario (a weekly schedule), «Cambiar estatus»
+   → Vacaciones tomorrow … +2 → the pill; *Calendario* week shows it.
+10. **Attendance.** *Asistencia* today → HFC site → «Todos presentes», one Falta, Guardar → «n/n». Yesterday → «Cambiar» one
+    person with a reason → the new value.
+11. **Incidencias.** «Nueva incidencia» Tiempo extra doble 2 h on an ECOVIA employee of Semana 41, and a Descuento → both
+    listed.
+12. **Prenómina.** ECOVIA Semana 41 → the incidencia's row moved; a SUELDO cell → desglose → «Ajustar celda» with a reason →
+    the total moves by the difference; Excel downloads. Semana 38 → «Pagar» → «Generar archivos de pago» → Pagada; the Azteca
+    file downloads; «Marcar subido al banco».
+13. **Cards.** Tarjetas → Por solicitar → Banorte → the person of step 9 → sucursal → «Generar alta» → file; «Marcar subido» →
+    «Tarjeta recibida» with a valid 16-digit number → their principal account.
+14. **Payroll clients.** *Clientes (nómina)* → HAPPY SA → «Nuevo grupo de nómina» (semanal, corte domingo) → a puesto with
+    tarifas → «Tarifas guardadas»; Bonos y conceptos → «Conceptos guardados».
+15. **Payroll reports.** Costo de nómina ECOVIA 38–41 → Semana 38 $334,654.83 and the Semana 41 total equal to step 12's grid;
+    Rotación shows step 9's alta; Tarjetas y cuentas the card of step 13.
+16. **Bell and MFA.** The bell has the unread items (invitation, document, period in review); open one → read. Mi cuenta →
+    activar verificación en dos pasos → recovery codes; sign out and in → the code is asked.
+
+**B. Candidates app (:4301)**
+17. Link for `happy.candidata@local.test` → aviso de privacidad → accept → Mi perfil.
+18. Mi perfil: CURP, RFC, NSS, celular, address → Guardar; «Agregar mi cuenta» a debit card → «•••• NNNN».
+19. Mis documentos: upload INE (PDF) and comprobante (JPG) → *Entregado*.
+20. Mi postulación: the vacante, the tracker on the current etapa, Mónica's contact.
+
+**C. Clients app (:4302)**
+21. Link for the HAPPY SA contact of step 4 → Mis vacantes: Auxiliar de limpieza, no sueldo / Sexo / Edad.
+22. The vacante: the candidate (initials until Apto); post a comment → in the thread and in Comentarios.
+
+**D. Admin close-out (owner)**
+23. The candidate detail shows the CURP / birth date from step 18 and the card; the documents *Entregado* → Validar both;
+    the bell has «documento subido»; «Comentarios del cliente» has step 22's comment.
+24. Move to Apto → the client sees the full name and documentos % (reload :4302); move to Contratado with today's fecha de
+    ingreso → «1 de 2 cubiertas»; «Convertir en empleado» into HAPPY SA's group → the bank pre-filled from step 18 →
+    «Ver empleado».
+25. 390 px: one screen of each app (Prenómina, Mi perfil, the client's vacante) has no page-wide horizontal scroll.
+
+### 4.2 FORMS — stress test of every form
+
+Run each form below against the **checklist**, then the form's own rules. Record per form: pass, or the `D-NNN`.
+
+**Checklist (every form)**
+- a. Submit empty → each required field shows its error and nothing is sent (Network: no request).
+- b. Max length: type exactly the limit → saved; one more → «Admite hasta N caracteres.» or blocked at N.
+- c. Whitespace only in required text → refused (not saved as blank); leading/trailing spaces trimmed on save.
+- d. Accents, ñ, `&`, apostrophes (`O'Brien`), emoji and `<script>alert(1)</script>` → stored and shown as typed, never run.
+- e. Double-click / Enter twice on the submit → one row, one toast.
+- f. Cancelar / Escape / clicking outside after typing → nothing saved; reopen → previous values.
+- g. Edit → reopen → the saved values, including selects, dates, toggles and money (`1234.5` shown as `$1,234.50`).
+- h. Money fields: `-1`, `1e3`, `1,234.56`, `12345678901` (11 integer digits), `1.234` → «Introduce un importe válido, por
+  ejemplo 1234.56.» (or the field's server message); `0` where only > 0 is valid.
+- i. Dates: a date before a required start, end before start, 29/02 of a non-leap year typed by hand.
+- j. Server down mid-form (stop `npm run api`, submit) → an error message, the panel stays open with the values; start it again
+  and submit → saved once.
+- k. 390 px: the panel fits, the keyboard does not hide the submit, errors readable.
+- l. A second tab edits the same record first → the later save shows the server's answer, not a silent overwrite of unrelated
+  fields.
+
+**Admin app**
+| Form | Where | Specific checks (on top of the checklist) |
+|---|---|---|
+| Entrar | `/entrar` | bad email → «Introduce un correo válido.»; empty → «El correo es obligatorio.» / «La contraseña es obligatoria.»; wrong password → «No se pudo iniciar sesión. Inténtalo de nuevo.»; «Olvidé mi contraseña» with no email → «Escribe tu correo para enviarte el enlace.», with one → «Te enviamos un enlace…» |
+| Verificación en dos pasos | account menu / `/verificacion` | wrong code → «El código no es correcto o ya se usó…»; same code twice; a used recovery code; 5 wrong codes → 15-minute wait; 7+ digits; letters |
+| Invitar / Editar usuario | Usuarios | duplicate email → «Ya existe un usuario con ese correo.»; Cliente role without client → «Elige el cliente al que pertenece el usuario.»; Reclutador with grants → none saved; change the email of an accepted user → «El usuario ya aceptó la invitación…»; desactivar → that user's next request is refused |
+| Nuevo / Editar cliente | Clientes | duplicate short name → «Ya existe un cliente con ese nombre corto.»; nombre corto 41 chars; RFC 11 and 14 chars, lowercase → «El RFC tiene 12 caracteres…»; celular 9 digits; notas 2001 chars |
+| Contacto | Cliente → Contactos | nombre 121 chars; puesto 81; invalid email; delete a contact with portal access → refused |
+| Sitio | Cliente → Sitios | duplicate name in the same client → «Este cliente ya tiene un sitio con ese nombre.» (allowed in another client); CP `6400`, `640000`, `abcde` → «El código postal tiene 5 dígitos.» |
+| Grupo de nómina | Clientes (nómina) | duplicate name → «El cliente ya tiene un grupo con ese nombre.»; horas `0`, `25`, `12.555` → «Entre 1 y 24 horas.» / «Horas con hasta 2 decimales.»; prima dominical `1.5` → «Entre 0 y 1 (0.25 = 25 %).»; festivo × `6`; no cierre time |
+| Puesto y tarifas | grupo → Puestos | costo por hora `35.71429` (5 decimals) → «Importe con hasta 4 decimales…»; «Vigentes desde» before the current rates → «La fecha debe ser posterior al inicio de las tarifas vigentes…»; a new rate on a paid period's dates → the paid period keeps its amounts |
+| Bonos y conceptos | grupo | base días `0`, `32`; importe `-5` |
+| Catálogos (each tab) and plantillas | Catálogos | duplicate clave/nombre; vigencia `-1`; «Plantilla por omisión» on two templates of the same kind → only one stays default; deactivate an item in use → still shown on old records |
+| Nueva / Editar vacante | Vacantes | vacantes `0`, `1001`, `1.5` → «Indica cuántas vacantes (1 o más).»; sueldo `10000000`; 31 otras prestaciones → «Hasta 30 prestaciones.»; one of 121 chars; años `61`; observaciones 4001; change líder to someone not assigned → «Elige el nuevo líder entre los reclutadores asignados.» |
+| Pausar / Cancelar vacante | vacante | empty motivo → «Este campo es obligatorio.»; 501 chars |
+| Asignar reclutador / Asignar vacante | vacante / Reclutadores | none selected → «Elige al menos un reclutador.»; an inactive recruiter not offered; two líderes → «Una vacante tiene un solo líder.» |
+| Nuevo candidato | pipeline | «Nombre, CURP o celular» finds an existing person → «Usar esta persona»; a new person with an existing CURP or RFC → «Ya existe una persona con esa CURP o RFC.»; CURP 17 chars → «La CURP debe tener 18 caracteres…»; celular 9 → «El celular debe tener 10 dígitos.»; no vacante / fuente → «Elige la vacante.» / «Elige la fuente.»; the same person twice on the same vacante → refused |
+| Persona (datos) | candidate / employee detail | fecha de nacimiento not matching the CURP → «La fecha de nacimiento no coincide con la CURP.»; NSS 10 digits → «El NSS tiene 11 dígitos.»; «Extranjero» on → CURP rules relaxed as SPEC says |
+| Cambio de etapa | kanban drag / menu | No apto without motivo → «Indica el motivo.»; Contratado without date → «Indica la fecha de ingreso.»; date before captura → «La fecha de ingreso no puede ser anterior a la fecha de captura.»; Contratado beyond the headcount → the vacante stays *Cubierta* and the message says so |
+| Nota | candidate → Notas | empty → «Escribe la nota.»; 20 001 chars; pasted Word/HTML → formatting kept, scripts dropped |
+| Entrevista | candidate → Entrevistas | no fecha → «Indica la fecha y hora.»; interviewer outside the team → «Elige un entrevistador del equipo.»; a date in the past |
+| Documentos (subir, validar, rechazar) | candidate / employee detail | `.docx` → «Sube un PDF, JPG o PNG.»; 10 MB passes, 10.1 MB → «El archivo debe pesar como máximo 10 MB.»; a renamed `.exe` as `.pdf`; the same file twice → «Este archivo ya se registró.»; vencimiento before expedición; an expired one → «El documento ya está vencido; sube uno vigente.»; Rechazar without motivo → «Indica el motivo del rechazo; la persona lo verá.», 301 chars |
+| Nuevo líder (al quitar un reclutador) | Reclutadores → detail | quitar the líder of a vacante with apoyos → the dialog asks for the new líder; Cancelar keeps everything |
+| Alta de empleado | Personal | no grupo / puesto / turno / fecha → the field errors; CLABE with a wrong digit → «CLABE inválida: el dígito verificador no coincide.»; a CLABE of another bank → «La CLABE es de otro banco (…)»; card with a wrong digit → «Número de tarjeta inválido…»; no account and no «Solicitar tarjeta» → allowed, listed as «Solicitar tarjeta» |
+| Agregar cuenta | employee → Cuentas | titular 41 chars, alias 61; second principal → «El empleado ya tiene cuenta principal…» unless «Hacerla la cuenta principal» is checked; 11 accounts in an hour → 429 (bank-account limit 10/h) |
+| Asignación (puesto, tarifas) | employee detail | SD and costo por hora as in Puesto; change of group mid-period |
+| Horario | employee → Horario | salida before entrada; a one-off date without sitio; more than 42 days in Calendario → «Consulta como máximo 42 días.» |
+| Cambiar estatus | employee header | Vacaciones without fin → «Indica la fecha de fin.»; end before start; Baja without motivo → «Elige el motivo de la baja.» or without «Confirmo la baja…»; a Baja on a paid date → refused; Reactivar / Reingreso |
+| Captura de asistencia | Asistencia | Incompleto without hours; hours `25`, `-1`; Guardar twice; two people saving the same site and day in two tabs → both captures kept, no 500 (D-013) |
+| Cambiar (desbloqueo) | Asistencia, closed day | no motivo → «Indica el motivo del cambio.»; as supervisor@local.test → «Solo un administrador con Asistencia para todos los clientes desbloquea días cerrados.» (or no «Cambiar»); a date of a paid period → «El período de ese día ya se pagó…» |
+| Nueva incidencia | Incidencias | no tipo → «Elige el tipo de incidencia.»; horas `0`, `169`, `1.234` → «Escribe las horas (más de 0, hasta 168…)»; importe `0` → «Escribe un importe mayor que cero…»; a date outside the period / of a paid period; an employee of another group |
+| Ajustar celda / comentarios | Prenómina → desglose | no motivo → «Escribe el motivo del ajuste.»; the same amount → «La celda ya tiene ese importe.»; `12.345` → «Escribe un importe con hasta dos decimales.»; on a Pagada period → no edit |
+| Cuenta de cargo | Prenómina → Pagar | number empty → «Escribe la cuenta de cargo.»; nombre 81, titular 41 chars; RFC 11 chars |
+| Pagos (rechazo, fecha de depósito) | payment panel | Rechazado without motivo / 201 chars → «Escribe el motivo del rechazo (hasta 200 caracteres).»; deposit date before the period |
+| Tarjetas (alta, recibida) | Tarjetas | sucursal `1234` → «Escribe la sucursal Banorte (5 dígitos)…»; recibida with 15 digits or a wrong check digit; a person without CURP/RFC → preview lists the issue and blocks «Generar alta» |
+| Report filters | Reportes, Reportes de nómina | Desde after Hasta; a 5-year range; a client with no data → empty state, exports still open |
+
+**Candidates app**
+| Form | Specific checks |
+|---|---|
+| Entrar (email link) | empty / invalid email messages; an unknown email → the same confirmation (no account disclosure); an expired or reused link → «Usar otro correo»; a link opened in another browser asks for the email |
+| Aviso de privacidad | «Continuar» disabled until the box is checked; «Salir» signs out; typing `/perfil` before accepting → back to the aviso |
+| Mi perfil | CURP / RFC / NSS / celular / CP rules as in Persona; birth date vs CURP; 31 saves in 10 minutes → 429 and the screen says to wait (profile limit 30/10 min) |
+| Cuenta para tu pago | the account rules of Agregar cuenta; «Cambiar cuenta» keeps one principal |
+| Mis documentos | the document checks above; a phone photo (HEIC → refused, JPG → ok) at 390 px through the file picker |
+
+**Clients app**
+| Form | Specific checks |
+|---|---|
+| Entrar (email link) | as the Candidates app; a candidate's email → «Sin acceso» |
+| Comentario | empty → refused; 2000 chars ok, 2001 → refused; after sending, the box is empty and **not** red (D-009); 31 comments in an hour → 429 (client comments 30/h) |
+
+Rate limits other than those above are covered by `RateLimitTests`; to reach one by hand, lower its `RATE_LIMIT_*` in `.env`
+for the run as in run 12, and put it back.
+
+### 4.3 E2E — one week of work
+
+**Why the week is replayed.** The API has no adjustable clock (`SystemClock`), and a day locks at its group's *Cierre de
+asistencia* time; past days change only through «Cambiar» with a reason (D83). So the run builds a new client on day 0 and
+replays **the last complete week** of its new group day by day, using the unlock path for each past day, then works the
+current week live. Every job is fired by hand after the day it belongs to. One sitting of about four hours, or split by
+day with the run record noting where it stopped.
+
+Notation: **L0** = the Monday of the last complete week (Lunes–Domingo), **D0** = today. Write the actual dates at the top of
+the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a new supervisor created on Día 0.
+
+**Día 0 — setup (D0, live)**
+1. *Catálogos*: a puesto «Operador de limpieza» if missing.
+2. *Clientes* → «Nuevo cliente» *E2E LIMPIEZA* with contacto principal (`e2e.cliente@local.test`), a sitio *Planta Norte* in
+   a zona → «Invitar al portal».
+3. *Clientes (nómina)* → E2E LIMPIEZA → grupo «OPERACIÓN» semanal, corte domingo, 8 h, cierre 23:59, divisor 6, prima 0.25,
+   festivo × 2. Puestos: OPERADOR (SD bolsillo 300.00, SD IMSS 278.80, costo por hora 37.50, vigentes desde L0 − 7) and
+   SUPERVISOR (400.00 / 278.80 / 50.00). Round rates so the run record can work one person's week by hand.
+4. *Usuarios* → invite «Supervisor E2E», Administrador, only Asistencia, «Solo para el cliente» E2E LIMPIEZA; set the password.
+5. *Personal* → six «Alta de empleado» in OPERACIÓN with fecha de ingreso L0 − 7: four OPERADOR with accounts (one CLABE, one
+   Banorte card, one Azteca own account, one paid to a third party as titular), one SUPERVISOR with a CLABE, and one OPERADOR
+   **without account** + «Solicitar tarjeta» Banorte (CURP, RFC, address, phone, birth captured). Horario lunes–sábado,
+   domingo descanso, at Planta Norte.
+6. Expected: Personal lists the six; Calendario week of L0 shows them; Tarjetas → Por solicitar has one Banorte request.
+
+**Lunes (L0, via unlock)** — *Asistencia* → L0 → Planta Norte → «Cambiar» per person, motivo «E2E captura L0»:
+7. All present. Recruiting starts: *Vacantes* → «Nueva vacante» E2E LIMPIEZA / Operador de limpieza / 2, líder Mónica, visible
+   in the portal (the vacante lives on D0; the week's story continues on it).
+
+**Martes (L0+1)**
+8. Five present, one Falta (operador A). Status: operador B «Cambiar estatus» → Vacaciones L0+2 … L0+3 → those days show
+   Vacaciones locked in Asistencia.
+9. Mónica (her own sign-in) captures three candidates on the vacante: one new person with `e2e.c1@local.test`, one existing
+   person found by CURP, one that will be discarded.
+
+**Miércoles (L0+2)**
+10. Present except operador B (Vacaciones, read-only). Operador C Incompleto 5 h.
+11. Mónica: c1 → Contactado → Entrevista (programar for D0+1); the third → Descartado with motivo.
+12. Candidates app as c1: aviso → Mi perfil complete → Mis documentos: INE, comprobante, CURP.
+
+**Jueves (L0+3)**
+13. Present; operador D Incompleto 10 h with 2 h extra in the unlock form. Incidencia: Tiempo extra doble 2 h for operador D on L0+3.
+14. Operador E: «Cambiar estatus» → Baja on L0+3, motivo, «Confirmo la baja…» → L0+4 onward locked as Baja.
+15. Clients app as `e2e.cliente@local.test`: the vacante with c1 as initials; a comment «¿Pueden venir el lunes?».
+
+**Viernes (L0+4)**
+16. Present (E is Baja). Incidencia: Descuento 150.00 for operador A (uniforme).
+17. Admin: c1's documents → Validar two, Rechazar one with motivo → the candidate sees the rejection and uploads again → Validar.
+    Reply to the client in «Comentarios del cliente» is visible in the portal thread.
+
+**Sábado (L0+5)**
+18. Present; operador C Descanso laborado instead of Sábado → check the expected rule on the row.
+
+**Domingo (L0+6)**
+19. All Descanso except the supervisor: Descanso laborado (prima dominical). If L0…L0+6 contains an LFT festivo, one person
+    works it (Festivo laborado ×2) and another rests it.
+
+**Lunes siguiente — close the week**
+20. Fire `attendance-lock` → the period of L0 reads *En revisión*; the bell has «período en revisión»; days of the week show
+    the lock. If it still reads *En captura*, check the group's cierre time and fire it again.
+21. Fire `period-roll` and `status-roll` (twice each → no duplicate periods, B back to Activo once the vacation ended).
+22. Fire `document-expiry` and `notifications-digest` → the API log has one digest per user with unread items, and none on
+    the second run.
+
+**Review the prenómina**
+23. *Prenómina* → E2E LIMPIEZA OPERACIÓN, the week of L0: six lines (E with days up to the Baja), A with one Falta and the
+    Descuento, B with Vacaciones, C partial, D with tiempo extra doble, the supervisor with prima dominical.
+24. Work operador A's week by hand (SPEC §5.5, PLAN D41–D43) in the run record → equals the desglose of each cell and the row
+    total to the cent.
+25. Ajustar one cell with a motivo → the total moves by the difference; remove it → back.
+26. Rate change: OPERADOR new tarifas vigentes desde D0's Monday → the L0 week **unchanged**, the current period uses the new rate.
+27. Exports: Excel, Resumen PDF, Recibos → the Excel's totals = the grid footers.
+
+**Pay**
+28. «Pagar»: five listos (the four + supervisor), the tarjeta-en-trámite one by name, nobody «sin cuenta»; cuenta de cargo by last
+    four digits.
+29. «Generar archivos de pago» → Pagada, nothing editable; the Azteca file (one row per payment, total = «en este archivo»)
+    and the cuentas frecuentes file (only unregistered accounts) download.
+30. «Marcar subido al banco» → rows Pagado; mark the third-party row Rechazado with motivo; fecha de depósito.
+31. Tarjetas → Banorte → «Generar alta» (sucursal) → file with NOMINATIVA and no card number → «Marcar subido» → «Tarjeta
+    recibida» → principal account. Back in the week → «Archivo de pendientes» → a file with that person and the rejected
+    row only → subido.
+32. Freeze: Asistencia «Cambiar» on L0+2 → «El período de ese día ya se pagó…»; a Baja or incidencia dated in the week → refused.
+
+**Live week (D0) — the hire joins**
+33. Mónica: c1 → Apto (client sees the full name) → Contratado, fecha de ingreso D0 → «1 de 2 cubiertas»; «Convertir en
+    empleado» into OPERACIÓN (bank from the candidate's own account) → appears in Personal and in today's roster.
+34. Supervisor E2E at 390 px: sidebar Calendario + Asistencia only; Planta Norte today → capture everyone incl. c1 → Guardar;
+    yesterday → no «Cambiar»; ECOVIA is not offered.
+35. The bell (owner): «falta captura» for any site left without today's capture after the lock time; «documento por vencer»
+    if one was set to expire within the warning window in step 12.
+
+**Reports cross-check**
+36. Costo de nómina, E2E LIMPIEZA, week of L0 → one row equal to the grid's TOTAL NETO A PAGAR.
+37. Resumen de pago → the payments of steps 29–31 with the rejected-then-paid row.
+38. Incidencias → the tiempo extra doble and the Descuento, priced as in the grid.
+39. Asistencia (with «Por día») → the days of steps 7–19 exactly.
+40. Rotación → six altas at L0 − 7, the Baja of E, the alta of c1.
+41. Tarjetas y cuentas → the Banorte card received, the accounts by bank.
+42. Recruiting Reportes → Mónica: E2E vacante with one cubierta and its días para cubrir; Fuentes counts the three candidates.
+43. Excel and PDF of steps 36 and 42 open with the same figures; `audit_log` has their `export` rows.
+
+**Pass:** every step's expectation met, step 24's hand total equal to the grid, and the six reports agree with the grid and
+with each other.

@@ -17,6 +17,17 @@
 | [2026-10-16-11](2026-10-16-11-s12-go-live.md) | S12 Notifications, MFA, go-live | import gate pass; same-VM stack and restore drill pass; 500 employees under 2 s; D-013 fixed; 390 px checked |
 | [2026-10-17-12](2026-10-17-12-rate-limits.md) | Request limits (D92) | pass after one fix (blank page while waiting out a 429) |
 
+## Pre-release runs
+
+The three cross-platform checks of [TEST_PLAN §4](../TEST_PLAN.md#4-browser-checks-across-the-platform), run before each
+release. Each run is written up as `YYYY-MM-DD-NN-happy.md`, `-forms.md` or `-e2e.md` and gets a row here.
+
+| Run | Check | Result |
+|---|---|---|
+| — | 4.1 HAPPY — one pass over every process | not run yet |
+| — | 4.2 FORMS — stress test of every form | not run yet |
+| — | 4.3 E2E — one week of work | not run yet |
+
 ## Defects
 
 | ID | Found in | Description | Status |
