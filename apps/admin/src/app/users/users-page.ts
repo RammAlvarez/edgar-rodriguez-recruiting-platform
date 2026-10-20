@@ -3,9 +3,10 @@ import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltip } from '@angular/material/tooltip';
-import { openSidePanel, Session, TimestampPipe } from '@platform/ui';
+import { openSidePanel, Pager, Session, SortValue, TimestampPipe, UiPager } from '@platform/ui';
 import type { UserDto } from '../data/api-types';
 import { ROLE_LABELS } from '../data/labels';
 import { ClientsRepository, UsersRepository } from '../data/repositories';
@@ -15,7 +16,7 @@ import { UserPanel, type UserPanelData } from './user-panel';
 /** Administración → Usuarios (SPEC §6): table; a row opens «Editar usuario», the header button «Invitar usuario». */
 @Component({
   selector: 'app-users-page',
-  imports: [MatTableModule, MatButton, MatIcon, MatProgressBar, MatTooltip, TimestampPipe],
+  imports: [MatSortModule, UiPager, MatTableModule, MatButton, MatIcon, MatProgressBar, MatTooltip, TimestampPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -32,9 +33,9 @@ import { UserPanel, type UserPanelData } from './user-panel';
         <p class="form-alert" role="alert">{{ e.message }}</p>
       }
       <div class="table-card">
-        <table mat-table [dataSource]="rows()">
+        <table mat-table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)" [dataSource]="paged()">
           <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <th mat-header-cell mat-sort-header="name" *matHeaderCellDef>Nombre</th>
             <td mat-cell *matCellDef="let u">
               <strong>{{ u.displayName }}</strong>
               @if (u.id === me()?.id) {
@@ -43,19 +44,19 @@ import { UserPanel, type UserPanelData } from './user-panel';
             </td>
           </ng-container>
           <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef>Correo</th>
+            <th mat-header-cell mat-sort-header="email" *matHeaderCellDef>Correo</th>
             <td mat-cell *matCellDef="let u">{{ u.email }}</td>
           </ng-container>
           <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef>Rol</th>
+            <th mat-header-cell mat-sort-header="role" *matHeaderCellDef>Rol</th>
             <td mat-cell *matCellDef="let u">{{ roleLabel(u) }}</td>
           </ng-container>
           <ng-container matColumnDef="client">
-            <th mat-header-cell *matHeaderCellDef>Cliente</th>
+            <th mat-header-cell mat-sort-header="client" *matHeaderCellDef>Cliente</th>
             <td mat-cell *matCellDef="let u">{{ clientOf(u) }}</td>
           </ng-container>
           <ng-container matColumnDef="mfa">
-            <th mat-header-cell *matHeaderCellDef>MFA</th>
+            <th mat-header-cell mat-sort-header="mfa" *matHeaderCellDef>MFA</th>
             <td mat-cell *matCellDef="let u">
               <mat-icon fontSet="material-symbols-outlined" [matTooltip]="u.mfaRequired ? 'MFA requerido' : 'MFA opcional'">
                 {{ u.mfaRequired ? 'verified_user' : 'remove_moderator' }}
@@ -63,11 +64,11 @@ import { UserPanel, type UserPanelData } from './user-panel';
             </td>
           </ng-container>
           <ng-container matColumnDef="lastLogin">
-            <th mat-header-cell *matHeaderCellDef>Último acceso</th>
+            <th mat-header-cell mat-sort-header="lastLogin" *matHeaderCellDef>Último acceso</th>
             <td mat-cell *matCellDef="let u">{{ u.lastLoginAt ? (u.lastLoginAt | timestamp) : 'Invitación pendiente' }}</td>
           </ng-container>
           <ng-container matColumnDef="active">
-            <th mat-header-cell *matHeaderCellDef>Activo</th>
+            <th mat-header-cell mat-sort-header="active" *matHeaderCellDef>Activo</th>
             <td mat-cell *matCellDef="let u">
               <span class="pill" [class.positive]="u.isActive" [class.negative]="!u.isActive">{{ u.isActive ? 'Activo' : 'Inactivo' }}</span>
             </td>
@@ -78,6 +79,7 @@ import { UserPanel, type UserPanelData } from './user-panel';
             <td [attr.colspan]="columns.length">Sin usuarios. Los usuarios invitados aparecerán aquí.</td>
           </tr>
         </table>
+        <ui-pager [pager]="pager" [total]="rows().length" />
       </div>
     </div>
   `,
@@ -90,6 +92,17 @@ export class UsersPage {
 
   readonly columns = ['name', 'email', 'role', 'client', 'mfa', 'lastLogin', 'active'];
   readonly rows = computed(() => this.users.value() ?? []);
+  readonly sortBy: Record<string, (u: UserDto) => SortValue> = {
+    name: (u) => u.displayName,
+    email: (u) => u.email,
+    role: (u) => this.roleLabel(u),
+    client: (u) => this.clientOf(u),
+    mfa: (u) => u.mfaRequired,
+    lastLogin: (u) => u.lastLoginAt,
+    active: (u) => u.isActive,
+  };
+  readonly pager = new Pager();
+  readonly paged = computed(() => this.pager.slice(this.rows(), this.sortBy));
 
   clientOf(u: UserDto): string {
     return clientColumn(u, (id) => this.clients.value()?.find((c) => c.id === id)?.shortName ?? '—');

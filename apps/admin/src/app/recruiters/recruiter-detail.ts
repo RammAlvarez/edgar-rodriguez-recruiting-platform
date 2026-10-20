@@ -5,10 +5,11 @@ import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
-import { API_CLIENT, confirm, DateKeyPipe, openSidePanel, Session } from '@platform/ui';
+import { API_CLIENT, confirm, DateKeyPipe, openSidePanel, Pager, Session, SortValue, UiPager } from '@platform/ui';
 import type { RecruiterAssignmentDto, RecruiterDetailDto } from '../data/api-types';
 import { OPENING_STATUS } from '../data/recruiting-labels';
 import { OpeningsRepository, RecruitersRepository } from '../data/recruiting-repositories';
@@ -24,7 +25,7 @@ import { NewLeadDialog, type NewLeadData } from './new-lead-dialog';
  */
 @Component({
   selector: 'app-recruiter-detail',
-  imports: [RouterLink, MatButton, MatIcon, MatProgressBar, MatSlideToggle, MatTableModule, DateKeyPipe],
+  imports: [MatSortModule, UiPager, RouterLink, MatButton, MatIcon, MatProgressBar, MatSlideToggle, MatTableModule, DateKeyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -61,29 +62,29 @@ import { NewLeadDialog, type NewLeadData } from './new-lead-dialog';
         </div>
         <h2 class="section">Vacantes asignadas</h2>
         <div class="table-card">
-          <table mat-table [dataSource]="d.assignments">
+          <table mat-table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)" [dataSource]="pager.slice(d.assignments, sortBy)">
             <ng-container matColumnDef="opening">
-              <th mat-header-cell *matHeaderCellDef>Vacante</th>
+              <th mat-header-cell mat-sort-header="opening" *matHeaderCellDef>Vacante</th>
               <td mat-cell *matCellDef="let a"><a [routerLink]="['/vacantes', a.openingId]">{{ a.displayName }}</a></td>
             </ng-container>
             <ng-container matColumnDef="role">
-              <th mat-header-cell *matHeaderCellDef>Rol</th>
+              <th mat-header-cell mat-sort-header="role" *matHeaderCellDef>Rol</th>
               <td mat-cell *matCellDef="let a"><span class="pill" [class.positive]="a.isLead">{{ a.isLead ? 'Líder' : 'Apoyo' }}</span></td>
             </ng-container>
             <ng-container matColumnDef="assigned">
-              <th mat-header-cell *matHeaderCellDef>Fecha de asignación</th>
+              <th mat-header-cell mat-sort-header="assigned" *matHeaderCellDef>Fecha de asignación</th>
               <td mat-cell *matCellDef="let a">{{ a.assignedAt | dateKey }}</td>
             </ng-container>
             <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Estatus</th>
+              <th mat-header-cell mat-sort-header="status" *matHeaderCellDef>Estatus</th>
               <td mat-cell *matCellDef="let a"><span class="pill" [class]="statusOf(a).tone">{{ statusOf(a).label }}</span></td>
             </ng-container>
             <ng-container matColumnDef="days">
-              <th mat-header-cell *matHeaderCellDef class="num">Días abierta</th>
+              <th mat-header-cell mat-sort-header="days" *matHeaderCellDef class="num">Días abierta</th>
               <td mat-cell *matCellDef="let a" class="num">{{ a.daysOpen }}</td>
             </ng-container>
             <ng-container matColumnDef="candidates">
-              <th mat-header-cell *matHeaderCellDef class="num">Candidatos</th>
+              <th mat-header-cell mat-sort-header="candidates" *matHeaderCellDef class="num">Candidatos</th>
               <td mat-cell *matCellDef="let a" class="num">{{ a.candidates }}</td>
             </ng-container>
             <ng-container matColumnDef="actions">
@@ -101,6 +102,7 @@ import { NewLeadDialog, type NewLeadData } from './new-lead-dialog';
               <td [attr.colspan]="columns.length">Sin vacantes asignadas. Usa «Asignar vacante».</td>
             </tr>
           </table>
+          <ui-pager [pager]="pager" [total]="d.assignments.length" />
         </div>
       }
     </div>
@@ -129,6 +131,15 @@ export class RecruiterDetail {
   private readonly recruiterId = this.route.snapshot.paramMap.get('id')!;
   readonly detail = inject(RecruitersRepository).detail(() => this.recruiterId);
   readonly conversion = conversion;
+  readonly sortBy: Record<string, (a: RecruiterAssignmentDto) => SortValue> = {
+    opening: (a) => a.displayName,
+    role: (a) => a.isLead,
+    assigned: (a) => a.assignedAt,
+    status: (a) => this.statusOf(a).label,
+    days: (a) => a.daysOpen,
+    candidates: (a) => a.candidates,
+  };
+  readonly pager = new Pager();
   readonly columns = ['opening', 'role', 'assigned', 'status', 'days', 'candidates', 'actions'];
 
   /** Activo is Usuarios' field: editable here only with that grant. */

@@ -6,9 +6,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOption, MatSelect } from '@angular/material/select';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MoneyPipe, openSidePanel } from '@platform/ui';
+import { MoneyPipe, openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
 import type { CandidateDetailDto, CandidateListItemDto } from '../data/api-types';
 import { SOURCE, STAGE, STAGES, type CandidateStage } from '../data/recruiting-labels';
 import { CandidatesRepository } from '../data/recruiting-repositories';
@@ -20,7 +21,7 @@ import { CandidatePanel, type CandidatePanelData } from './candidate-panel';
  */
 @Component({
   selector: 'app-candidates-page',
-  imports: [MatTableModule, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatPrefix, MatInput, MatSelect, MatOption, MoneyPipe],
+  imports: [MatSortModule, UiPager, MatTableModule, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatPrefix, MatInput, MatSelect, MatOption, MoneyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -73,45 +74,45 @@ import { CandidatePanel, type CandidatePanelData } from './candidate-panel';
         <p class="form-alert" role="alert">{{ e.message }}</p>
       }
       <div class="table-card">
-        <table mat-table [dataSource]="rows()">
+        <table mat-table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)" [dataSource]="paged()">
           <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <th mat-header-cell mat-sort-header="name" *matHeaderCellDef>Nombre</th>
             <td mat-cell *matCellDef="let c"><strong>{{ c.fullName }}</strong></td>
           </ng-container>
           <ng-container matColumnDef="phone">
-            <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+            <th mat-header-cell mat-sort-header="phone" *matHeaderCellDef>Teléfono</th>
             <td mat-cell *matCellDef="let c">{{ c.mobilePhone ?? '—' }}</td>
           </ng-container>
           <ng-container matColumnDef="opening">
-            <th mat-header-cell *matHeaderCellDef>Vacante</th>
+            <th mat-header-cell mat-sort-header="opening" *matHeaderCellDef>Vacante</th>
             <td mat-cell *matCellDef="let c">{{ c.openingName }}</td>
           </ng-container>
           <ng-container matColumnDef="recruiter">
-            <th mat-header-cell *matHeaderCellDef>Reclutador</th>
+            <th mat-header-cell mat-sort-header="recruiter" *matHeaderCellDef>Reclutador</th>
             <td mat-cell *matCellDef="let c">{{ c.recruiterName ?? 'Sin reclutador' }}</td>
           </ng-container>
           <ng-container matColumnDef="source">
-            <th mat-header-cell *matHeaderCellDef>Fuente</th>
+            <th mat-header-cell mat-sort-header="source" *matHeaderCellDef>Fuente</th>
             <td mat-cell *matCellDef="let c">{{ sourceOf(c) }}</td>
           </ng-container>
           <ng-container matColumnDef="stage">
-            <th mat-header-cell *matHeaderCellDef>Etapa</th>
+            <th mat-header-cell mat-sort-header="stage" *matHeaderCellDef>Etapa</th>
             <td mat-cell *matCellDef="let c"><span class="pill" [class]="stageOf(c.stage).tone">{{ stageOf(c.stage).label }}</span></td>
           </ng-container>
           <ng-container matColumnDef="suitable">
-            <th mat-header-cell *matHeaderCellDef>Apto</th>
+            <th mat-header-cell mat-sort-header="suitable" *matHeaderCellDef>Apto</th>
             <td mat-cell *matCellDef="let c">{{ c.isSuitable === true ? 'Sí' : c.isSuitable === false ? 'No' : '—' }}</td>
           </ng-container>
           <ng-container matColumnDef="hired">
-            <th mat-header-cell *matHeaderCellDef>Contratado</th>
+            <th mat-header-cell mat-sort-header="hired" *matHeaderCellDef>Contratado</th>
             <td mat-cell *matCellDef="let c">{{ c.isHired ? 'Sí' : 'No' }}</td>
           </ng-container>
           <ng-container matColumnDef="days">
-            <th mat-header-cell *matHeaderCellDef class="num">Días de proceso</th>
+            <th mat-header-cell mat-sort-header="days" *matHeaderCellDef class="num">Días de proceso</th>
             <td mat-cell *matCellDef="let c" class="num">{{ c.daysInProcess }}</td>
           </ng-container>
           <ng-container matColumnDef="salary">
-            <th mat-header-cell *matHeaderCellDef class="num">Sueldo ofrecido</th>
+            <th mat-header-cell mat-sort-header="salary" *matHeaderCellDef class="num">Sueldo ofrecido</th>
             <td mat-cell *matCellDef="let c" class="num">{{ (c.offeredSalary | money) || '—' }}</td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="columns"></tr>
@@ -120,6 +121,7 @@ import { CandidatePanel, type CandidatePanelData } from './candidate-panel';
             <td [attr.colspan]="columns.length">Sin candidatos con estos filtros.</td>
           </tr>
         </table>
+        <ui-pager [pager]="pager" [total]="rows().length" />
       </div>
     </div>
   `,
@@ -155,6 +157,21 @@ export class CandidatesPage {
         (!this.recruiter() || c.recruiterName === this.recruiter()),
     );
   });
+
+  readonly sortBy: Record<string, (c: CandidateListItemDto) => SortValue> = {
+    name: (c) => c.fullName,
+    phone: (c) => c.mobilePhone,
+    opening: (c) => c.openingName,
+    recruiter: (c) => c.recruiterName,
+    source: (c) => this.sourceOf(c),
+    stage: (c) => this.stageOf(c.stage).label,
+    suitable: (c) => c.isSuitable,
+    hired: (c) => c.isHired,
+    days: (c) => c.daysInProcess,
+    salary: (c) => (c.offeredSalary == null ? null : Number(c.offeredSalary)),
+  };
+  readonly pager = new Pager();
+  readonly paged = computed(() => this.pager.slice(this.rows(), this.sortBy));
 
   stageOf(s: CandidateStage) {
     return STAGE[s];

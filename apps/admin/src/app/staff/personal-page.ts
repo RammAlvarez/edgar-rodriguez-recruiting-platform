@@ -12,7 +12,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ApiError } from '@platform/api-client';
 import { type DateKey, formatDateKey } from '@platform/shared';
-import { openSidePanel } from '@platform/ui';
+import { MatSortModule } from '@angular/material/sort';
+import { openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
 import { DateKeyPipe } from '@platform/ui/pipes';
 import type { EmployeeListItemDto, EmployeeStatus, RegistrationBank } from '../data/api-types';
 import { EMPLOYEE_STATUS, PERIOD_STATUS_LABEL, REGISTRATION_BANK } from '../data/payroll-labels';
@@ -28,7 +29,7 @@ const COMPLETE = 100;
  */
 @Component({
   selector: 'app-personal-page',
-  imports: [MatButton, MatCheckbox, MatFormField, MatLabel, MatPrefix, MatIcon, MatInput, MatMenu, MatMenuItem, MatMenuTrigger, MatProgressBar, MatSelect, MatOption, DateKeyPipe],
+  imports: [MatSortModule, UiPager, MatButton, MatCheckbox, MatFormField, MatLabel, MatPrefix, MatIcon, MatInput, MatMenu, MatMenuItem, MatMenuTrigger, MatProgressBar, MatSelect, MatOption, DateKeyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -78,12 +79,16 @@ const COMPLETE = 100;
         <p class="form-alert" role="alert">{{ e.message }}</p>
       }
       <div class="table-card">
-        <table>
+        <table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)">
           <thead>
-            <tr><th>Nombre</th><th>Cliente</th><th>Grupo de nómina</th><th>Puesto</th><th>Turno</th><th>Ingreso</th><th>Estatus</th><th>Documentos</th><th></th></tr>
+            <tr>
+              <th mat-sort-header="name">Nombre</th><th mat-sort-header="client">Cliente</th><th mat-sort-header="group">Grupo de nómina</th>
+              <th mat-sort-header="position">Puesto</th><th mat-sort-header="shift">Turno</th><th mat-sort-header="hired">Ingreso</th>
+              <th mat-sort-header="status">Estatus</th><th mat-sort-header="docs">Documentos</th><th></th>
+            </tr>
           </thead>
           <tbody>
-            @for (e of rows(); track e.id) {
+            @for (e of paged(); track e.id) {
               <tr class="clickable" (click)="open(e)">
                 <td class="name">{{ e.fullName }}</td>
                 <td>{{ e.clientName }}</td>
@@ -123,6 +128,7 @@ const COMPLETE = 100;
             }
           </tbody>
         </table>
+        <ui-pager [pager]="pager" [total]="rows().length" />
       </div>
       <p class="muted count">{{ rows().length }} empleados@if (statusFilter() !== 'terminated') { · las bajas se ven con Estatus «Baja» }</p>
     </div>
@@ -218,6 +224,19 @@ export class PersonalPage {
         (!text || e.fullName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(text)),
     );
   });
+
+  readonly sortBy: Record<string, (e: EmployeeListItemDto) => SortValue> = {
+    name: (e) => e.fullName,
+    client: (e) => e.clientName,
+    group: (e) => e.groupName,
+    position: (e) => e.positionName,
+    shift: (e) => e.shift,
+    hired: (e) => e.hiredAt,
+    status: (e) => this.status[e.status].label,
+    docs: (e) => Number(e.documentsCompleteness),
+  };
+  readonly pager = new Pager();
+  readonly paged = computed(() => this.pager.slice(this.rows(), this.sortBy));
 
   constructor() {
     // The cliente filter and «Baja» change what the API returns; the rest filters in the browser.

@@ -5,9 +5,10 @@ import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { openSidePanel } from '@platform/ui';
+import { openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
 import type { OpeningDetailDto, OpeningListItemDto } from '../data/api-types';
 import { OPENING_STATUS, PRIORITY, type OpeningStatus } from '../data/recruiting-labels';
 import { OpeningsRepository } from '../data/recruiting-repositories';
@@ -19,7 +20,7 @@ import { OpeningPanel, type OpeningPanelData } from './opening-panel';
  */
 @Component({
   selector: 'app-openings-page',
-  imports: [MatTableModule, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatSelect, MatOption],
+  imports: [MatSortModule, UiPager, MatTableModule, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatSelect, MatOption],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -69,43 +70,43 @@ import { OpeningPanel, type OpeningPanelData } from './opening-panel';
         <p class="form-alert" role="alert">{{ e.message }}</p>
       }
       <div class="table-card">
-        <table mat-table [dataSource]="rows()">
+        <table mat-table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)" [dataSource]="paged()">
           <ng-container matColumnDef="client">
-            <th mat-header-cell *matHeaderCellDef>Cliente</th>
+            <th mat-header-cell mat-sort-header="client" *matHeaderCellDef>Cliente</th>
             <td mat-cell *matCellDef="let o"><strong>{{ o.clientName }}</strong></td>
           </ng-container>
           <ng-container matColumnDef="position">
-            <th mat-header-cell *matHeaderCellDef>Puesto</th>
+            <th mat-header-cell mat-sort-header="position" *matHeaderCellDef>Puesto</th>
             <td mat-cell *matCellDef="let o">{{ positionOf(o) }}</td>
           </ng-container>
           <ng-container matColumnDef="zone">
-            <th mat-header-cell *matHeaderCellDef>Zona</th>
+            <th mat-header-cell mat-sort-header="zone" *matHeaderCellDef>Zona</th>
             <td mat-cell *matCellDef="let o">{{ o.zoneName ?? '—' }}</td>
           </ng-container>
           <ng-container matColumnDef="requested">
-            <th mat-header-cell *matHeaderCellDef class="num">Solicitadas</th>
+            <th mat-header-cell mat-sort-header="requested" *matHeaderCellDef class="num">Solicitadas</th>
             <td mat-cell *matCellDef="let o" class="num">{{ o.headcountRequested }}</td>
           </ng-container>
           <ng-container matColumnDef="hired">
-            <th mat-header-cell *matHeaderCellDef class="num">Contratados</th>
+            <th mat-header-cell mat-sort-header="hired" *matHeaderCellDef class="num">Contratados</th>
             <td mat-cell *matCellDef="let o" class="num">{{ o.hired }}</td>
           </ng-container>
           <ng-container matColumnDef="priority">
-            <th mat-header-cell *matHeaderCellDef>Prioridad</th>
+            <th mat-header-cell mat-sort-header="priority" *matHeaderCellDef>Prioridad</th>
             <td mat-cell *matCellDef="let o">{{ priorityOf(o) }}</td>
           </ng-container>
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Estatus</th>
+            <th mat-header-cell mat-sort-header="status" *matHeaderCellDef>Estatus</th>
             <td mat-cell *matCellDef="let o">
               <span class="pill" [class]="statusOf(o).tone">{{ statusOf(o).label }}</span>
             </td>
           </ng-container>
           <ng-container matColumnDef="days">
-            <th mat-header-cell *matHeaderCellDef class="num">Días abierta</th>
+            <th mat-header-cell mat-sort-header="days" *matHeaderCellDef class="num">Días abierta</th>
             <td mat-cell *matCellDef="let o" class="num">{{ o.daysOpen }}</td>
           </ng-container>
           <ng-container matColumnDef="lead">
-            <th mat-header-cell *matHeaderCellDef>Reclutador líder</th>
+            <th mat-header-cell mat-sort-header="lead" *matHeaderCellDef>Reclutador líder</th>
             <td mat-cell *matCellDef="let o">{{ o.leadRecruiterName ?? 'Sin líder' }}</td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="columns"></tr>
@@ -116,6 +117,7 @@ import { OpeningPanel, type OpeningPanelData } from './opening-panel';
             </td>
           </tr>
         </table>
+        <ui-pager [pager]="pager" [total]="rows().length" />
       </div>
     </div>
   `,
@@ -146,6 +148,20 @@ export class OpeningsPage {
         (!this.recruiter() || o.leadRecruiterName === this.recruiter()),
     ),
   );
+
+  readonly sortBy: Record<string, (o: OpeningListItemDto) => SortValue> = {
+    client: (o) => o.clientName,
+    position: (o) => this.positionOf(o),
+    zone: (o) => o.zoneName,
+    requested: (o) => o.headcountRequested,
+    hired: (o) => o.hired,
+    priority: (o) => o.priority === 'high' ? 0 : o.priority === 'medium' ? 1 : 2,
+    status: (o) => this.statusOf(o).label,
+    days: (o) => o.daysOpen,
+    lead: (o) => o.leadRecruiterName,
+  };
+  readonly pager = new Pager();
+  readonly paged = computed(() => this.pager.slice(this.rows(), this.sortBy));
 
   /** The puesto as the display name shows it: everything after "Cliente – " (keeps the date suffix of duplicates). */
   positionOf(o: OpeningListItemDto): string {

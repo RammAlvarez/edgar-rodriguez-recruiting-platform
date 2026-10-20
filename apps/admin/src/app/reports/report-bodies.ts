@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
+import { MatSortModule } from '@angular/material/sort';
+import { Pager, SortValue, UiPager } from '@platform/ui';
 import { DateKeyPipe, TimestampPipe } from '@platform/ui/pipes';
 import type {
   ClientOpeningsReportDto,
@@ -203,19 +205,19 @@ export class SummaryBody {
 /** 3 · Vacantes abiertas y envejecimiento: oldest first, candidates per etapa, «Sin actividad N días». */
 @Component({
   selector: 'app-report-open-openings',
-  imports: [TimestampPipe],
+  imports: [TimestampPipe, UiPager, MatSortModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="table-card">
-      <table>
+      <table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)">
         <thead>
           <tr>
-            <th>Vacante</th><th>Cliente</th><th>Puesto</th><th>Prioridad</th><th>Solicitadas / Contratadas</th>
-            <th class="num">Días abierta</th><th>Etapas</th><th>Último movimiento</th><th>Reclutador</th><th></th>
+            <th mat-sort-header="name">Vacante</th><th mat-sort-header="client">Cliente</th><th mat-sort-header="position">Puesto</th><th mat-sort-header="priority">Prioridad</th><th mat-sort-header="hired">Solicitadas / Contratadas</th>
+            <th class="num" mat-sort-header="days">Días abierta</th><th>Etapas</th><th mat-sort-header="last">Último movimiento</th><th mat-sort-header="lead">Reclutador</th><th></th>
           </tr>
         </thead>
         <tbody>
-          @for (o of data().openings; track o.openingId) {
+          @for (o of paged(); track o.openingId) {
             <tr class="clickable" (click)="open(o.openingId)">
               <td>{{ o.openingName }}</td>
               <td>{{ o.clientName }}</td>
@@ -244,6 +246,7 @@ export class SummaryBody {
           }
         </tbody>
       </table>
+      <ui-pager [pager]="pager" [total]="data().openings.length" />
     </div>
     <p class="muted note">«Sin actividad» marca las vacantes con más de {{ data().staleAfterDays }} días sin movimiento.</p>
   `,
@@ -258,6 +261,18 @@ export class OpenOpeningsBody {
   readonly data = input.required<OpenOpeningsReportDto>();
   readonly priority = PRIORITY;
   readonly stage = STAGE;
+  readonly sortBy: Record<string, (o: OpenOpeningsReportDto['openings'][number]) => SortValue> = {
+    name: (o) => o.openingName,
+    client: (o) => o.clientName,
+    position: (o) => o.positionName,
+    priority: (o) => o.priority === 'high' ? 0 : o.priority === 'medium' ? 1 : 2,
+    hired: (o) => o.hired,
+    days: (o) => o.daysOpen,
+    last: (o) => o.lastActivityAt,
+    lead: (o) => o.leadRecruiterName,
+  };
+  readonly pager = new Pager();
+  readonly paged = computed(() => this.pager.slice(this.data().openings, this.sortBy));
   private readonly router = inject(Router);
 
   open(id: string): void {

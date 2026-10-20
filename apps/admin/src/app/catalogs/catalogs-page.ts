@@ -4,11 +4,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ApiError } from '@platform/api-client';
-import { confirm, openSidePanel } from '@platform/ui';
+import { confirm, openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
 import type { DocumentTemplateDto } from '../data/api-types';
 import { CatalogsRepository } from '../data/repositories';
 import { CATALOGS, type CatalogDef, type Row } from './catalog-defs';
@@ -21,7 +22,7 @@ import { TemplatePanel, type TemplatePanelData } from './template-panel';
  */
 @Component({
   selector: 'app-catalogs-page',
-  imports: [MatTabGroup, MatTab, MatTableModule, MatButton, MatIconButton, MatIcon, MatProgressBar, MatTooltip],
+  imports: [MatSortModule, UiPager, MatTabGroup, MatTab, MatTableModule, MatButton, MatIconButton, MatIcon, MatProgressBar, MatTooltip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -47,17 +48,17 @@ import { TemplatePanel, type TemplatePanelData } from './template-panel';
                 </button>
               </div>
               <div class="table-card">
-                <table mat-table [dataSource]="def.rows(c)">
+                <table mat-table matSort [matSortActive]="pagers[def.key].sort().active" [matSortDirection]="pagers[def.key].sort().direction" (matSortChange)="pagers[def.key].sortChange($event)" [dataSource]="pagers[def.key].slice(def.rows(c), rowValue)">
                   @for (col of def.columns; track col.key) {
                     <ng-container [matColumnDef]="col.key">
-                      <th mat-header-cell *matHeaderCellDef [class.num]="col.numeric">{{ col.label }}</th>
+                      <th mat-header-cell [mat-sort-header]="col.key" *matHeaderCellDef [class.num]="col.numeric">{{ col.label }}</th>
                       <td mat-cell *matCellDef="let r" [class.num]="col.numeric" [class.mono]="col.key === 'code' || col.key === 'speiCode'">
                         {{ col.format ? col.format(r) : r[col.key] }}
                       </td>
                     </ng-container>
                   }
                   <ng-container matColumnDef="isActive">
-                    <th mat-header-cell *matHeaderCellDef>Estatus</th>
+                    <th mat-header-cell mat-sort-header="isActive" *matHeaderCellDef>Estatus</th>
                     <td mat-cell *matCellDef="let r"><span class="pill" [class.positive]="r.isActive">{{ r.isActive ? 'Activo' : 'Inactivo' }}</span></td>
                   </ng-container>
                   <ng-container matColumnDef="actions">
@@ -74,6 +75,8 @@ import { TemplatePanel, type TemplatePanelData } from './template-panel';
                     <td [attr.colspan]="columnsOf(def).length">Sin registros. Los que agregues aparecerán aquí.</td>
                   </tr>
                 </table>
+              <ui-pager [pager]="templatePager" [total]="c.documentTemplates.length" />
+                <ui-pager [pager]="pagers[def.key]" [total]="def.rows(c).length" />
               </div>
             </mat-tab>
           }
@@ -84,25 +87,25 @@ import { TemplatePanel, type TemplatePanelData } from './template-panel';
               </button>
             </div>
             <div class="table-card">
-              <table mat-table [dataSource]="c.documentTemplates">
+              <table mat-table matSort [matSortActive]="templatePager.sort().active" [matSortDirection]="templatePager.sort().direction" (matSortChange)="templatePager.sortChange($event)" [dataSource]="templatePager.slice(c.documentTemplates, templateSortBy)">
                 <ng-container matColumnDef="name">
-                  <th mat-header-cell *matHeaderCellDef>Plantilla</th>
+                  <th mat-header-cell mat-sort-header="name" *matHeaderCellDef>Plantilla</th>
                   <td mat-cell *matCellDef="let t">{{ t.nameEs }}</td>
                 </ng-container>
                 <ng-container matColumnDef="scope">
-                  <th mat-header-cell *matHeaderCellDef>Para</th>
+                  <th mat-header-cell mat-sort-header="scope" *matHeaderCellDef>Para</th>
                   <td mat-cell *matCellDef="let t">{{ t.scope === 'candidate' ? 'Candidatos' : 'Empleados' }}</td>
                 </ng-container>
                 <ng-container matColumnDef="required">
-                  <th mat-header-cell *matHeaderCellDef class="num">Obligatorios</th>
+                  <th mat-header-cell mat-sort-header="required" *matHeaderCellDef class="num">Obligatorios</th>
                   <td mat-cell *matCellDef="let t" class="num">{{ requiredCount(t) }}</td>
                 </ng-container>
                 <ng-container matColumnDef="optional">
-                  <th mat-header-cell *matHeaderCellDef class="num">Opcionales</th>
+                  <th mat-header-cell mat-sort-header="optional" *matHeaderCellDef class="num">Opcionales</th>
                   <td mat-cell *matCellDef="let t" class="num">{{ t.items.length - requiredCount(t) }}</td>
                 </ng-container>
                 <ng-container matColumnDef="default">
-                  <th mat-header-cell *matHeaderCellDef>Por omisión</th>
+                  <th mat-header-cell mat-sort-header="default" *matHeaderCellDef>Por omisión</th>
                   <td mat-cell *matCellDef="let t">{{ t.isDefault ? 'Sí' : 'No' }}</td>
                 </ng-container>
                 <tr mat-header-row *matHeaderRowDef="templateColumns"></tr>
@@ -133,6 +136,16 @@ export class CatalogsPage {
   private readonly snack = inject(MatSnackBar);
   readonly catalogs = this.repo.catalogs();
   readonly defs = CATALOGS;
+  readonly pagers: Record<string, Pager> = Object.fromEntries(CATALOGS.map((d) => [d.key, new Pager()]));
+  readonly rowValue = (key: string, row: Record<string, unknown>): SortValue => row[key] as SortValue;
+  readonly templatePager = new Pager();
+  readonly templateSortBy: Record<string, (t: DocumentTemplateDto) => SortValue> = {
+    name: (t) => t.nameEs,
+    scope: (t) => t.scope,
+    required: (t) => this.requiredCount(t),
+    optional: (t) => t.items.length - this.requiredCount(t),
+    default: (t) => t.isDefault,
+  };
   readonly tab = signal(0);
   readonly year = new Date().getFullYear();
   readonly templateColumns = ['name', 'scope', 'required', 'optional', 'default'];

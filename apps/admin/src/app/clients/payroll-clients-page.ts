@@ -5,9 +5,10 @@ import { MatFormField, MatLabel, MatSuffix } from '@angular/material/form-field'
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { Router } from '@angular/router';
-import { openSidePanel } from '@platform/ui';
+import { openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
 import type { ClientDetailDto, ClientListItemDto, PayrollGroupListItemDto } from '../data/api-types';
 import { PayrollGroupsRepository } from '../data/payroll-repositories';
 import { ClientsRepository } from '../data/repositories';
@@ -27,7 +28,7 @@ const NO_PROJECT: Project = { groups: [], positions: 0, employees: 0 };
  */
 @Component({
   selector: 'app-payroll-clients-page',
-  imports: [MatTableModule, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatInput, MatSuffix],
+  imports: [MatSortModule, UiPager, MatTableModule, MatButton, MatIcon, MatProgressBar, MatFormField, MatLabel, MatInput, MatSuffix],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -50,13 +51,13 @@ const NO_PROJECT: Project = { groups: [], positions: 0, employees: 0 };
         </div>
       } @else {
         <div class="table-card active-card">
-          <table mat-table [dataSource]="active()">
+          <table mat-table matSort [matSortActive]="activePager.sort().active" [matSortDirection]="activePager.sort().direction" (matSortChange)="activePager.sortChange($event)" [dataSource]="activePaged()">
             <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef>Cliente</th>
+              <th mat-header-cell mat-sort-header="name" *matHeaderCellDef>Cliente</th>
               <td mat-cell *matCellDef="let p"><strong>{{ p.client.shortName }}</strong></td>
             </ng-container>
             <ng-container matColumnDef="groups">
-              <th mat-header-cell *matHeaderCellDef>Grupos de nómina</th>
+              <th mat-header-cell mat-sort-header="groups" *matHeaderCellDef>Grupos de nómina</th>
               <td mat-cell *matCellDef="let p">
                 <span class="chips">
                   @for (g of p.groups; track g.id) {
@@ -66,16 +67,18 @@ const NO_PROJECT: Project = { groups: [], positions: 0, employees: 0 };
               </td>
             </ng-container>
             <ng-container matColumnDef="positions">
-              <th mat-header-cell *matHeaderCellDef class="num">Puestos</th>
+              <th mat-header-cell mat-sort-header="positions" *matHeaderCellDef class="num">Puestos</th>
               <td mat-cell *matCellDef="let p" class="num">{{ p.positions }}</td>
             </ng-container>
             <ng-container matColumnDef="employees">
-              <th mat-header-cell *matHeaderCellDef class="num">Empleados activos</th>
+              <th mat-header-cell mat-sort-header="employees" *matHeaderCellDef class="num">Empleados activos</th>
               <td mat-cell *matCellDef="let p" class="num">{{ p.employees }}</td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="activeColumns"></tr>
             <tr mat-row *matRowDef="let p; columns: activeColumns" class="clickable" tabindex="0" (click)="go(p.client)" (keydown.enter)="go(p.client)"></tr>
           </table>
+        <ui-pager [pager]="pager" [total]="rows().length" />
+          <ui-pager [pager]="activePager" [total]="active().length" />
         </div>
       }
       <div class="section-bar">
@@ -87,29 +90,29 @@ const NO_PROJECT: Project = { groups: [], positions: 0, employees: 0 };
         </mat-form-field>
       </div>
       <div class="table-card">
-        <table mat-table [dataSource]="rows()">
+        <table mat-table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)" [dataSource]="paged()">
           <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Cliente</th>
+            <th mat-header-cell mat-sort-header="name" *matHeaderCellDef>Cliente</th>
             <td mat-cell *matCellDef="let c"><strong>{{ c.shortName }}</strong></td>
           </ng-container>
           <ng-container matColumnDef="legal">
-            <th mat-header-cell *matHeaderCellDef>Razón social</th>
+            <th mat-header-cell mat-sort-header="legal" *matHeaderCellDef>Razón social</th>
             <td mat-cell *matCellDef="let c">{{ c.legalName ?? '—' }}</td>
           </ng-container>
           <ng-container matColumnDef="rfc">
-            <th mat-header-cell *matHeaderCellDef>RFC</th>
+            <th mat-header-cell mat-sort-header="rfc" *matHeaderCellDef>RFC</th>
             <td mat-cell *matCellDef="let c" class="mono">{{ c.rfc ?? '—' }}</td>
           </ng-container>
           <ng-container matColumnDef="groups">
-            <th mat-header-cell *matHeaderCellDef class="num">Grupos de nómina</th>
+            <th mat-header-cell mat-sort-header="groups" *matHeaderCellDef class="num">Grupos de nómina</th>
             <td mat-cell *matCellDef="let c" class="num">{{ project(c).groups.length }}</td>
           </ng-container>
           <ng-container matColumnDef="employees">
-            <th mat-header-cell *matHeaderCellDef class="num">Empleados activos</th>
+            <th mat-header-cell mat-sort-header="employees" *matHeaderCellDef class="num">Empleados activos</th>
             <td mat-cell *matCellDef="let c" class="num">{{ project(c).employees }}</td>
           </ng-container>
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Estatus</th>
+            <th mat-header-cell mat-sort-header="status" *matHeaderCellDef>Estatus</th>
             <td mat-cell *matCellDef="let c">
               <span class="pill" [class.on]="c.isActive && project(c).employees > 0">{{ statusText(c) }}</span>
             </td>
@@ -190,6 +193,25 @@ export class PayrollClientsPage {
       (c) => !q || c.shortName.toLowerCase().includes(q) || (c.legalName ?? '').toLowerCase().includes(q),
     );
   });
+
+  readonly activeSortBy: Record<string, (p: { client: ClientListItemDto } & Project) => SortValue> = {
+    name: (p) => p.client.shortName,
+    groups: (p) => p.groups.map((g) => g.name).join(' '),
+    positions: (p) => p.positions,
+    employees: (p) => p.employees,
+  };
+  readonly sortBy: Record<string, (c: ClientListItemDto) => SortValue> = {
+    name: (c) => c.shortName,
+    legal: (c) => c.legalName,
+    rfc: (c) => c.rfc,
+    groups: (c) => this.project(c).groups.length,
+    employees: (c) => this.project(c).employees,
+    status: (c) => this.statusText(c),
+  };
+  readonly activePager = new Pager();
+  readonly activePaged = computed(() => this.activePager.slice(this.active(), this.activeSortBy));
+  readonly pager = new Pager();
+  readonly paged = computed(() => this.pager.slice(this.rows(), this.sortBy));
 
   project(c: ClientListItemDto): Project {
     return this.projects().get(c.id) ?? NO_PROJECT;

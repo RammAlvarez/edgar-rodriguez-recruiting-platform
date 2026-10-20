@@ -10,10 +10,11 @@ import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
-import { DateKeyPipe, MoneyPipe, openSidePanel, TimestampPipe } from '@platform/ui';
+import { DateKeyPipe, MoneyPipe, openSidePanel, Pager, SortValue, TimestampPipe, UiPager } from '@platform/ui';
 import type { CandidateDetailDto, CandidateListItemDto, OpeningDetailDto, OpeningEventDto } from '../data/api-types';
 import { CandidatePanel, type CandidatePanelData } from '../candidates/candidate-panel';
 import { OPENING_STATUS, PRIORITY, SOURCE, STAGE, type OpeningEventKind, type OpeningStatus } from '../data/recruiting-labels';
@@ -31,7 +32,7 @@ import { prompt } from './prompt-dialog';
  */
 @Component({
   selector: 'app-opening-detail',
-  imports: [
+  imports: [MatSortModule, UiPager, 
     FormsModule,
     RouterLink,
     MatButton,
@@ -127,25 +128,25 @@ import { prompt } from './prompt-dialog';
           </mat-tab>
           <mat-tab label="Candidatos">
             <div class="table-card tab-table">
-              <table mat-table [dataSource]="candidates.value() ?? []">
+              <table mat-table matSort [matSortActive]="pager.sort().active" [matSortDirection]="pager.sort().direction" (matSortChange)="pager.sortChange($event)" [dataSource]="pager.slice(candidates.value() ?? [], sortBy)">
                 <ng-container matColumnDef="name">
-                  <th mat-header-cell *matHeaderCellDef>Nombre</th>
+                  <th mat-header-cell mat-sort-header="name" *matHeaderCellDef>Nombre</th>
                   <td mat-cell *matCellDef="let c"><strong>{{ c.fullName }}</strong></td>
                 </ng-container>
                 <ng-container matColumnDef="stage">
-                  <th mat-header-cell *matHeaderCellDef>Etapa</th>
+                  <th mat-header-cell mat-sort-header="stage" *matHeaderCellDef>Etapa</th>
                   <td mat-cell *matCellDef="let c"><span class="pill" [class]="stageOf(c).tone">{{ stageOf(c).label }}</span></td>
                 </ng-container>
                 <ng-container matColumnDef="source">
-                  <th mat-header-cell *matHeaderCellDef>Fuente</th>
+                  <th mat-header-cell mat-sort-header="source" *matHeaderCellDef>Fuente</th>
                   <td mat-cell *matCellDef="let c">{{ sourceOf(c) }}</td>
                 </ng-container>
                 <ng-container matColumnDef="recruiter">
-                  <th mat-header-cell *matHeaderCellDef>Reclutador</th>
+                  <th mat-header-cell mat-sort-header="recruiter" *matHeaderCellDef>Reclutador</th>
                   <td mat-cell *matCellDef="let c">{{ c.recruiterName ?? 'Sin reclutador' }}</td>
                 </ng-container>
                 <ng-container matColumnDef="days">
-                  <th mat-header-cell *matHeaderCellDef class="num">Días de proceso</th>
+                  <th mat-header-cell mat-sort-header="days" *matHeaderCellDef class="num">Días de proceso</th>
                   <td mat-cell *matCellDef="let c" class="num">{{ c.daysInProcess }}</td>
                 </ng-container>
                 <tr mat-header-row *matHeaderRowDef="candidateColumns"></tr>
@@ -155,6 +156,7 @@ import { prompt } from './prompt-dialog';
                   <td [attr.colspan]="candidateColumns.length">Sin candidatos todavía.</td>
                 </tr>
               </table>
+              <ui-pager [pager]="pager" [total]="(candidates.value() ?? []).length" />
             </div>
           </mat-tab>
           <mat-tab label="Documentos requeridos">
@@ -280,6 +282,14 @@ export class OpeningDetail {
   readonly candidateBase = this.workspace ? '/mis-candidatos' : '/candidatos';
 
   readonly opening = this.repo.detail(() => this.openingId);
+  readonly sortBy: Record<string, (c: CandidateListItemDto) => SortValue> = {
+    name: (c) => c.fullName,
+    stage: (c) => this.stageOf(c).label,
+    source: (c) => this.sourceOf(c),
+    recruiter: (c) => c.recruiterName,
+    days: (c) => c.daysInProcess,
+  };
+  readonly pager = new Pager();
   readonly candidates = inject(CandidatesRepository).list(() => this.openingId);
   readonly events = this.repo.events(() => this.openingId);
   readonly comments = this.repo.comments(() => this.openingId);

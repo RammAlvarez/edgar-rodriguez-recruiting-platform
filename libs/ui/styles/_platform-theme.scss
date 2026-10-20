@@ -185,6 +185,15 @@
       padding: 24px 16px;
       color: var(--mat-sys-on-surface-variant);
     }
+    // Tinted column headers; the doubled selector outranks Material's own header-cell rules.
+    --mat-table-header-headline-color: var(--mat-sys-on-primary-container);
+    table th,
+    table th.mat-mdc-header-cell {
+      background-color: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+      font-weight: 600;
+      border-bottom: 2px solid var(--mat-sys-primary);
+    }
   }
   .pill {
     display: inline-flex;

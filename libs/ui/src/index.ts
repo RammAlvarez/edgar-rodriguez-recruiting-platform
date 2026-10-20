@@ -11,3 +11,4 @@ export * from './side-panel';
 export * from './forms';
 export * from './material';
 export * from './theme';
+export * from './pager';
