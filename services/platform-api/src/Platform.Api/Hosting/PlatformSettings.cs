@@ -46,7 +46,7 @@ public sealed record PlatformSettings(
                 Get("CANDIDATES_APP_URL", "http://localhost:4301"),
                 Get("CLIENTS_APP_URL", "http://localhost:4302")),
             // The local key is public (it is in this file): it only ever protects sample data on a developer's machine.
-            EncryptionSettings.Parse(Get("ENCRYPTION_KEY", "bG9jYWwtb25seS1rZXktbm90LWZvci1yZWFsLWRhdGE="), c["ENCRYPTION_KEY_ID"]),
+            EncryptionSettings.Parse(Get("ENCRYPTION_KEY", "bG9jYWwtb25seS1rZXktbm90LWZvci1yZWFsLWRhdGE="), c["ENCRYPTION_KEY_ID"], c["ENCRYPTION_PREVIOUS_KEYS"]),
             RateLimitSettings.FromConfiguration(c));
     }
 }

@@ -114,12 +114,33 @@ apart:
 2. On paper or an offline USB in the owner's safe, the same value and the date it was created.
 3. Never in the repository, a chat, an email or a bucket next to the database dumps.
 
-**Never change the key casually.** Changing `ENCRYPTION_KEY` makes every stored account number, card number and MFA secret
-unreadable (the API answers 500 when it needs one, and `/internal/health/encryption` says `failed`). If the key leaks:
-keep using it, rotate the database passwords and the access keys, and plan a re-encryption — the platform writes the key id
-in front of every value for that, but the re-encryption tool is **not built yet**: it is the first follow-up if a rotation
-is ever needed. Until then, losing the key means re-capturing the accounts and asking every staff user to set up their
-two-step verification again.
+**Never just replace the key.** Swapping `ENCRYPTION_KEY` for another value makes every stored account number, card number
+and MFA secret unreadable (the API answers 500 when it needs one, and `/internal/health/encryption` says `failed`). Losing
+the key means re-capturing the accounts and asking every staff user to set up their two-step verification again.
+
+### Rotating the key (a leak, a person with access leaving, or on schedule)
+
+Each value carries the id of the key that encrypted it, so the old key keeps reading old values while the new one takes
+over:
+
+1. Back up the database (§5).
+2. Generate the new key (`openssl rand -base64 32`) and give it the next id (2, then 3…). Store it as in steps 1–2 above
+   **before** deploying it.
+3. Deploy the API with `ENCRYPTION_KEY=<new>`, `ENCRYPTION_KEY_ID=<new id>` and
+   `ENCRYPTION_PREVIOUS_KEYS=<old id>:<old key>` (several as `1:…,2:…`). New values use the new key; old ones still read.
+4. Re-encrypt what is stored:
+   `curl -X POST -H "X-Internal-Secret: $INTERNAL_SECRET" https://api…/internal/jobs/reencrypt-fields`.
+   It goes through every encrypted column (accounts, the cuenta de cargo, the account snapshots of paid lines and payment
+   files, card numbers, MFA secrets) in batches and answers per column `reencrypted`, `pending` and `unreadable`. It is
+   safe to run again and while people work; run it until `pending` is 0 everywhere.
+5. `unreadable` above 0 means values under a key the API was not given: find that key before going on.
+6. Deploy again without `ENCRYPTION_PREVIOUS_KEYS`, check `/internal/health/encryption` says `ok` with the new key id, and
+   only then mark the old key **retired** in the password manager and the safe. Don't delete it yet: backups taken before
+   step 4 are still under it. Delete it only once the last of those backups has expired (§5: 7 days or more on a managed
+   database, 30 on the same VM). To restore one of those backups in the meantime, deploy with the old key in
+   `ENCRYPTION_PREVIOUS_KEYS` and run `reencrypt-fields` again.
+
+If the key leaked, also rotate the database passwords and the bucket access keys.
 
 ## 7. Restore drill (do it before go-live, then every quarter)
 

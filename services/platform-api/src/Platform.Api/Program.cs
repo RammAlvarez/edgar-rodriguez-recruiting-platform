@@ -81,6 +81,7 @@ builder.Services.AddScoped<IJob, PeriodRollJob>();
 builder.Services.AddScoped<IJob, StatusRollJob>();
 builder.Services.AddScoped<IJob, DocumentExpiryJob>();
 builder.Services.AddScoped<IJob, NotificationsDigestJob>();
+builder.Services.AddScoped<IJob, ReencryptFieldsJob>();
 builder.Services.AddScoped<Platform.Core.Notifications.ICandidateDocumentListener, Platform.Recruiting.Candidates.CandidateDocumentListener>();
 builder.Services.AddSingleton(settings.Firebase);
 builder.Services.AddSingleton<IAuthProvider, FirebaseAuthProvider>();
