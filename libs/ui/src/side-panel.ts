@@ -1,5 +1,7 @@
 import type { ComponentType } from '@angular/cdk/portal';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { merge } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { MatButton } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -13,10 +15,11 @@ import {
 
 /**
  * The prototype's side panel (create and edit share it, ARCHITECTURE §9.12): a dialog docked to the right edge, full
- * height, 480px wide (full width on phones). Focus trap, Esc and the scrim come from MatDialog.
+ * height, 480px wide (full width on phones). Focus trap, Esc and the scrim come from MatDialog; closing through them
+ * asks first when the panel's `form` has unsaved edits.
  */
 export function openSidePanel<C, D, R = unknown>(dialog: MatDialog, component: ComponentType<C>, data: D): MatDialogRef<C, R> {
-  return dialog.open<C, D, R>(component, {
+  const ref = dialog.open<C, D, R>(component, {
     data,
     position: { right: '0', top: '0' },
     height: '100dvh',
@@ -25,7 +28,26 @@ export function openSidePanel<C, D, R = unknown>(dialog: MatDialog, component: C
     maxHeight: '100dvh',
     panelClass: 'ui-side-panel',
     autoFocus: 'first-tabbable',
+    disableClose: true,
   });
+  let asking = false;
+  merge(ref.backdropClick(), ref.keydownEvents().pipe(filter((e) => e.key === 'Escape'))).subscribe(async () => {
+    if (asking) return;
+    const form = (ref.componentInstance as { form?: { dirty?: boolean } } | null)?.form;
+    if (form?.dirty) {
+      asking = true;
+      const discard = await confirm(dialog, {
+        title: '¿Descartar los cambios?',
+        body: 'Lo que capturaste no se ha guardado y se perderá.',
+        confirm: 'Descartar',
+        destructive: true,
+      });
+      asking = false;
+      if (!discard) return;
+    }
+    ref.close();
+  });
+  return ref;
 }
 
 export interface ConfirmData {
