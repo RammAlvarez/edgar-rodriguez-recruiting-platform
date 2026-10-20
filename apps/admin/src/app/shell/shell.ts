@@ -7,7 +7,6 @@ import { MatIcon } from '@angular/material/icon';
 import { MatListItem, MatListItemIcon, MatListItemTitle, MatNavList } from '@angular/material/list';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
-import { MatToolbar } from '@angular/material/toolbar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { RefreshButton, Session } from '@platform/ui';
@@ -29,7 +28,6 @@ const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', c
     MatSidenavContainer,
     MatSidenav,
     MatSidenavContent,
-    MatToolbar,
     MatNavList,
     MatListItem,
     MatListItemIcon,

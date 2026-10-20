@@ -4,7 +4,7 @@
   height: 100%;
 }
 
-// Toolbar across the top, sidenav and content below it (prototype layout).
+// Sidenav on the left with the action buttons at its bottom; no toolbar.
 .shell {
   flex: 1;
   min-height: 0;
@@ -14,9 +14,10 @@
 .sidenav {
   --mat-sidenav-container-width: 256px;
   --mat-sidenav-container-shape: 0;
-  --mat-list-list-item-one-line-container-height: 52px;
+  --mat-list-list-item-one-line-container-height: 44px;
   --mat-list-list-item-label-text-font: var(--mat-sys-label-large-font);
-  --mat-list-list-item-label-text-weight: 500;
+  --mat-list-list-item-label-text-size: 13px;
+  --mat-list-list-item-label-text-weight: 400;
   --mat-list-list-item-label-text-tracking: var(--mat-sys-label-large-tracking);
   --mat-list-list-item-label-text-color: var(--mat-sys-on-surface-variant);
   --mat-list-list-item-leading-icon-color: var(--mat-sys-on-surface-variant);
@@ -32,34 +33,37 @@
 }
 
 .section {
-  margin: 0;
-  padding: 16px 16px 8px;
+  margin: 20px 0 0;
+  padding: 0 16px 6px;
   font: var(--mat-sys-title-small);
+  font-size: 12px;
   letter-spacing: var(--mat-sys-title-small-tracking);
   color: var(--mat-sys-on-surface-variant);
 }
 
-.toolbar {
-  flex: none;
-  gap: 4px;
-  background: var(--mat-sys-surface);
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+.sidenav ::ng-deep .mat-drawer-inner-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
-.brand {
-  color: var(--mat-sys-primary);
-  margin-right: 4px;
+.sidenav-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 0;
+  background: var(--mat-sys-surface-container-low);
+  border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
-.title {
-  font: var(--mat-sys-title-medium);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.spacer {
-  flex: 1;
+.menu-fab {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
 }
 
 .user-label {
