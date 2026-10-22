@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Platform.Core.Abstractions;
 using Platform.Core.Access;
 using Platform.Core.Http;
 using Platform.Core.Persistence;
@@ -130,33 +131,36 @@ public static class CatalogEndpoints
     private static void MapHolidays(RouteGroupBuilder g)
     {
         const string conflict = "Ya hay un día festivo en esa fecha.";
-        g.MapPost("/holidays", (HolidayRequest r, DbContext db, CancellationToken ct) =>
+        g.MapPost("/holidays", async (HolidayRequest r, DbContext db, IClock clock, IEnumerable<IHolidayChangeListener> listeners, CancellationToken ct) =>
         {
             var h = new Holiday { Date = r.Date, NameEs = r.NameEs.Trim(), IsMandatory = r.IsMandatory };
             db.Add(h);
-            return db.SaveOrConflictAsync(() => TypedResults.Ok(HolidayDto.From(h)), conflict, ct);
+            return await SaveHolidaysAsync(db, listeners, clock, [r.Date], conflict, () => TypedResults.Ok(HolidayDto.From(h)), ct);
         }).Mutation<HolidayRequest, HolidayDto>("CreateHoliday");
 
-        g.MapPut("/holidays/{id:guid}", async (Guid id, HolidayRequest r, DbContext db, CancellationToken ct) =>
+        g.MapPut("/holidays/{id:guid}", async (Guid id, HolidayRequest r, DbContext db, IClock clock, IEnumerable<IHolidayChangeListener> listeners,
+            CancellationToken ct) =>
         {
             if (await db.Set<Holiday>().SingleOrDefaultAsync(x => x.Uid == id, ct) is not { } h)
                 return ApiResults.NotFound("El día festivo no existe.");
+            var previous = h.Date;
             (h.Date, h.NameEs, h.IsMandatory) = (r.Date, r.NameEs.Trim(), r.IsMandatory);
-            return await db.SaveOrConflictAsync(() => TypedResults.Ok(HolidayDto.From(h)), conflict, ct);
+            return await SaveHolidaysAsync(db, listeners, clock, [previous, r.Date], conflict, () => TypedResults.Ok(HolidayDto.From(h)), ct);
         }).Mutation<HolidayRequest, HolidayDto>("UpdateHoliday");
 
-        g.MapDelete("/holidays/{id:guid}", async (Guid id, DbContext db, CancellationToken ct) =>
+        g.MapDelete("/holidays/{id:guid}", async (Guid id, DbContext db, IClock clock, IEnumerable<IHolidayChangeListener> listeners,
+                CancellationToken ct) =>
             {
                 if (await db.Set<Holiday>().SingleOrDefaultAsync(x => x.Uid == id, ct) is not { } h)
                     return ApiResults.NotFound("El día festivo no existe.");
                 db.Remove(h);
-                await db.SaveChangesAsync(ct);
-                return TypedResults.NoContent();
+                return await SaveHolidaysAsync(db, listeners, clock, [h.Date], conflict, () => TypedResults.NoContent(), ct);
             })
             .WithName("DeleteHoliday").ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Edit).Invalidates(Tag);
 
         // Adds the LFT art. 74 days of a year that are not in the catalog yet; dates already present are kept as they are.
-        g.MapPost("/holidays/statutory", async (StatutoryHolidaysRequest r, DbContext db, CancellationToken ct) =>
+        g.MapPost("/holidays/statutory", async (StatutoryHolidaysRequest r, DbContext db, IClock clock, IEnumerable<IHolidayChangeListener> listeners,
+                CancellationToken ct) =>
             {
                 var statutory = StatutoryHolidays.For(r.Year);
                 var dates = statutory.Select(h => h.Date).ToList();
@@ -164,11 +168,40 @@ public static class CatalogEndpoints
                 var added = statutory.Where(h => !existing.Contains(h.Date))
                     .Select(h => new Holiday { Date = h.Date, NameEs = h.NameEs, IsMandatory = true }).ToList();
                 db.AddRange(added);
-                await db.SaveChangesAsync(ct);
-                var year = await db.Set<Holiday>().Where(h => h.Date.Year == r.Year).OrderBy(h => h.Date).ToListAsync(ct);
-                return TypedResults.Ok(new StatutoryHolidaysResult(added.Count, year.Select(HolidayDto.From).ToList()));
+                return await SaveHolidaysAsync(db, listeners, clock, added.Select(h => h.Date).ToList(), conflict, async () =>
+                {
+                    var year = await db.Set<Holiday>().Where(h => h.Date.Year == r.Year).OrderBy(h => h.Date).ToListAsync(ct);
+                    return TypedResults.Ok(new StatutoryHolidaysResult(added.Count, year.Select(HolidayDto.From).ToList()));
+                }, ct);
             })
             .WithName("AddStatutoryHolidays").Validate<StatutoryHolidaysRequest>().RequireAccess(Edit).Invalidates(Tag);
+    }
+
+    /// <summary>
+    /// Saves the pending holiday changes and, in the same transaction, tells the modules that price days by them (payroll
+    /// recomputes the open prenómina lines whose period covers one of <paramref name="dates"/>).
+    /// </summary>
+    private static async Task<IResult> SaveHolidaysAsync(DbContext db, IEnumerable<IHolidayChangeListener> listeners, IClock clock,
+        IReadOnlyCollection<DateOnly> dates, string conflict, Func<IResult> ok, CancellationToken ct) =>
+        await SaveHolidaysAsync(db, listeners, clock, dates, conflict, () => Task.FromResult(ok()), ct);
+
+    private static async Task<IResult> SaveHolidaysAsync(DbContext db, IEnumerable<IHolidayChangeListener> listeners, IClock clock,
+        IReadOnlyCollection<DateOnly> dates, string conflict, Func<Task<IResult>> ok, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e) when (DbErrors.UniqueViolation(e) is not null)
+        {
+            return ApiResults.Conflict(conflict);
+        }
+        if (dates.Count > 0)
+            foreach (var listener in listeners)
+                await listener.ChangedAsync(db, dates, clock.UtcNow, ct);
+        await transaction.CommitAsync(ct);
+        return await ok();
     }
 
     private static void MapBanks(RouteGroupBuilder g)

@@ -223,6 +223,75 @@ public sealed class PrepayrollTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(HttpStatusCode.Conflict, (await _owner.PostAsync($"/v1/payroll/periods/{a.Period}/close-capture", null)).StatusCode);
     }
 
+    private Task<PrepayrollLine> LineOf(Guid employee) =>
+        WithDb(db => db.Set<PrepayrollLine>().AsNoTracking().SingleAsync(l => l.EmployeeId == employee));
+
+    [Fact]
+    public async Task A_past_dated_baja_stops_paying_the_days_after_it_without_deleting_them()
+    {
+        var a = await ArrangeSem38([6]);
+        var employee = a.Employees[0];
+        var before = await LineOf(employee);
+        var baja = new DateOnly(2026, 9, 14);
+
+        var response = await _owner.PostAsJsonAsync($"/v1/employees/{employee}/status",
+            new { status = "terminated", startDate = "2026-09-14", endDate = (string?)null, reason = "Renuncia voluntaria", reference = (string?)null, confirmPaidDays = true });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var records = await WithDb(db => db.Set<AttendanceRecord>().Where(r => r.EmployeeId == employee).ToListAsync());
+        Assert.Contains(records, r => r.WorkDate >= baja && r.Status == AttendanceStatus.Present);
+        var paid = new[] { AttendanceStatus.Present, AttendanceStatus.RestDayWorked, AttendanceStatus.HolidayWorked };
+        var after = await LineOf(employee);
+        Assert.Equal(records.Count(r => r.WorkDate < baja && paid.Contains(r.Status)), after.DaysWorked);
+        Assert.True(after.DaysWorked < before.DaysWorked);
+        Assert.True(after.TotalNet < before.TotalNet);
+
+        // The same with the alta moved to a later date than some of the attendance.
+        var hired = new DateOnly(2026, 9, 15);
+        await WithDb(async db =>
+        {
+            var e = await db.Set<Employee>().SingleAsync(x => x.Uid == employee);
+            (e.TerminatedAt, e.HiredAt) = (null, hired);
+            await db.SaveChangesAsync();
+        });
+        await WithDb(db => Prepayrolls.SaveAndRefreshEmployeeAsync(db, employee, DateTimeOffset.UtcNow, CancellationToken.None));
+        var late = await LineOf(employee);
+        Assert.Equal(records.Count(r => r.WorkDate >= hired && paid.Contains(r.Status)), late.DaysWorked);
+    }
+
+    [Fact]
+    public async Task Changing_the_holiday_catalog_recomputes_the_open_lines_that_cover_the_date()
+    {
+        var a = await ArrangeSem38([6]);
+        var employee = a.Employees[0];
+        var date = new DateOnly(2026, 9, 15);
+        await WithDb(async db =>
+        {
+            db.RemoveRange(db.Set<AttendanceRecord>().Where(r => r.EmployeeId == employee && r.WorkDate == date));
+            db.Add(new AttendanceRecord { EmployeeId = employee, WorkDate = date, Status = AttendanceStatus.Holiday, IsLocked = true, RecordedAt = DateTimeOffset.UnixEpoch });
+            await db.SaveChangesAsync();
+        });
+        Assert.Equal(0, (await LineOf(employee)).HolidaysEntitled);
+
+        var created = await _owner.PostAsJsonAsync("/v1/catalogs/holidays", new { date = "2026-09-15", nameEs = "Feriado de prueba", isMandatory = false });
+        Assert.Equal(HttpStatusCode.OK, created.StatusCode);
+        var line = await LineOf(employee);
+        Assert.Equal(1, line.HolidaysEntitled);
+        var withHoliday = line.DaysWorked;
+
+        var holiday = (await BodyOf(created)).GetProperty("id").GetGuid();
+        Assert.Equal(HttpStatusCode.OK, (await _owner.PutAsJsonAsync($"/v1/catalogs/holidays/{holiday}",
+            new { date = "2026-09-20", nameEs = "Feriado de prueba", isMandatory = false })).StatusCode);
+        Assert.Equal(0, (await LineOf(employee)).HolidaysEntitled);
+
+        Assert.Equal(HttpStatusCode.OK, (await _owner.PutAsJsonAsync($"/v1/catalogs/holidays/{holiday}",
+            new { date = "2026-09-15", nameEs = "Feriado de prueba", isMandatory = false })).StatusCode);
+        Assert.Equal(withHoliday, (await LineOf(employee)).DaysWorked);
+        Assert.Equal(HttpStatusCode.NoContent, (await _owner.DeleteAsync($"/v1/catalogs/holidays/{holiday}")).StatusCode);
+        Assert.Equal(0, (await LineOf(employee)).HolidaysEntitled);
+        Assert.True((await LineOf(employee)).DaysWorked < withHoliday);
+    }
+
     [Fact]
     public async Task An_incidencia_recomputes_the_line_and_its_desglose_shows_where_each_amount_comes_from()
     {

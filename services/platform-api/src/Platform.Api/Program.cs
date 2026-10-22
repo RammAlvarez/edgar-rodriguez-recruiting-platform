@@ -83,6 +83,7 @@ builder.Services.AddScoped<IJob, DocumentExpiryJob>();
 builder.Services.AddScoped<IJob, NotificationsDigestJob>();
 builder.Services.AddScoped<IJob, ReencryptFieldsJob>();
 builder.Services.AddScoped<Platform.Core.Notifications.ICandidateDocumentListener, Platform.Recruiting.Candidates.CandidateDocumentListener>();
+builder.Services.AddScoped<Platform.Core.Catalogs.IHolidayChangeListener, Platform.Payroll.Prepayroll.HolidayChangeListener>();
 builder.Services.AddSingleton(settings.Firebase);
 builder.Services.AddSingleton<IAuthProvider, FirebaseAuthProvider>();
 builder.Services.AddSingleton(settings.Links);
