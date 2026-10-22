@@ -205,10 +205,13 @@ public static class Prepayrolls
                 await StaffRules.PositionRatesOn(db, employee.PositionId, period.EndDate, ct));
         var (position, positionRates) = cached;
         var rates = StaffRules.Effective(employee, positionRates);
-        var days = batch is not null
+        // Only the days inside the employment count: a baja dated in the past (or an alta moved earlier) leaves attendance rows
+        // outside [HiredAt, TerminatedAt), and those are not paid (days worked, salary, séptimo, bonuses).
+        var days = AttendanceSummaries.WithinEmployment(batch is not null
             ? batch.Days[employeeId].ToList()
             : await db.Set<AttendanceRecord>().AsNoTracking()
-                .Where(a => a.EmployeeId == employeeId && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate).ToListAsync(ct);
+                .Where(a => a.EmployeeId == employeeId && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate).ToListAsync(ct),
+            employee);
         var holidays = context.Holidays;
         var concepts = context.Concepts;
         var codes = concepts.Values.ToDictionary(c => c.Code, c => c.Uid);
