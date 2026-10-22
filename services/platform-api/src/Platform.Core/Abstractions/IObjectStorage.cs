@@ -18,9 +18,12 @@ public interface IObjectStorage
     /// <summary>Throws when the configured buckets are unreachable (used by <c>/health</c>).</summary>
     Task PingAsync(CancellationToken cancellationToken);
 
-    /// <summary>A PUT for one object; the content type is part of the signature.</summary>
-    Task<PresignedRequest> PresignUploadAsync(StorageBucket bucket, string key, string contentType, TimeSpan lifetime,
+    /// <summary>A PUT for one object; the content type and the exact length (<paramref name="sizeBytes"/>) are part of the signature.</summary>
+    Task<PresignedRequest> PresignUploadAsync(StorageBucket bucket, string key, string contentType, long sizeBytes, TimeSpan lifetime,
         CancellationToken cancellationToken);
+
+    /// <summary>A server-side copy inside one bucket (keeps the content type); the copy is a snapshot later writes to the source do not touch.</summary>
+    Task CopyAsync(StorageBucket bucket, string sourceKey, string destinationKey, CancellationToken cancellationToken);
 
     /// <summary>A GET; <paramref name="downloadAs"/> sets <c>Content-Disposition: attachment</c> with that file name, otherwise inline.</summary>
     Task<PresignedRequest> PresignDownloadAsync(StorageBucket bucket, string key, string? downloadAs, TimeSpan lifetime,
