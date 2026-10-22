@@ -222,6 +222,40 @@ public sealed class PayrollReportTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task Attendance_day_grid_matches_each_row_to_its_own_employee_when_names_repeat()
+    {
+        var a = await ArrangeAsync();
+        // A rehire: the same person, a second employment (same name and client) that starts on the 18th and is absent on the 20th.
+        var (personId, group, position) = await WithDb(async db =>
+        {
+            var ana = await db.Set<Employee>().SingleAsync(e => e.Uid == a.Employees["ANA"]);
+            return (ana.PersonId, ana.PayrollGroupId, ana.PositionId);
+        });
+        await WithDb(async db =>
+        {
+            var first = await db.Set<Employee>().SingleAsync(e => e.Uid == a.Employees["ANA"]);
+            first.TerminatedAt = new DateOnly(2026, 9, 18);
+            var second = new Employee { PersonId = personId, PayrollGroupId = group, PositionId = position, Shift = "C/DÍA", HiredAt = new DateOnly(2026, 9, 18) };
+            db.Add(second);
+            await db.SaveChangesAsync();
+            db.Add(new AttendanceRecord
+            {
+                EmployeeId = second.Uid, WorkDate = new DateOnly(2026, 9, 20), Status = AttendanceStatus.Absent, IsLocked = true, RecordedAt = DateTimeOffset.UnixEpoch,
+            });
+            await db.SaveChangesAsync();
+        });
+
+        var attendance = await Report("attendance", $"?clientId={a.Client}&from=2026-09-11&to=2026-09-24");
+        var days = attendance.GetProperty("tables")[1];
+        var anaRows = Rows(days).Where(r => Text(days, r, "Empleado") == "PÉREZ LÓPEZ ANA").ToList();
+        Assert.Equal(2, anaRows.Count);
+        // Column 0 is the name; the 11th is column 1, so the 20th is column 10.
+        var letters = anaRows.Select(r => r.GetProperty("cells")[10].GetProperty("display").GetString()).OrderBy(x => x, StringComparer.Ordinal).ToList();
+        // The first employment rests on Sunday the 20th; the rehire is absent.
+        Assert.Equal(["D", "F"], letters);
+    }
+
+    [Fact]
     public async Task Rotacion_and_tarjetas_y_cuentas_follow_altas_bajas_and_accounts()
     {
         var a = await ArrangeAsync();

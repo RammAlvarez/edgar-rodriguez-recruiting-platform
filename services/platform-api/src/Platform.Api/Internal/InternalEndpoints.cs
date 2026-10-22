@@ -47,17 +47,25 @@ public static class InternalEndpoints
                 ? Results.Ok(await job.RunAsync(ct))
                 : ApiResults.NotFound($"Job '{name}' does not exist."));
 
-        // First administrator of a new installation (scripts/bootstrap). Refuses once any administrator exists.
+        // First administrator of a new installation (scripts/bootstrap). Refuses once any administrator exists — except re-running for
+        // the same email while that sole administrator has never signed in, which only issues a fresh link (the first run may have
+        // committed the row and then failed to produce the link).
         group.MapPost("/bootstrap", async (BootstrapRequest body, DbContext db, IAuthProvider auth, CancellationToken ct) =>
             {
-                if (await db.Set<User>().AnyAsync(u => u.Role == UserRole.Administrator, ct))
-                    return ApiResults.Conflict("Ya existe un administrador; invita usuarios desde Usuarios.");
+                var address = body.Email.Trim().ToLowerInvariant();
+                var admins = await db.Set<User>().AsNoTracking().Where(u => u.Role == UserRole.Administrator).ToListAsync(ct);
+                if (admins.Count > 0)
+                {
+                    if (admins is not [{ LastLoginAt: null, AcceptedAt: null } pending] || pending.Email != address)
+                        return ApiResults.Conflict("Ya existe un administrador; invita usuarios desde Usuarios.");
+                    return Results.Ok(new BootstrapResponse(pending.Uid, pending.Email, await auth.CreatePasswordSetupLinkAsync(pending.Email, ct)));
+                }
 
-                var authUid = await auth.CreateUserAsync(body.Email, body.DisplayName, ct);
+                var authUid = await auth.CreateUserAsync(address, body.DisplayName.Trim(), ct);
                 var user = new User
                 {
                     AuthUid = authUid,
-                    Email = body.Email.Trim(),
+                    Email = address,
                     DisplayName = body.DisplayName.Trim(),
                     Role = UserRole.Administrator,
                     InvitedAt = DateTimeOffset.UtcNow,
