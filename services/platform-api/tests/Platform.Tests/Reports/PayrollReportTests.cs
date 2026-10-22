@@ -240,7 +240,11 @@ public sealed class PayrollReportTests(ApiFactory factory) : ApiTest(factory)
             await db.SaveChangesAsync();
             db.Add(new AttendanceRecord
             {
-                EmployeeId = second.Uid, WorkDate = new DateOnly(2026, 9, 20), Status = AttendanceStatus.Absent, IsLocked = true, RecordedAt = DateTimeOffset.UnixEpoch,
+                EmployeeId = second.Uid,
+                WorkDate = new DateOnly(2026, 9, 20),
+                Status = AttendanceStatus.Absent,
+                IsLocked = true,
+                RecordedAt = DateTimeOffset.UnixEpoch,
             });
             await db.SaveChangesAsync();
         });
