@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
+using Platform.Bank.Payments;
 using Platform.Bank.Registrations;
 using Platform.Core.Abstractions;
 using Platform.Core.People;
@@ -48,11 +49,11 @@ public sealed class CardBatchTests(ApiFactory factory) : ApiTest(factory)
     }
 
     /// <summary>Everything the bank asks for (a CURP born 1 Jan 1990 in Nuevo León).</summary>
-    private Task Complete(Guid employee, string curp = "PEPJ900101HNLRRN09") => WithDb(async db =>
+    private Task Complete(Guid employee, string curp = "PEPJ900101HNLRRN09", string rfc = "PEPJ900101AB1") => WithDb(async db =>
     {
         var personId = await db.Set<Employee>().Where(e => e.Uid == employee).Select(e => e.PersonId).SingleAsync();
         var p = await db.Set<Person>().SingleAsync(x => x.Uid == personId);
-        (p.Curp, p.Rfc, p.Email, p.MobilePhone) = (curp, "PEPJ900101AB1", "juan.perez@example.com", "8112345670");
+        (p.Curp, p.Rfc, p.Email, p.MobilePhone) = (curp, rfc, "juan.perez@example.com", "8112345670");
         (p.Street, p.ExtNumber, p.Neighborhood, p.PostalCode) = ("Av Constitución", "100", "Centro", "64000");
         (p.BirthDate, p.Gender, p.BirthState) = (new DateOnly(1990, 1, 1), Gender.Male, "Nuevo León");
         await db.SaveChangesAsync();
@@ -165,5 +166,37 @@ public sealed class CardBatchTests(ApiFactory factory) : ApiTest(factory)
         Assert.Empty(preview.GetProperty("rows").EnumerateArray());
         Assert.Equal(RegistrationEndpoints.NothingQueued,
             await DetailOf(await scoped.PostAsJsonAsync("/v1/card-batches", new { bank = "banorte", requestIds = (Guid[]?)null, branchToSend = "01234" })));
+    }
+
+    [Fact]
+    public async Task A_client_limited_grant_cannot_download_or_mark_a_batch_that_includes_other_clients()
+    {
+        var e = await ArrangeAsync("banorte", "JUAN", "LUIS");
+        await Complete(e["JUAN"]);
+        await Complete(e["LUIS"], "PEPL900101HNLRRN09", "PEPL900101AB2");
+        // LUIS belongs to another client, so the one batch spans two.
+        var heb = await WithDb(db => db.AddClient("HEB"));
+        var hebGroup = (await BodyOf(await _owner.PostAsJsonAsync("/v1/payroll/groups", PayrollGroupTests.NewGroup(heb.Uid)))).GetProperty("id").GetGuid();
+        var hebPosition = (await BodyOf(await _owner.PostAsJsonAsync($"/v1/payroll/groups/{hebGroup}/positions",
+                PayrollGroupTests.NewPosition(validFrom: "2020-01-01"))))
+            .GetProperty("positions").EnumerateArray().Single().GetProperty("id").GetGuid();
+        await WithDb(async db =>
+        {
+            var luis = await db.Set<Employee>().SingleAsync(x => x.Uid == e["LUIS"]);
+            (luis.PayrollGroupId, luis.PositionId) = (hebGroup, hebPosition);
+            await db.SaveChangesAsync();
+        });
+        var generated = await BodyOf(await _owner.PostAsJsonAsync("/v1/card-batches", new { bank = "banorte", requestIds = (Guid[]?)null, branchToSend = "01234" }));
+        var batchId = generated.GetProperty("batch").GetProperty("id").GetGuid();
+
+        var ecovia = await WithDb(db => db.Set<Platform.Core.Clients.Client>().Where(c => c.ShortName == "ECOVIA").Select(c => c.Uid).SingleAsync());
+        var (_, scoped) = await SignedIn(UserRole.Administrator, new UserPermission { Module = PermissionModule.PayrollCardRequests, ClientId = ecovia });
+        // It is listed with only its own person...
+        Assert.Single((await BodyOf(await scoped.GetAsync("/v1/card-batches")))[0].GetProperty("rows").EnumerateArray());
+        // ...but the whole file and the status flip are not its to take.
+        Assert.Equal(HttpStatusCode.NotFound, (await scoped.PostAsync($"/v1/card-batches/{batchId}/download", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await scoped.PostAsync($"/v1/card-batches/{batchId}/uploaded", null)).StatusCode);
+        Assert.Equal(BatchStatus.Generated, await WithDb(db => db.Set<RegistrationBatch>().Where(b => b.Uid == batchId).Select(b => b.Status).SingleAsync()));
+        Assert.True((await _owner.PostAsync($"/v1/card-batches/{batchId}/download", null)).IsSuccessStatusCode);
     }
 }
