@@ -104,6 +104,38 @@ public sealed class MfaTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task Parallel_wrong_codes_still_lock_after_five()
+    {
+        Factory.Clock.Now = T0;
+        var (user, _) = await SignedIn(UserRole.Recruiter);
+        var (secret, _) = await Enroll(SignIn(user, 100));
+        var next = SignIn(user, 200);
+        Factory.Clock.Now = T0.AddSeconds(60);
+        var results = await Task.WhenAll(Enumerable.Range(0, 40).Select(_ => next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = "123456" })));
+        Assert.All(results, r => Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode));
+        var wrong = 0;
+        foreach (var r in results)
+            wrong += (await ErrorsOf(r))["code"].SequenceEqual([MfaEndpoints.WrongCode]) ? 1 : 0;
+        Assert.True(wrong <= MfaEndpoints.MaxAttempts, $"{wrong} wrong codes were evaluated");
+        var locked = await next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = CodeAt(secret, T0.AddSeconds(60)) });
+        Assert.Equal([MfaEndpoints.Locked], (await ErrorsOf(locked))["code"]);
+    }
+
+    [Fact]
+    public async Task One_code_and_one_recovery_code_are_accepted_once_in_parallel()
+    {
+        Factory.Clock.Now = T0;
+        var (user, _) = await SignedIn(UserRole.Recruiter);
+        var (secret, recovery) = await Enroll(SignIn(user, 100));
+        var next = SignIn(user, 200);
+        Factory.Clock.Now = T0.AddSeconds(60);
+        var totp = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = CodeAt(secret, T0.AddSeconds(60)) })));
+        Assert.Equal(1, totp.Count(r => r.StatusCode == HttpStatusCode.NoContent));
+        var rec = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = recovery[0] })));
+        Assert.Equal(1, rec.Count(r => r.StatusCode == HttpStatusCode.NoContent));
+    }
+
+    [Fact]
     public async Task Required_from_usuarios_means_enrolling_first_and_restablecer_starts_over()
     {
         Factory.Clock.Now = T0;
