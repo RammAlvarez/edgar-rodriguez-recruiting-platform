@@ -52,6 +52,47 @@ public sealed class BootstrapTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task Normalizes_the_email_like_an_invitation()
+    {
+        var response = await InternalClient().PostAsJsonAsync("/internal/bootstrap", new { email = "  Edgar@Example.Test ", displayName = " Edgar " });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var user = await WithDb(db => db.Set<User>().SingleAsync());
+        Assert.Equal("edgar@example.test", user.Email);
+        Assert.Equal("Edgar", user.DisplayName);
+    }
+
+    [Fact]
+    public async Task Retry_after_a_failed_link_issues_a_fresh_link_for_the_same_email()
+    {
+        Factory.Auth.LinkFailures = 1;
+        var body = new { email = "edgar@example.test", displayName = "Edgar" };
+        var failed = await InternalClient().PostAsJsonAsync("/internal/bootstrap", body);
+        Assert.False(failed.IsSuccessStatusCode);
+
+        var retry = await InternalClient().PostAsJsonAsync("/internal/bootstrap", new { email = " EDGAR@example.test ", displayName = "Edgar" });
+        Assert.Equal(HttpStatusCode.OK, retry.StatusCode);
+        var json = await retry.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.StartsWith("https://auth.test/setup", json.GetProperty("passwordSetupLink").GetString(), StringComparison.Ordinal);
+        Assert.Equal(1, await WithDb(db => db.Set<User>().CountAsync()));
+    }
+
+    [Fact]
+    public async Task Rerun_is_refused_for_another_email_or_once_the_administrator_signed_in()
+    {
+        var body = new { email = "edgar@example.test", displayName = "Edgar" };
+        Assert.Equal(HttpStatusCode.OK, (await InternalClient().PostAsJsonAsync("/internal/bootstrap", body)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await InternalClient().PostAsJsonAsync("/internal/bootstrap", new { email = "otro@example.test", displayName = "Otro" })).StatusCode);
+
+        await WithDb(async db =>
+        {
+            (await db.Set<User>().SingleAsync()).LastLoginAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync();
+        });
+        Assert.Equal(HttpStatusCode.Conflict, (await InternalClient().PostAsJsonAsync("/internal/bootstrap", body)).StatusCode);
+    }
+
+    [Fact]
     public async Task Invalid_body_returns_field_messages()
     {
         var response = await InternalClient().PostAsJsonAsync("/internal/bootstrap", new { email = "no-es-correo", displayName = "" });
