@@ -42,11 +42,11 @@ public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisp
             await _client.ListObjectsV2Async(new ListObjectsV2Request { BucketName = bucket, MaxKeys = 1 }, cancellationToken);
     }
 
-    public async Task<PresignedRequest> PresignUploadAsync(StorageBucket bucket, string key, string contentType, TimeSpan lifetime,
-        CancellationToken cancellationToken)
+    public async Task<PresignedRequest> PresignUploadAsync(StorageBucket bucket, string key, string contentType, long sizeBytes,
+        TimeSpan lifetime, CancellationToken cancellationToken)
     {
         var expires = DateTime.UtcNow.Add(lifetime);
-        var url = await _client.GetPreSignedURLAsync(new GetPreSignedUrlRequest
+        var request = new GetPreSignedUrlRequest
         {
             BucketName = Name(bucket),
             Key = key,
@@ -54,7 +54,10 @@ public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisp
             ContentType = contentType,
             Expires = expires,
             Protocol = _protocol,
-        });
+        };
+        // Signed, so the object can only be exactly this long. The browser sets Content-Length itself from the body.
+        request.Headers["Content-Length"] = sizeBytes.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var url = await _client.GetPreSignedURLAsync(request);
         return new PresignedRequest(url, new Dictionary<string, string> { ["Content-Type"] = contentType }, expires);
     }
 
@@ -118,6 +121,16 @@ public sealed class S3ObjectStorage(S3Settings settings) : IObjectStorage, IDisp
             read += n;
         return buffer[..read];
     }
+
+    public async Task CopyAsync(StorageBucket bucket, string sourceKey, string destinationKey, CancellationToken cancellationToken) =>
+        await _client.CopyObjectAsync(new CopyObjectRequest
+        {
+            SourceBucket = Name(bucket),
+            SourceKey = sourceKey,
+            DestinationBucket = Name(bucket),
+            DestinationKey = destinationKey,
+            MetadataDirective = S3MetadataDirective.COPY,
+        }, cancellationToken);
 
     public Task DeleteAsync(StorageBucket bucket, string key, CancellationToken cancellationToken) =>
         _client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = Name(bucket), Key = key }, cancellationToken);

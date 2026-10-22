@@ -23,7 +23,7 @@ public sealed class S3ObjectStorageTests : IDisposable
         var key = $"tests/{Guid.NewGuid()}.pdf";
         var bytes = "%PDF-1.4 prueba"u8.ToArray();
 
-        var put = await _storage.PresignUploadAsync(StorageBucket.Documents, key, "application/pdf", TimeSpan.FromMinutes(5), default);
+        var put = await _storage.PresignUploadAsync(StorageBucket.Documents, key, "application/pdf", bytes.Length, TimeSpan.FromMinutes(5), default);
         using var content = new ByteArrayContent(bytes);
         content.Headers.ContentType = MediaTypeHeaderValue.Parse(put.Headers["Content-Type"]);
         Assert.Equal(HttpStatusCode.OK, (await _browser.PutAsync(put.Url, content)).StatusCode);
@@ -62,11 +62,40 @@ public sealed class S3ObjectStorageTests : IDisposable
     [Fact]
     public async Task A_put_with_another_content_type_than_the_signed_one_is_refused()
     {
-        var put = await _storage.PresignUploadAsync(StorageBucket.Documents, $"tests/{Guid.NewGuid()}.pdf", "application/pdf",
+        var put = await _storage.PresignUploadAsync(StorageBucket.Documents, $"tests/{Guid.NewGuid()}.pdf", "application/pdf", 3,
             TimeSpan.FromMinutes(5), default);
         using var content = new ByteArrayContent([1, 2, 3]);
         content.Headers.ContentType = new MediaTypeHeaderValue("text/html");
         Assert.Equal(HttpStatusCode.Forbidden, (await _browser.PutAsync(put.Url, content)).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_put_longer_or_shorter_than_the_signed_size_is_refused()
+    {
+        foreach (var length in new[] { 4, 2 })
+        {
+            var put = await _storage.PresignUploadAsync(StorageBucket.Documents, $"tests/{Guid.NewGuid()}.pdf", "application/pdf", 3,
+                TimeSpan.FromMinutes(5), default);
+            using var content = new ByteArrayContent(new byte[length]);
+            content.Headers.ContentType = MediaTypeHeaderValue.Parse(put.Headers["Content-Type"]);
+            Assert.Equal(HttpStatusCode.Forbidden, (await _browser.PutAsync(put.Url, content)).StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task A_copy_is_a_snapshot_that_later_writes_to_the_source_do_not_change()
+    {
+        var source = $"tests/{Guid.NewGuid()}.pdf";
+        var copy = $"tests/{Guid.NewGuid()}.pdf";
+        await _storage.UploadAsync(StorageBucket.Documents, source, "%PDF-1.4 uno"u8.ToArray(), "application/pdf", default);
+        await _storage.CopyAsync(StorageBucket.Documents, source, copy, default);
+        await _storage.UploadAsync(StorageBucket.Documents, source, "MZ otro"u8.ToArray(), "text/html", default);
+
+        var head = await _storage.HeadAsync(StorageBucket.Documents, copy, default);
+        Assert.Equal("application/pdf", head?.ContentType);
+        Assert.Equal("%PDF-1.4 uno"u8.ToArray(), await _storage.ReadPrefixAsync(StorageBucket.Documents, copy, 64, default));
+        await _storage.DeleteAsync(StorageBucket.Documents, source, default);
+        await _storage.DeleteAsync(StorageBucket.Documents, copy, default);
     }
 
     public void Dispose()

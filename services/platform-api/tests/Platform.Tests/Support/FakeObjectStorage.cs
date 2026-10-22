@@ -25,12 +25,18 @@ public sealed class FakeObjectStorage : IObjectStorage
         };
     }
 
+    /// <summary>The length each presigned upload was signed for.</summary>
+    public ConcurrentBag<(string Key, long SizeBytes)> PresignedSizes { get; } = [];
+
     public Task PingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    public Task<PresignedRequest> PresignUploadAsync(StorageBucket bucket, string key, string contentType, TimeSpan lifetime,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(new PresignedRequest($"https://storage.test/{bucket}/{key}?put",
+    public Task<PresignedRequest> PresignUploadAsync(StorageBucket bucket, string key, string contentType, long sizeBytes,
+        TimeSpan lifetime, CancellationToken cancellationToken)
+    {
+        PresignedSizes.Add((key, sizeBytes));
+        return Task.FromResult(new PresignedRequest($"https://storage.test/{bucket}/{key}?put",
             new Dictionary<string, string> { ["Content-Type"] = contentType }, DateTimeOffset.UtcNow.Add(lifetime)));
+    }
 
     public Task<PresignedRequest> PresignDownloadAsync(StorageBucket bucket, string key, string? downloadAs, TimeSpan lifetime,
         CancellationToken cancellationToken)
@@ -56,9 +62,20 @@ public sealed class FakeObjectStorage : IObjectStorage
     public Task<byte[]> ReadPrefixAsync(StorageBucket bucket, string key, int count, CancellationToken cancellationToken) =>
         Task.FromResult(Contents.TryGetValue((bucket, key), out var c) ? c[..Math.Min(count, c.Length)] : []);
 
+    public ConcurrentBag<(string Source, string Destination)> Copies { get; } = [];
+
+    public Task CopyAsync(StorageBucket bucket, string sourceKey, string destinationKey, CancellationToken cancellationToken)
+    {
+        Copies.Add((sourceKey, destinationKey));
+        Objects[(bucket, destinationKey)] = Objects[(bucket, sourceKey)];
+        Contents[(bucket, destinationKey)] = Contents.GetValueOrDefault((bucket, sourceKey)) ?? [];
+        return Task.CompletedTask;
+    }
+
     public Task DeleteAsync(StorageBucket bucket, string key, CancellationToken cancellationToken)
     {
         Objects.TryRemove((bucket, key), out _);
+        Contents.TryRemove((bucket, key), out _);
         return Task.CompletedTask;
     }
 }
