@@ -165,7 +165,7 @@ public static class RegistrationEndpoints
 
         g.MapPost("/{id:guid}/download", async (Guid id, DbContext db, RequestContext ctx, IClock clock, IObjectStorage storage, CancellationToken ct) =>
             {
-                if ((await BatchesAsync(db, ctx, id, ct)).Count == 0)
+                if (!await CoversEveryRowAsync(db, ctx, id, ct))
                     return ApiResults.NotFound(BatchNotFound);
                 var batch = await db.Set<RegistrationBatch>().AsNoTracking().SingleAsync(b => b.Uid == id, ct);
                 db.Add(Export(ctx, clock.UtcNow, new { download = true, batchId = id }));
@@ -177,7 +177,7 @@ public static class RegistrationEndpoints
 
         g.MapPost("/{id:guid}/uploaded", async (Guid id, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
             {
-                if ((await BatchesAsync(db, ctx, id, ct)).Count == 0)
+                if (!await CoversEveryRowAsync(db, ctx, id, ct))
                     return ApiResults.NotFound(BatchNotFound);
                 var batch = await db.Set<RegistrationBatch>().Include(b => b.Rows).SingleAsync(b => b.Uid == id, ct);
                 if (batch.Status != BatchStatus.Generated)
@@ -319,6 +319,17 @@ public static class RegistrationEndpoints
             c.Person.BirthDate,
             c.Person.Gender switch { Platform.Core.People.Gender.Male => LayoutGender.Male, Platform.Core.People.Gender.Female => LayoutGender.Female, _ => null },
             c.PositionName, c.Person.Email ?? "", null, c.Person.BirthState ?? "");
+
+    /// <summary>
+    /// Batch-level actions (the whole xlsx, every card request) need the grant to cover every person in the batch: a client-limited
+    /// grant that sees only part of it gets «not found», as the file carries other clients' CURP, RFC, address and phone.
+    /// </summary>
+    private static async Task<bool> CoversEveryRowAsync(DbContext db, RequestContext ctx, Guid id, CancellationToken ct)
+    {
+        var employees = PayrollScope.Employees(db, ctx, PermissionModule.PayrollCardRequests);
+        var rows = db.Set<RegistrationBatchRow>().Where(x => x.RegistrationBatchId == id);
+        return await rows.AnyAsync(ct) && !await rows.AnyAsync(x => !employees.Any(e => e.Uid == x.EmployeeId), ct);
+    }
 
     private static async Task<List<RegistrationBatchDto>> BatchesAsync(DbContext db, RequestContext ctx, Guid? id, CancellationToken ct)
     {
