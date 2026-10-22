@@ -58,18 +58,26 @@ public sealed class FirebaseAuthProvider : IAuthProvider
         try
         {
             var existing = await _auth.Value.GetUserByEmailAsync(email, cancellationToken);
-            return existing.Uid;
+            // A verified account proved control of the mailbox (reset-link flow, or a real sign-up confirmed): reuse it. An
+            // unverified one may be a stranger's self-registration with the victim's address and their own password — drop it
+            // (credentials, refresh tokens and linked providers go with it) and start clean; the invitee sets the password
+            // through the setup link, which also marks the email verified.
+            if (existing.EmailVerified)
+                return existing.Uid;
+            await _auth.Value.DeleteUserAsync(existing.Uid, cancellationToken);
         }
         catch (FirebaseAuthException e) when (e.AuthErrorCode == AuthErrorCode.UserNotFound)
         {
-            var created = await _auth.Value.CreateUserAsync(new UserRecordArgs
-            {
-                Email = email,
-                DisplayName = displayName,
-                EmailVerified = false,
-            }, cancellationToken);
-            return created.Uid;
+            // fall through to create
         }
+
+        var created = await _auth.Value.CreateUserAsync(new UserRecordArgs
+        {
+            Email = email,
+            DisplayName = displayName,
+            EmailVerified = false,
+        }, cancellationToken);
+        return created.Uid;
     }
 
     public Task UpdateEmailAsync(string uid, string email, CancellationToken cancellationToken) =>
