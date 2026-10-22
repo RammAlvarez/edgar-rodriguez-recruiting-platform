@@ -123,6 +123,9 @@ public static class IncidentEndpoints
         return v1;
     }
 
+    /// <summary>How far past today an incidencia may be dated; further out is a typo that would open a payroll period years ahead.</summary>
+    public const int MaxDaysAhead = 14;
+
     private static IQueryable<Incident> Scope(DbContext db, RequestContext ctx)
     {
         var employees = PayrollScope.Employees(db, ctx, PermissionModule.PayrollIncidents);
@@ -160,6 +163,8 @@ public static class IncidentEndpoints
             errors["reason"] = ["El motivo admite hasta 200 caracteres."];
         if (r.Date < employee.HiredAt || employee.TerminatedAt is { } t && r.Date >= t)
             errors["date"] = ["Esa fecha no está dentro del empleo de la persona."];
+        else if (r.Date > clock.Today().AddDays(MaxDaysAhead))
+            errors["date"] = [$"La fecha no puede ser más de {MaxDaysAhead} días posterior a hoy."];
         if (errors.Count > 0)
             return ApiResults.Validation(errors);
 

@@ -293,6 +293,20 @@ public sealed class PrepayrollTests(ApiFactory factory) : ApiTest(factory)
         });
         Assert.Contains("quantity", (await ErrorsOf(noHours)).Keys);
 
+        // A typo'd year must not open a period decades ahead.
+        var farFuture = await _owner.PostAsJsonAsync("/v1/payroll/incidents", new
+        {
+            employeeId = employee,
+            conceptCode = "OVERTIME_TRIPLE",
+            date = "2062-10-14",
+            quantity = "2",
+            amount = (string?)null,
+            reason = (string?)null,
+        });
+        Assert.Contains("date", (await ErrorsOf(farFuture)).Keys);
+        foreach (var date in new[] { "9999-12-31", "1999-12-31" })
+            Assert.Contains("date", (await ErrorsOf(await _owner.PostAsJsonAsync($"/v1/payroll/groups/{a.Group}/periods", new { date }))).Keys);
+
         Assert.Equal(HttpStatusCode.NoContent, (await _owner.DeleteAsync($"/v1/payroll/incidents/{deduction.GetProperty("id").GetGuid()}")).StatusCode);
         Assert.Equal(2_999.99m + 142.84m, Dec(Row(await Grid(a.Period), employee).GetProperty("totalNet")));
     }
