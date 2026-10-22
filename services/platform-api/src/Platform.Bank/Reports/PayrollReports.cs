@@ -380,7 +380,7 @@ public static class PayrollReports
                 var list = days.GetValueOrDefault(e.Uid) ?? [];
                 var s = AttendanceSummaries.Summarize(list, holidays);
                 int Count(Func<AttendanceRecord, bool> f) => list.Count(f);
-                return (e.FullName, e.Client, Summary: s, Absent: Count(a => a.Status == AttendanceStatus.Absent && !a.IsAutoAbsent),
+                return (e.Uid, e.FullName, e.Client, Summary: s, Absent: Count(a => a.Status == AttendanceStatus.Absent && !a.IsAutoAbsent),
                     Auto: Count(a => a.Status == AttendanceStatus.Absent && a.IsAutoAbsent), Sick: Count(a => a.Status == AttendanceStatus.SickLeave),
                     Leave: Count(a => a.Status is AttendanceStatus.LeavePaid or AttendanceStatus.LeaveUnpaid),
                     Vacation: Count(a => a.Status == AttendanceStatus.Vacation), Captured: list.Count);
@@ -405,8 +405,7 @@ public static class PayrollReports
             var dates = Enumerable.Range(0, to.DayNumber - from.DayNumber + 1).Select(from.AddDays).ToList();
             var grid = summary.Select(x =>
                 {
-                    var e = employees.First(y => y.FullName == x.FullName && y.Client == x.Client);
-                    var byDate = (days.GetValueOrDefault(e.Uid) ?? []).ToDictionary(a => a.WorkDate);
+                    var byDate = (days.GetValueOrDefault(x.Uid) ?? []).ToDictionary(a => a.WorkDate);
                     return new PayrollReportRowDto(
                     [
                         ReportCell.Text(x.FullName),
