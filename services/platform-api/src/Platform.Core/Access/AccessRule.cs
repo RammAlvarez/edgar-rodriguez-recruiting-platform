@@ -30,6 +30,8 @@ public static class AccessMessages
         "Este correo no tiene acceso. Revisa que sea el mismo correo con el que te registraron o pide ayuda a quien te invitó.";
     public const string CandidateEmailShared =
         "Tu correo está registrado en más de una persona. Pide a tu reclutador que lo corrija para poder entrar.";
+    public const string EmailNotVerified =
+        "Confirma tu correo con el enlace de invitación (o restablece tu contraseña) para entrar.";
     public const string Inactive = "Tu cuenta está desactivada. Contacta al administrador.";
     public const string RoleNotAllowed = "No tienes permiso para esta sección.";
     public const string CoverModeAdminOnly = "Solo un Administrador puede cubrir a un reclutador.";

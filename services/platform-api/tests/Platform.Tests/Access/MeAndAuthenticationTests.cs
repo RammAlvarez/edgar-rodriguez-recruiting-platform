@@ -44,6 +44,21 @@ public sealed class MeAndAuthenticationTests(ApiFactory factory) : ApiTest(facto
         Assert.Equal(AccessMessages.Inactive, await Detail(response));
     }
 
+    [Theory]
+    [InlineData(UserRole.Administrator)]
+    [InlineData(UserRole.Recruiter)]
+    public async Task Staff_whose_provider_email_is_unverified_get_403(UserRole role)
+    {
+        var user = await WithDb(db => db.AddUser(role));
+        Factory.Auth.Emails[user.AuthUid] = (user.Email, false);
+        var response = await Client(user.AuthUid).GetAsync("/v1/me");
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(AccessMessages.EmailNotVerified, await Detail(response));
+
+        Factory.Auth.Emails[user.AuthUid] = (user.Email, true);
+        Assert.Equal(HttpStatusCode.OK, (await Client(user.AuthUid).GetAsync("/v1/me")).StatusCode);
+    }
+
     [Fact]
     public async Task Administrator_sees_role_and_grants_from_the_database()
     {
