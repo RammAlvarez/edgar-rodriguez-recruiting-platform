@@ -75,12 +75,15 @@ public static class GroupEndpoints
             {
                 if (await PayrollScope.Groups(db, ctx, PermissionModule.PayrollPrepayroll).SingleOrDefaultAsync(x => x.Uid == id, ct) is not { } group)
                     return ApiResults.NotFound(NotFound);
+                // The rules and the lines they price land together (or not at all), under the lines' advisory locks.
+                await using var transaction = await db.Database.BeginTransactionAsync(ct);
                 Apply(group, r);
                 return await db.SaveOrConflictAsync(async () =>
                 {
                     // The group's rules (séptimo día, prima, festivo) are in every open line.
                     await Prepayroll.Prepayrolls.RecomputeGroupAsync(db, id, clock.UtcNow, ct);
                     await db.SaveChangesAsync(ct);
+                    await transaction.CommitAsync(ct);
                     return Result(await Detail(db, db.Set<PayrollGroup>(), id, clock.Today(), ct));
                 }, NameTaken, ct);
             })
@@ -111,6 +114,7 @@ public static class GroupEndpoints
             {
                 if (!await PayrollScope.Groups(db, ctx, PermissionModule.PayrollPrepayroll).AnyAsync(x => x.Uid == id, ct))
                     return ApiResults.NotFound(NotFound);
+                await using var transaction = await db.Database.BeginTransactionAsync(ct);
                 var concepts = await db.Set<PayConceptRow>().Where(c => ConfigurableCodes.Contains(c.Code)).ToDictionaryAsync(c => c.Code, ct);
                 var rows = await db.Set<PayrollGroupConcept>().Where(c => c.PayrollGroupId == id).ToDictionaryAsync(c => c.PayConceptId, ct);
                 foreach (var item in r.Concepts)
@@ -126,6 +130,7 @@ public static class GroupEndpoints
                 await db.SaveChangesAsync(ct);
                 await Prepayroll.Prepayrolls.RecomputeGroupAsync(db, id, clock.UtcNow, ct);
                 await db.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
                 return Result(await Detail(db, db.Set<PayrollGroup>(), id, clock.Today(), ct));
             })
             .WithName("UpdatePayrollGroupConcepts").Mutation<GroupConceptsRequest>().RequireAccess(Access);
@@ -147,6 +152,7 @@ public static class GroupEndpoints
             {
                 if (await Position(db, ctx, id, ct) is not { } position)
                     return ApiResults.NotFound(PositionNotFound);
+                await using var transaction = await db.Database.BeginTransactionAsync(ct);
                 var open = await db.Set<PositionRate>().SingleOrDefaultAsync(x => x.PositionId == id && x.ValidTo == null, ct);
                 if (open is not null && r.ValidFrom <= open.ValidFrom)
                     return ApiResults.Validation(new Dictionary<string, string[]>
@@ -172,6 +178,7 @@ public static class GroupEndpoints
                 // A period uses the rates valid at its end: only open periods change, a paid one keeps what it paid.
                 await Prepayroll.Prepayrolls.RecomputeGroupAsync(db, position.PayrollGroupId, clock.UtcNow, ct);
                 await db.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
                 return Result(await Detail(db, db.Set<PayrollGroup>(), position.PayrollGroupId, clock.Today(), ct));
             })
             .WithName("ChangePositionRates").Mutation<PositionRatesRequest>().RequireAccess(Access);

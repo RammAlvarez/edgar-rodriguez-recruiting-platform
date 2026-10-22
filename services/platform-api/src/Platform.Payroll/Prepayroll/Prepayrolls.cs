@@ -77,10 +77,15 @@ public static class Prepayrolls
             await transaction.CommitAsync(ct);
     }
 
-    /// <summary>Recomputes every line of the group's open periods (rates, rules or concepts changed).</summary>
+    /// <summary>
+    /// Recomputes every line of the group's open periods (rates, rules or concepts changed). The caller's transaction must
+    /// hold the edit too: the lines' advisory locks are taken inside it.
+    /// </summary>
     public static async Task RecomputeGroupAsync(DbContext db, Guid groupId, DateTimeOffset now, CancellationToken ct)
     {
-        foreach (var period in await db.Set<PayrollPeriod>().Where(p => p.PayrollGroupId == groupId && Open.Contains(p.Status)).ToListAsync(ct))
+        // Periods in Guid order, as RecomputeEmployeeAsync takes them: every writer locks lines in one order (no deadlocks).
+        var periods = await db.Set<PayrollPeriod>().Where(p => p.PayrollGroupId == groupId && Open.Contains(p.Status)).ToListAsync(ct);
+        foreach (var period in periods.OrderBy(p => p.Uid))
             await EnsureLinesAsync(db, period, now, ct, recomputeAll: true);
     }
 
