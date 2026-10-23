@@ -64,8 +64,15 @@ public sealed class DashboardTests(ApiFactory factory) : ApiTest(factory)
     private static PersonDocument Doc(Guid personId, Guid typeId, DateOnly expires, DocumentStatus status = DocumentStatus.Delivered, Guid? supersededBy = null) =>
         new()
         {
-            PersonId = personId, DocumentTypeId = typeId, Status = status, StorageKey = $"k/{Guid.NewGuid():N}", OriginalFilename = "f.pdf",
-            ContentType = "application/pdf", SizeBytes = 1024, ExpiresAt = expires, SupersededBy = supersededBy,
+            PersonId = personId,
+            DocumentTypeId = typeId,
+            Status = status,
+            StorageKey = $"k/{Guid.NewGuid():N}",
+            OriginalFilename = "f.pdf",
+            ContentType = "application/pdf",
+            SizeBytes = 1024,
+            ExpiresAt = expires,
+            SupersededBy = supersededBy,
             RejectionReason = status == DocumentStatus.Rejected ? "Ilegible" : null,
         };
 }
