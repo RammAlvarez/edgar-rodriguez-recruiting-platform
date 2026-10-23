@@ -39,7 +39,7 @@ public static class DocumentEndpoints
                     return ApiResults.NotFound("El tipo de documento no existe.");
                 var key = $"{DocumentFiles.KeyPrefix(r.PersonId, type.Code)}{Guid.CreateVersion7()}.{DocumentFiles.Extensions[r.ContentType]}";
                 var put = await storage.PresignUploadAsync(StorageBucket.Documents, key, r.ContentType.ToLowerInvariant(),
-                    DocumentFiles.UrlLifetime, ct);
+                    r.SizeBytes, DocumentFiles.UrlLifetime, ct);
                 return TypedResults.Ok(new PresignUploadResponse(key, put.Url, put.Headers, put.ExpiresAt));
             })
             .WithName("PresignDocumentUpload").WithTags("Documents").Validate<PresignUploadRequest>()
@@ -119,22 +119,12 @@ public static class DocumentEndpoints
         var prefix = DocumentFiles.KeyPrefix(personId, type.Code);
         if (!r.StorageKey.StartsWith(prefix, StringComparison.Ordinal) || r.StorageKey.AsSpan(prefix.Length).ContainsAny("/\\"))
             return Field("storageKey", "El archivo no corresponde a esta persona o a este documento.");
+        // One confirm per uploaded key at a time (a double-click, a retry): the second waits for the first to move the file and
+        // commit, then finds nothing left to register instead of failing mid-copy or registering the same upload twice.
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({r.StorageKey}))", ct);
         if (await db.Set<PersonDocument>().AnyAsync(d => d.StorageKey == r.StorageKey, ct))
             return Field("storageKey", "Este archivo ya se registró.");
-        if (await storage.HeadAsync(StorageBucket.Documents, r.StorageKey, ct) is not { } stored)
-            return Field("storageKey", "No encontramos el archivo; vuelve a subirlo.");
-        var contentType = (stored.ContentType ?? "").Split(';')[0].Trim().ToLowerInvariant();
-        if (stored.SizeBytes is <= 0 or > DocumentFiles.MaxBytes || !DocumentFiles.Extensions.ContainsKey(contentType))
-        {
-            await storage.DeleteAsync(StorageBucket.Documents, r.StorageKey, ct);
-            return Field("storageKey", "Sube un PDF, JPG o PNG de máximo 10 MB.");
-        }
-        if (!DocumentFiles.HasSignature(contentType, await storage.ReadPrefixAsync(StorageBucket.Documents, r.StorageKey, 8, ct)))
-        {
-            await storage.DeleteAsync(StorageBucket.Documents, r.StorageKey, ct);
-            return Field("storageKey", DocumentFiles.NotAFile);
-        }
-
         var today = clock.Today();
         var expiresAt = type.HasExpiry
             ? r.ExpiresAt ?? (type.DefaultValidityDays is { } days ? (r.IssuedAt ?? today).AddDays(days) : null)
@@ -142,14 +132,45 @@ public static class DocumentEndpoints
         if (expiresAt is { } e && e < today)
             return Field("expiresAt", "El documento ya está vencido; sube uno vigente.");
 
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        if (await storage.HeadAsync(StorageBucket.Documents, r.StorageKey, ct) is not { } uploaded)
+            return Field("storageKey", "No encontramos el archivo; vuelve a subirlo.");
+        if (uploaded.SizeBytes is <= 0 or > DocumentFiles.MaxBytes)
+        {
+            await storage.DeleteAsync(StorageBucket.Documents, r.StorageKey, ct);
+            return Field("storageKey", "Sube un PDF, JPG o PNG de máximo 10 MB.");
+        }
+
+        // The upload URL stays valid after this point, so the uploaded key could be overwritten with anything. Copy it
+        // to a key nobody holds a URL for, check the copy, and keep only the copy (it is what staff later download).
+        var contentType = (uploaded.ContentType ?? "").Split(';')[0].Trim().ToLowerInvariant();
+        if (!DocumentFiles.Extensions.TryGetValue(contentType, out var extension))
+        {
+            await storage.DeleteAsync(StorageBucket.Documents, r.StorageKey, ct);
+            return Field("storageKey", "Sube un PDF, JPG o PNG de máximo 10 MB.");
+        }
+        var finalKey = $"{prefix}stored/{Guid.CreateVersion7()}.{extension}";
+        await storage.CopyAsync(StorageBucket.Documents, r.StorageKey, finalKey, ct);
+        await storage.DeleteAsync(StorageBucket.Documents, r.StorageKey, ct);
+        var stored = await storage.HeadAsync(StorageBucket.Documents, finalKey, ct);
+        contentType = (stored?.ContentType ?? "").Split(';')[0].Trim().ToLowerInvariant();
+        if (stored is null || stored.SizeBytes is <= 0 or > DocumentFiles.MaxBytes || !DocumentFiles.Extensions.ContainsKey(contentType))
+        {
+            await storage.DeleteAsync(StorageBucket.Documents, finalKey, ct);
+            return Field("storageKey", "Sube un PDF, JPG o PNG de máximo 10 MB.");
+        }
+        if (!DocumentFiles.HasSignature(contentType, await storage.ReadPrefixAsync(StorageBucket.Documents, finalKey, 8, ct)))
+        {
+            await storage.DeleteAsync(StorageBucket.Documents, finalKey, ct);
+            return Field("storageKey", DocumentFiles.NotAFile);
+        }
+
         var previous = await db.Set<PersonDocument>()
             .SingleOrDefaultAsync(d => d.PersonId == personId && d.DocumentTypeId == type.Uid && d.SupersededBy == null, ct);
         var doc = new PersonDocument
         {
             PersonId = personId,
             DocumentTypeId = type.Uid,
-            StorageKey = r.StorageKey,
+            StorageKey = finalKey,
             OriginalFilename = DocumentFiles.SanitizeFileName(r.OriginalFilename, contentType),
             ContentType = contentType,
             SizeBytes = stored.SizeBytes,

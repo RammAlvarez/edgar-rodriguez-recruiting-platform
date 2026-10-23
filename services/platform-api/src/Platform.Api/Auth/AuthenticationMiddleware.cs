@@ -64,6 +64,15 @@ public sealed class AuthenticationMiddleware(RequestDelegate next)
                 return;
             }
 
+            // Users are authorised by uid alone, so the provider must vouch for the mailbox: an account somebody self-registered
+            // with the invited address stays unverified until its owner uses the password-setup link (staff) or signs in with the
+            // email link (Cliente users), both of which verify it.
+            if (!identity.EmailVerified)
+            {
+                await ApiResults.Forbidden(AccessMessages.EmailNotVerified).ExecuteAsync(http);
+                return;
+            }
+
             ctx.AuthTime = identity.AuthTime;
             var mfaEnabled = user.MfaEnabledAt is not null;
             var mfaVerified = mfaEnabled && identity.AuthTime is { } signedInAt

@@ -13,7 +13,7 @@ import { Router } from '@angular/router';
 import { ApiError } from '@platform/api-client';
 import { type DateKey, formatDateKey } from '@platform/shared';
 import { MatSortModule } from '@angular/material/sort';
-import { openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
+import { openSidePanel, Pager, type SortValue, UiPager } from '@platform/ui';
 import { DateKeyPipe } from '@platform/ui/pipes';
 import type { EmployeeListItemDto, EmployeeStatus, RegistrationBank } from '../data/api-types';
 import { EMPLOYEE_STATUS, PERIOD_STATUS_LABEL, REGISTRATION_BANK } from '../data/payroll-labels';

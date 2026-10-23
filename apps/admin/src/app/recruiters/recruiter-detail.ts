@@ -9,7 +9,7 @@ import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
-import { API_CLIENT, confirm, DateKeyPipe, openSidePanel, Pager, Session, SortValue, UiPager } from '@platform/ui';
+import { API_CLIENT, confirm, DateKeyPipe, openSidePanel, Pager, Session, type SortValue, UiPager } from '@platform/ui';
 import type { RecruiterAssignmentDto, RecruiterDetailDto } from '../data/api-types';
 import { OPENING_STATUS } from '../data/recruiting-labels';
 import { OpeningsRepository, RecruitersRepository } from '../data/recruiting-repositories';

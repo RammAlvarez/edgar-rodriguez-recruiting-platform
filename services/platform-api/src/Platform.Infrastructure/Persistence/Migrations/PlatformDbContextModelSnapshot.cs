@@ -656,6 +656,10 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("card_request_id");
 
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -708,6 +712,9 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.HasIndex("CardRequestId")
                         .IsUnique()
                         .HasDatabaseName("ix_registration_batch_rows_card_request_id");
+
+                    b.HasIndex("ClientId")
+                        .HasDatabaseName("ix_registration_batch_rows_client_id");
 
                     b.HasIndex("EmployeeId")
                         .HasDatabaseName("ix_registration_batch_rows_employee_id");
@@ -4649,6 +4656,14 @@ namespace Platform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_registration_batch_rows_card_requests_card_request_id");
+
+                    b.HasOne("Platform.Core.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .HasPrincipalKey("Uid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_registration_batch_rows_clients_client_id");
 
                     b.HasOne("Platform.Payroll.Staff.Employee", null)
                         .WithMany()

@@ -14,7 +14,7 @@ import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '@platform/api-client';
-import { DateKeyPipe, MoneyPipe, openSidePanel, Pager, SortValue, TimestampPipe, UiPager } from '@platform/ui';
+import { DateKeyPipe, MoneyPipe, openSidePanel, Pager, type SortValue, TimestampPipe, UiPager } from '@platform/ui';
 import type { CandidateDetailDto, CandidateListItemDto, OpeningDetailDto, OpeningEventDto } from '../data/api-types';
 import { CandidatePanel, type CandidatePanelData } from '../candidates/candidate-panel';
 import { OPENING_STATUS, PRIORITY, SOURCE, STAGE, type OpeningEventKind, type OpeningStatus } from '../data/recruiting-labels';

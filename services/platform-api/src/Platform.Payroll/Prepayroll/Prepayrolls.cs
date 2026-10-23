@@ -29,17 +29,17 @@ public static class Prepayrolls
     {
         await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         await db.SaveChangesAsync(ct);
-        // One order for every writer, so two requests that lock several lines never wait on each other in a cycle.
-        foreach (var (employeeId, from, to) in scope.Distinct().OrderBy(x => x.EmployeeId))
+        var lines = new List<(Guid PeriodId, Guid EmployeeId)>();
+        foreach (var (employeeId, from, to) in scope.Distinct())
         {
             var groupId = await db.Set<Employee>().Where(e => e.Uid == employeeId).Select(e => e.PayrollGroupId).SingleAsync(ct);
             var periods = await db.Set<PayrollPeriod>()
                 .Where(p => p.PayrollGroupId == groupId && Open.Contains(p.Status) && p.StartDate <= to && p.EndDate >= from)
                 .Select(p => p.Uid).ToListAsync(ct);
-            foreach (var period in periods)
-                await RecomputeAsync(db, period, employeeId, now, ct);
+            lines.AddRange(periods.Select(p => (p, employeeId)));
         }
-        await db.SaveChangesAsync(ct);
+        // Locked period-major, like every other writer, so two requests that lock several lines never wait on each other in a cycle.
+        await SaveAndRecomputeLinesAsync(db, lines, now, ct);
         if (transaction is not null)
             await transaction.CommitAsync(ct);
     }
@@ -77,10 +77,15 @@ public static class Prepayrolls
             await transaction.CommitAsync(ct);
     }
 
-    /// <summary>Recomputes every line of the group's open periods (rates, rules or concepts changed).</summary>
+    /// <summary>
+    /// Recomputes every line of the group's open periods (rates, rules or concepts changed). The caller's transaction must
+    /// hold the edit too: the lines' advisory locks are taken inside it.
+    /// </summary>
     public static async Task RecomputeGroupAsync(DbContext db, Guid groupId, DateTimeOffset now, CancellationToken ct)
     {
-        foreach (var period in await db.Set<PayrollPeriod>().Where(p => p.PayrollGroupId == groupId && Open.Contains(p.Status)).ToListAsync(ct))
+        // Periods in Guid order, as RecomputeEmployeeAsync takes them: every writer locks lines in one order (no deadlocks).
+        var periods = await db.Set<PayrollPeriod>().Where(p => p.PayrollGroupId == groupId && Open.Contains(p.Status)).ToListAsync(ct);
+        foreach (var period in periods.OrderBy(p => p.Uid))
             await EnsureLinesAsync(db, period, now, ct, recomputeAll: true);
     }
 
@@ -200,10 +205,13 @@ public static class Prepayrolls
                 await StaffRules.PositionRatesOn(db, employee.PositionId, period.EndDate, ct));
         var (position, positionRates) = cached;
         var rates = StaffRules.Effective(employee, positionRates);
-        var days = batch is not null
+        // Only the days inside the employment count: a baja dated in the past (or an alta moved earlier) leaves attendance rows
+        // outside [HiredAt, TerminatedAt), and those are not paid (days worked, salary, séptimo, bonuses).
+        var days = AttendanceSummaries.WithinEmployment(batch is not null
             ? batch.Days[employeeId].ToList()
             : await db.Set<AttendanceRecord>().AsNoTracking()
-                .Where(a => a.EmployeeId == employeeId && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate).ToListAsync(ct);
+                .Where(a => a.EmployeeId == employeeId && a.WorkDate >= period.StartDate && a.WorkDate <= period.EndDate).ToListAsync(ct),
+            employee);
         var holidays = context.Holidays;
         var concepts = context.Concepts;
         var codes = concepts.Values.ToDictionary(c => c.Code, c => c.Uid);

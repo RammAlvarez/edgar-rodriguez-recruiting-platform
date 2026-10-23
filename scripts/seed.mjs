@@ -41,8 +41,24 @@ async function signUpInEmulator({ email, password, name }) {
     `http://${emulator}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=demo-api-key`,
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, displayName: name }) },
   );
-  const body = await response.json();
+  let body = await response.json();
   if (!response.ok && body?.error?.message !== 'EMAIL_EXISTS') throw new Error(`Emulator sign-up failed: ${JSON.stringify(body)}`);
+  if (!response.ok) {
+    // Re-run: the account is there already; find its id to mark it verified (same password as the first run).
+    const signIn = await fetch(
+      `http://${emulator}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-api-key`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, returnSecureToken: true }) },
+    );
+    body = await signIn.json();
+    if (!signIn.ok) throw new Error(`Emulator sign-in of existing account failed: ${JSON.stringify(body)}`);
+  }
+  // The API replaces an unverified account for an invited email (a stranger could have registered it) and refuses unverified
+  // staff, so mark this one verified (emulator admin endpoint, bearer "owner") for bootstrap/invite to reuse it with its password.
+  const verify = await fetch(
+    `http://${emulator}/identitytoolkit.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID ?? 'demo-platform'}/accounts:update`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' }, body: JSON.stringify({ localId: body.localId, emailVerified: true }) },
+  );
+  if (!verify.ok) throw new Error(`Emulator email verification failed: ${await verify.text()}`);
 }
 
 async function internal(path, payload) {

@@ -163,41 +163,54 @@ public static class MfaEndpoints
 
     /// <summary>
     /// The code (or, where allowed, a recovery code) for <paramref name="user"/>; null when right. Counts wrong ones and locks
-    /// after <see cref="MaxAttempts"/>. Saves the attempt count.
+    /// after <see cref="MaxAttempts"/>. Every step that must not race (the attempt, the TOTP step, a recovery code) is one
+    /// conditional UPDATE, so parallel requests cannot dodge the lock nor use a code twice; the user is reloaded afterwards.
     /// </summary>
     private static async Task<IResult?> CheckAsync(DbContext db, User user, IFieldCipher cipher, string? code, DateTimeOffset now, bool recovery,
         CancellationToken ct)
     {
-        if (user.MfaLockedUntil is { } until && until > now)
+        var users = db.Set<User>().Where(u => u.Uid == user.Uid);
+        // A wait that is over starts a new window. So does a full count with no wait, which only rows from before the lock moved
+        // into the charge can hold (a check that died before its lock UPDATE): left alone, nothing would ever clear it.
+        await users.Where(u => u.MfaLockedUntil <= now || (u.MfaLockedUntil == null && u.MfaFailedAttempts >= MaxAttempts))
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaFailedAttempts, 0).SetProperty(u => u.MfaLockedUntil, (DateTimeOffset?)null), ct);
+        // The attempt is charged before the code is looked at: only MaxAttempts checks can be in flight per window. The one that
+        // takes the last attempt starts the wait in the same UPDATE, so a request that dies afterwards still leaves a wait that ends.
+        var lockUntil = now.Add(LockFor);
+        var charged = await users.Where(u => u.MfaFailedAttempts < MaxAttempts && u.MfaLockedUntil == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaFailedAttempts, u => u.MfaFailedAttempts + 1)
+                .SetProperty(u => u.MfaLockedUntil, u => u.MfaFailedAttempts + 1 >= MaxAttempts ? lockUntil : (DateTimeOffset?)null), ct);
+        if (charged == 0)
             return ApiResults.Validation(new Dictionary<string, string[]> { ["code"] = [Locked] });
+
         var secret = Base32.Decode(cipher.Decrypt(user.MfaSecretEnc!));
         if (Totp.Verify(secret, code ?? "", now, user.MfaLastStep) is { } step)
         {
-            user.MfaLastStep = step;
-            user.MfaFailedAttempts = 0;
-            user.MfaLockedUntil = null;
-            return null;
-        }
-        if (recovery && NormalizeRecovery(code) is { Length: 8 } normalized)
-        {
-            var hash = Hash(normalized);
-            var match = await db.Set<MfaRecoveryCode>().SingleOrDefaultAsync(c => c.UserId == user.Uid && c.CodeHash == hash && c.UsedAt == null, ct);
-            if (match is not null)
+            // Claims the step: of two requests with the same code only one moves MfaLastStep forward.
+            var claimed = await users.Where(u => u.MfaLastStep == null || u.MfaLastStep < step)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaLastStep, (long?)step).SetProperty(u => u.MfaFailedAttempts, 0)
+                    .SetProperty(u => u.MfaLockedUntil, (DateTimeOffset?)null), ct);
+            if (claimed == 1)
             {
-                match.UsedAt = now;
-                user.MfaFailedAttempts = 0;
-                user.MfaLockedUntil = null;
+                await db.Entry(user).ReloadAsync(ct);
                 return null;
             }
         }
-        user.MfaFailedAttempts++;
-        if (user.MfaFailedAttempts >= MaxAttempts)
+        else if (recovery && NormalizeRecovery(code) is { Length: 8 } normalized)
         {
-            user.MfaFailedAttempts = 0;
-            user.MfaLockedUntil = now.Add(LockFor);
+            var hash = Hash(normalized);
+            var used = await db.Set<MfaRecoveryCode>().Where(c => c.UserId == user.Uid && c.CodeHash == hash && c.UsedAt == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.UsedAt, (DateTimeOffset?)now), ct);
+            if (used == 1)
+            {
+                await users.ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaFailedAttempts, 0).SetProperty(u => u.MfaLockedUntil, (DateTimeOffset?)null), ct);
+                await db.Entry(user).ReloadAsync(ct);
+                return null;
+            }
         }
-        await db.SaveChangesAsync(ct);
-        return ApiResults.Validation(new Dictionary<string, string[]> { ["code"] = [user.MfaLockedUntil > now ? Locked : WrongCode] });
+        // Wrong: the attempt stays counted, and the wait (if the charge started it) stays on.
+        var locked = await users.AnyAsync(u => u.MfaLockedUntil > now, ct);
+        return ApiResults.Validation(new Dictionary<string, string[]> { ["code"] = [locked ? Locked : WrongCode] });
     }
 
     private static async Task MarkVerifiedAsync(DbContext db, User user, long? signedInAt, DateTimeOffset now, CancellationToken ct)

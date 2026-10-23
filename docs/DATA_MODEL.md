@@ -841,6 +841,7 @@ registration_batches(id, uid, bank registration_bank, generated_by, generated_at
                      occupation_code text, product_code text, card_type text,   -- 'NOMINATIVA' (PLAN D85)
                      gross_monthly_salary numeric(12,2), branch_to_send text)    -- the 5-digit sucursal, required for NOMINATIVA
 registration_batch_rows(id, uid, registration_batch_id FK, line_no int, card_request_id FK UNIQUE, employee_id FK,
+                        client_id FK,   -- the employee's client at generation; client-limited grants are checked against it
                         employee_number text, stamps)
 ```
 

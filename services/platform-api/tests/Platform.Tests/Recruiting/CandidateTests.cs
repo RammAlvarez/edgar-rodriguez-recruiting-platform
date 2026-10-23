@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -128,14 +129,15 @@ public sealed class CandidateTests(ApiFactory factory) : ApiTest(factory)
         var first = (await Capture(_admin)).GetProperty("id").GetGuid();
         var second = (await Capture(_admin, NewPerson("Ana"))).GetProperty("id").GetGuid();
 
-        var hired = await BodyOf(await Move(_admin, first, "hired", hiredAt: "2026-10-20"));
+        var hiredAt = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture); // never before the capture date, which uses the real clock
+        var hired = await BodyOf(await Move(_admin, first, "hired", hiredAt: hiredAt));
         Assert.Equal(1, hired.GetProperty("hired").GetInt32());
         Assert.Equal("filled", hired.GetProperty("openingStatus").GetString());
         var opening = await Opening();
         Assert.Equal("filled", opening.GetProperty("status").GetString());
         Assert.NotEqual(JsonValueKind.Null, opening.GetProperty("filledAt").ValueKind);
 
-        Assert.Equal(CandidateMessages.HeadcountReached(1), await DetailOf(await Move(_admin, second, "hired", hiredAt: "2026-10-20")));
+        Assert.Equal(CandidateMessages.HeadcountReached(1), await DetailOf(await Move(_admin, second, "hired", hiredAt: hiredAt)));
 
         await Move(_admin, first, "suitable");
         opening = await Opening();

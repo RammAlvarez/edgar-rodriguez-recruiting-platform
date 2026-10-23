@@ -364,9 +364,9 @@ public static class PayrollReports
             scoped = scoped.Where(g => g.Uid == p.Group.Uid);
         var employees = await db.Set<Employee>().AsNoTracking()
             .Where(e => scoped.Any(g => g.Uid == e.PayrollGroupId) && e.HiredAt <= to && (e.TerminatedAt == null || e.TerminatedAt > from))
-            .Join(db.Set<Person>(), e => e.PersonId, x => x.Uid, (e, x) => new { e.Uid, x.FullName, e.PayrollGroupId })
-            .Join(db.Set<PayrollGroup>(), x => x.PayrollGroupId, g => g.Uid, (x, g) => new { x.Uid, x.FullName, g.ClientId })
-            .Join(db.Set<Client>(), x => x.ClientId, c => c.Uid, (x, c) => new { x.Uid, x.FullName, Client = c.ShortName })
+            .Join(db.Set<Person>(), e => e.PersonId, x => x.Uid, (e, x) => new { e.Uid, x.FullName, e.PayrollGroupId, e.HiredAt, e.TerminatedAt })
+            .Join(db.Set<PayrollGroup>(), x => x.PayrollGroupId, g => g.Uid, (x, g) => new { x.Uid, x.FullName, x.HiredAt, x.TerminatedAt, g.ClientId })
+            .Join(db.Set<Client>(), x => x.ClientId, c => c.Uid, (x, c) => new { x.Uid, x.FullName, x.HiredAt, x.TerminatedAt, Client = c.ShortName })
             .ToListAsync(ct);
         var ids = employees.Select(e => e.Uid).ToList();
         var days = (await db.Set<AttendanceRecord>().AsNoTracking()
@@ -377,13 +377,15 @@ public static class PayrollReports
         static ReportCell Days(decimal d) => d == decimal.Truncate(d) ? ReportCell.Count((int)d) : ReportCell.Average(d);
         var summary = employees.Select(e =>
             {
-                var list = days.GetValueOrDefault(e.Uid) ?? [];
+                // The totals count only the days inside the employment, as the prenómina pays them (rows past a backdated baja are
+                // not days worked); the day grid below still shows every captured row.
+                var list = AttendanceSummaries.WithinEmployment(days.GetValueOrDefault(e.Uid) ?? [], e.HiredAt, e.TerminatedAt);
                 var s = AttendanceSummaries.Summarize(list, holidays);
                 int Count(Func<AttendanceRecord, bool> f) => list.Count(f);
-                return (e.FullName, e.Client, Summary: s, Absent: Count(a => a.Status == AttendanceStatus.Absent && !a.IsAutoAbsent),
+                return (e.Uid, e.FullName, e.Client, Summary: s, Absent: Count(a => a.Status == AttendanceStatus.Absent && !a.IsAutoAbsent),
                     Auto: Count(a => a.Status == AttendanceStatus.Absent && a.IsAutoAbsent), Sick: Count(a => a.Status == AttendanceStatus.SickLeave),
                     Leave: Count(a => a.Status is AttendanceStatus.LeavePaid or AttendanceStatus.LeaveUnpaid),
-                    Vacation: Count(a => a.Status == AttendanceStatus.Vacation), Captured: list.Count);
+                    Vacation: Count(a => a.Status == AttendanceStatus.Vacation), Captured: days.GetValueOrDefault(e.Uid)?.Count ?? 0);
             })
             .Where(x => x.Captured > 0)
             .OrderByDescending(x => x.Absent + x.Auto).ThenBy(x => x.FullName, StringComparer.Ordinal).ToList();
@@ -405,8 +407,7 @@ public static class PayrollReports
             var dates = Enumerable.Range(0, to.DayNumber - from.DayNumber + 1).Select(from.AddDays).ToList();
             var grid = summary.Select(x =>
                 {
-                    var e = employees.First(y => y.FullName == x.FullName && y.Client == x.Client);
-                    var byDate = (days.GetValueOrDefault(e.Uid) ?? []).ToDictionary(a => a.WorkDate);
+                    var byDate = (days.GetValueOrDefault(x.Uid) ?? []).ToDictionary(a => a.WorkDate);
                     return new PayrollReportRowDto(
                     [
                         ReportCell.Text(x.FullName),

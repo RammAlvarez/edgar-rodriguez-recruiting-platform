@@ -27,6 +27,16 @@ public static class AttendanceSummaries
     private static readonly AttendanceStatus[] Worked =
         [AttendanceStatus.Present, AttendanceStatus.Partial, AttendanceStatus.RestDayWorked, AttendanceStatus.HolidayWorked];
 
+    /// <summary>
+    /// The days that fall in the employment: from <c>HiredAt</c> up to, not including, <c>TerminatedAt</c> (the baja date is the
+    /// first day not worked, as in «Cerrar captura»). Rows outside it stay in the database but are never paid.
+    /// </summary>
+    public static List<AttendanceRecord> WithinEmployment(IEnumerable<AttendanceRecord> days, Employee employee) =>
+        WithinEmployment(days, employee.HiredAt, employee.TerminatedAt);
+
+    public static List<AttendanceRecord> WithinEmployment(IEnumerable<AttendanceRecord> days, DateOnly hiredAt, DateOnly? terminatedAt) =>
+        days.Where(d => d.WorkDate >= hiredAt && (terminatedAt is not { } t || d.WorkDate < t)).ToList();
+
     public static AttendanceSummary Summarize(IEnumerable<AttendanceRecord> days, IReadOnlySet<DateOnly> holidays)
     {
         var list = days.ToList();

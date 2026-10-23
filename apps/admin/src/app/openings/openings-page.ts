@@ -8,7 +8,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
+import { openSidePanel, Pager, type SortValue, UiPager } from '@platform/ui';
 import type { OpeningDetailDto, OpeningListItemDto } from '../data/api-types';
 import { OPENING_STATUS, PRIORITY, type OpeningStatus } from '../data/recruiting-labels';
 import { OpeningsRepository } from '../data/recruiting-repositories';

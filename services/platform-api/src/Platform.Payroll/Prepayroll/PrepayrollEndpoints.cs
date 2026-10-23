@@ -28,6 +28,10 @@ public static partial class PrepayrollEndpoints
 {
     public const string Tag = "prepayroll";
 
+    /// <summary>Bounds for creating a period by hand, so a typo cannot open one decades away or overflow date arithmetic.</summary>
+    public static readonly DateOnly MinPeriodDate = new(2000, 1, 1);
+    public const int MaxPeriodDaysAhead = 60;
+
     public static readonly AccessRule Access = AccessRule.Administrator(PermissionModule.PayrollPrepayroll);
 
     public const string PeriodNotFound = "El período no existe o no es de tus clientes.";
@@ -58,6 +62,11 @@ public static partial class PrepayrollEndpoints
                 var group = await Groups(db, ctx).AsNoTracking().SingleOrDefaultAsync(x => x.Uid == id, ct);
                 if (group is null)
                     return ApiResults.NotFound(GroupNotFound);
+                if (r.Date < MinPeriodDate || r.Date > clock.Today().AddDays(MaxPeriodDaysAhead))
+                    return ApiResults.Validation(new Dictionary<string, string[]>
+                    {
+                        ["date"] = [$"Elige una fecha entre {MinPeriodDate:dd/MM/yyyy} y {MaxPeriodDaysAhead} días después de hoy."],
+                    });
                 var (start, _, _, _) = PeriodCalendar.Containing(group, r.Date);
                 await using var transaction = await db.Database.BeginTransactionAsync(ct);
                 await PeriodCalendar.EnsureAsync(db, group, [r.Date], ct);

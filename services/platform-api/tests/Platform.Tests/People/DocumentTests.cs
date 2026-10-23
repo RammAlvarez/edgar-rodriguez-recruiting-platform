@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Platform.Core.Abstractions;
 using Platform.Core.Audit;
 using Platform.Core.People;
 using Platform.Core.Users;
@@ -49,6 +50,7 @@ public sealed class DocumentTests(ApiFactory factory) : ApiTest(factory)
 
         Assert.Matches($"^people/{_person}/INE/[0-9a-f-]{{36}}\\.pdf$", presign.GetProperty("storageKey").GetString());
         Assert.Equal("application/pdf", presign.GetProperty("headers").GetProperty("Content-Type").GetString());
+        Assert.Equal(1000, Factory.Storage.PresignedSizes.Single(p => p.Key == presign.GetProperty("storageKey").GetString()).SizeBytes);
     }
 
     [Theory]
@@ -60,6 +62,23 @@ public sealed class DocumentTests(ApiFactory factory) : ApiTest(factory)
         var response = await _admin.PostAsJsonAsync("/v1/files/presign-upload",
             new { personId = _person, documentTypeId = _types["INE"], fileName = "x", contentType, sizeBytes = size });
         Assert.Contains(field, (await ErrorsOf(response)).Keys);
+    }
+
+    [Fact]
+    public async Task The_same_upload_confirmed_at_once_is_registered_once_and_the_others_get_a_field_message()
+    {
+        await Arrange();
+        var presign = await BodyOf(await _admin.PostAsJsonAsync("/v1/files/presign-upload",
+            new { personId = _person, documentTypeId = _types["INE"], fileName = "ine.pdf", contentType = "application/pdf", sizeBytes = 200_000 }));
+        var key = presign.GetProperty("storageKey").GetString()!;
+        Factory.Storage.Put(key, 200_000, "application/pdf");
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 3).Select(_ => _admin.PostAsJsonAsync($"/v1/people/{_person}/documents",
+            new { documentTypeId = _types["INE"], storageKey = key, originalFilename = "ine.pdf", issuedAt = (string?)null, expiresAt = "2030-12-31" })));
+
+        Assert.Equal(1, results.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.All(results.Where(r => r.StatusCode != HttpStatusCode.OK), r => Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode));
+        Assert.Equal(1, await WithDb(db => db.Set<PersonDocument>().CountAsync(d => d.PersonId == _person)));
     }
 
     [Fact]
@@ -113,7 +132,35 @@ public sealed class DocumentTests(ApiFactory factory) : ApiTest(factory)
             new { documentTypeId = _types["INE"], storageKey = key, originalFilename = "ine.pdf" });
 
         Assert.Equal([DocumentFiles.NotAFile], (await ErrorsOf(response))["storageKey"]);
-        Assert.DoesNotContain(Factory.Storage.Objects.Keys, k => k.Item2 == key);
+        Assert.DoesNotContain(Factory.Storage.Objects.Keys, k => k.Item2.StartsWith($"people/{_person}/", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Confirm_pins_a_copy_so_overwriting_the_upload_url_afterwards_does_not_change_the_stored_document()
+    {
+        await Arrange();
+        var presign = await BodyOf(await _admin.PostAsJsonAsync("/v1/files/presign-upload",
+            new { personId = _person, documentTypeId = _types["INE"], fileName = "ine.pdf", contentType = "application/pdf", sizeBytes = 2000 }));
+        var uploadKey = presign.GetProperty("storageKey").GetString()!;
+        Factory.Storage.Put(uploadKey, 2000, "application/pdf");
+
+        var confirmed = await BodyOf(await _admin.PostAsJsonAsync($"/v1/people/{_person}/documents",
+            new { documentTypeId = _types["INE"], storageKey = uploadKey, originalFilename = "ine.pdf" }));
+
+        // The upload key is gone; the document lives under a key no upload URL was ever signed for.
+        Assert.DoesNotContain(Factory.Storage.Objects.Keys, k => k.Item2 == uploadKey);
+        var finalKey = Assert.Single(Factory.Storage.Copies, c => c.Source == uploadKey).Destination;
+        Assert.Matches($"^people/{_person}/INE/stored/[0-9a-f-]{{36}}\\.pdf$", finalKey);
+
+        // The old URL is replayed with an executable: it only creates a new, unconfirmed object under the old key.
+        Factory.Storage.Put(uploadKey, 50, "application/pdf", [0x4D, 0x5A]);
+        var url = await BodyOf(await _admin.GetAsync($"/v1/documents/{confirmed.GetProperty("id").GetGuid()}/url"));
+        Assert.Contains(finalKey, url.GetProperty("url").GetString());
+        Assert.Equal("%PDF-1.4"u8.ToArray(), Factory.Storage.Contents[(StorageBucket.Documents, finalKey)]);
+        // ...and it cannot be confirmed as a second document with those bytes: the checks run again on its copy.
+        var replay = await _admin.PostAsJsonAsync($"/v1/people/{_person}/documents",
+            new { documentTypeId = _types["INE"], storageKey = uploadKey, originalFilename = "ine.pdf" });
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
     }
 
     [Fact]

@@ -104,6 +104,82 @@ public sealed class MfaTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task After_the_wait_a_wrong_code_counts_as_the_first_of_a_new_window()
+    {
+        Factory.Clock.Now = T0;
+        var (user, _) = await SignedIn(UserRole.Recruiter);
+        await Enroll(SignIn(user, 100));
+        var next = SignIn(user, 200);
+        Factory.Clock.Now = T0.AddSeconds(60);
+        for (var i = 0; i < 5; i++)
+            await next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = "123456" });
+        Factory.Clock.Now = T0.AddMinutes(16);
+        Assert.Equal([MfaEndpoints.WrongCode], (await ErrorsOf(await next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = "123456" })))["code"]);
+        Assert.Equal(1, await WithDb(db => db.Set<User>().Where(u => u.Uid == user.Uid).Select(u => u.MfaFailedAttempts).SingleAsync()));
+    }
+
+    [Fact]
+    public async Task A_full_count_without_a_wait_does_not_lock_for_good()
+    {
+        // What a check that died between its charge and its lock UPDATE used to leave behind.
+        Factory.Clock.Now = T0;
+        var (user, _) = await SignedIn(UserRole.Recruiter);
+        var (secret, _) = await Enroll(SignIn(user, 100));
+        await WithDb(db => db.Set<User>().Where(u => u.Uid == user.Uid).ExecuteUpdateAsync(s => s
+            .SetProperty(u => u.MfaFailedAttempts, MfaEndpoints.MaxAttempts).SetProperty(u => u.MfaLockedUntil, (DateTimeOffset?)null)));
+        Factory.Clock.Now = T0.AddSeconds(60);
+        Assert.Equal(HttpStatusCode.NoContent, (await SignIn(user, 200).PostAsJsonAsync("/v1/me/mfa/verify", new { code = CodeAt(secret, T0.AddSeconds(60)) })).StatusCode);
+    }
+
+    [Fact]
+    public async Task The_last_attempt_starts_the_wait_before_the_code_is_checked()
+    {
+        Factory.Clock.Now = T0;
+        var (user, _) = await SignedIn(UserRole.Recruiter);
+        await Enroll(SignIn(user, 100));
+        var next = SignIn(user, 200);
+        Factory.Clock.Now = T0.AddSeconds(60);
+        for (var i = 0; i < 4; i++)
+            await next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = "123456" });
+        Assert.Null(await WithDb(db => db.Set<User>().Where(u => u.Uid == user.Uid).Select(u => u.MfaLockedUntil).SingleAsync()));
+        Assert.Equal([MfaEndpoints.Locked], (await ErrorsOf(await next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = "123456" })))["code"]);
+        Assert.Equal(T0.AddSeconds(60) + MfaEndpoints.LockFor,
+            await WithDb(db => db.Set<User>().Where(u => u.Uid == user.Uid).Select(u => u.MfaLockedUntil).SingleAsync()));
+    }
+
+    [Fact]
+    public async Task Parallel_wrong_codes_still_lock_after_five()
+    {
+        Factory.Clock.Now = T0;
+        var (user, _) = await SignedIn(UserRole.Recruiter);
+        var (secret, _) = await Enroll(SignIn(user, 100));
+        var next = SignIn(user, 200);
+        Factory.Clock.Now = T0.AddSeconds(60);
+        var results = await Task.WhenAll(Enumerable.Range(0, 40).Select(_ => next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = "123456" })));
+        Assert.All(results, r => Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode));
+        var wrong = 0;
+        foreach (var r in results)
+            wrong += (await ErrorsOf(r))["code"].SequenceEqual([MfaEndpoints.WrongCode]) ? 1 : 0;
+        Assert.True(wrong <= MfaEndpoints.MaxAttempts, $"{wrong} wrong codes were evaluated");
+        var locked = await next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = CodeAt(secret, T0.AddSeconds(60)) });
+        Assert.Equal([MfaEndpoints.Locked], (await ErrorsOf(locked))["code"]);
+    }
+
+    [Fact]
+    public async Task One_code_and_one_recovery_code_are_accepted_once_in_parallel()
+    {
+        Factory.Clock.Now = T0;
+        var (user, _) = await SignedIn(UserRole.Recruiter);
+        var (secret, recovery) = await Enroll(SignIn(user, 100));
+        var next = SignIn(user, 200);
+        Factory.Clock.Now = T0.AddSeconds(60);
+        var totp = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = CodeAt(secret, T0.AddSeconds(60)) })));
+        Assert.Equal(1, totp.Count(r => r.StatusCode == HttpStatusCode.NoContent));
+        var rec = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ => next.PostAsJsonAsync("/v1/me/mfa/verify", new { code = recovery[0] })));
+        Assert.Equal(1, rec.Count(r => r.StatusCode == HttpStatusCode.NoContent));
+    }
+
+    [Fact]
     public async Task Required_from_usuarios_means_enrolling_first_and_restablecer_starts_over()
     {
         Factory.Clock.Now = T0;

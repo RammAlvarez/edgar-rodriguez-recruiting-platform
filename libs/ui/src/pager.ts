@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
-import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorIntl, type PageEvent } from '@angular/material/paginator';
 import type { Sort } from '@angular/material/sort';
 
 export const PAGE_SIZES = [15, 25, 50] as const;

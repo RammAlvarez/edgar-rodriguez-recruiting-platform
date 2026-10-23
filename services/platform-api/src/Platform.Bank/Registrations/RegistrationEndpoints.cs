@@ -48,7 +48,7 @@ public static class RegistrationEndpoints
 
     private static readonly TimeSpan DownloadLifetime = TimeSpan.FromMinutes(10);
 
-    private sealed record Candidate(CardRequest Request, Person Person, string PositionName, string ClientName, string GroupName,
+    private sealed record Candidate(CardRequest Request, Person Person, string PositionName, Guid ClientId, string ClientName, string GroupName,
         string? ExistingNumber, bool HasAccount);
 
     public static IEndpointRouteBuilder MapRegistrationEndpoints(this IEndpointRouteBuilder v1)
@@ -142,6 +142,7 @@ public static class RegistrationEndpoints
                         LineNo = i + 1,
                         CardRequestId = included[i].Request.Uid,
                         EmployeeId = included[i].Request.EmployeeId,
+                        ClientId = included[i].ClientId,
                         EmployeeNumber = numbers[i]
                     };
                     batch.Rows.Add(row);
@@ -165,7 +166,7 @@ public static class RegistrationEndpoints
 
         g.MapPost("/{id:guid}/download", async (Guid id, DbContext db, RequestContext ctx, IClock clock, IObjectStorage storage, CancellationToken ct) =>
             {
-                if ((await BatchesAsync(db, ctx, id, ct)).Count == 0)
+                if (!await CoversEveryRowAsync(db, ctx, id, ct))
                     return ApiResults.NotFound(BatchNotFound);
                 var batch = await db.Set<RegistrationBatch>().AsNoTracking().SingleAsync(b => b.Uid == id, ct);
                 db.Add(Export(ctx, clock.UtcNow, new { download = true, batchId = id }));
@@ -177,7 +178,7 @@ public static class RegistrationEndpoints
 
         g.MapPost("/{id:guid}/uploaded", async (Guid id, DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
             {
-                if ((await BatchesAsync(db, ctx, id, ct)).Count == 0)
+                if (!await CoversEveryRowAsync(db, ctx, id, ct))
                     return ApiResults.NotFound(BatchNotFound);
                 var batch = await db.Set<RegistrationBatch>().Include(b => b.Rows).SingleAsync(b => b.Uid == id, ct);
                 if (batch.Status != BatchStatus.Generated)
@@ -261,7 +262,7 @@ public static class RegistrationEndpoints
         var info = await db.Set<Employee>().AsNoTracking().Where(e => employeeIds.Contains(e.Uid))
             .Join(db.Set<Position>(), e => e.PositionId, p => p.Uid, (e, p) => new { e, Position = p.Name })
             .Join(db.Set<PayrollGroup>(), x => x.e.PayrollGroupId, g => g.Uid, (x, g) => new { x.e, x.Position, Group = g.Name, g.ClientId })
-            .Join(db.Set<Client>(), x => x.ClientId, c => c.Uid, (x, c) => new { x.e, x.Position, x.Group, Client = c.ShortName })
+            .Join(db.Set<Client>(), x => x.ClientId, c => c.Uid, (x, c) => new { x.e, x.Position, x.Group, ClientId = c.Uid, Client = c.ShortName })
             .ToDictionaryAsync(x => x.e.Uid, ct);
         var personIds = info.Values.Select(x => x.e.PersonId).ToList();
         var people = await db.Set<Person>().AsNoTracking().Where(p => personIds.Contains(p.Uid)).ToDictionaryAsync(p => p.Uid, ct);
@@ -274,7 +275,7 @@ public static class RegistrationEndpoints
         return requests.Select(x =>
             {
                 var e = info[x.EmployeeId];
-                return new Candidate(x, people[e.e.PersonId], e.Position, e.Client, e.Group, numbers.GetValueOrDefault(x.EmployeeId),
+                return new Candidate(x, people[e.e.PersonId], e.Position, e.ClientId, e.Client, e.Group, numbers.GetValueOrDefault(x.EmployeeId),
                     withAccount.Contains(e.e.PersonId));
             })
             .OrderBy(c => c.Person.FullName).ToList();
@@ -320,17 +321,30 @@ public static class RegistrationEndpoints
             c.Person.Gender switch { Platform.Core.People.Gender.Male => LayoutGender.Male, Platform.Core.People.Gender.Female => LayoutGender.Female, _ => null },
             c.PositionName, c.Person.Email ?? "", null, c.Person.BirthState ?? "");
 
+    /// <summary>
+    /// Batch-level actions (the whole xlsx, every card request) need the grant to cover every person in the batch: a client-limited
+    /// grant that sees only part of it gets «not found», as the file carries other clients' CURP, RFC, address and phone. Each
+    /// row counts under the client it was generated for, not the employee's group today.
+    /// </summary>
+    private static async Task<bool> CoversEveryRowAsync(DbContext db, RequestContext ctx, Guid id, CancellationToken ct)
+    {
+        var rows = db.Set<RegistrationBatchRow>().Where(x => x.RegistrationBatchId == id);
+        if (ctx.RequiredPrincipal.ClientScope(PermissionModule.PayrollCardRequests) is not { } scope)
+            return await rows.AnyAsync(ct);
+        var clients = scope.ToList();
+        return await rows.AnyAsync(ct) && !await rows.AnyAsync(x => !clients.Contains(x.ClientId), ct);
+    }
+
     private static async Task<List<RegistrationBatchDto>> BatchesAsync(DbContext db, RequestContext ctx, Guid? id, CancellationToken ct)
     {
-        var employees = PayrollScope.Employees(db, ctx, PermissionModule.PayrollCardRequests);
+        var scope = ctx.RequiredPrincipal.ClientScope(PermissionModule.PayrollCardRequests)?.ToList();
         var q = db.Set<RegistrationBatch>().AsNoTracking().Include(b => b.Rows)
-            // A batch is visible when one of its people is in scope; a client-limited grant sees only its people's rows.
-            .Where(b => b.Rows.Any(x => employees.Any(e => e.Uid == x.EmployeeId)));
+            // A batch is visible when one of its rows' clients is in scope; a client-limited grant sees only those rows.
+            .Where(b => scope == null || b.Rows.Any(x => scope.Contains(x.ClientId)));
         if (id is { } one)
             q = q.Where(b => b.Uid == one);
         var batches = await q.OrderByDescending(b => b.GeneratedAt).Take(50).ToListAsync(ct);
         var requestIds = batches.SelectMany(b => b.Rows).Select(x => x.CardRequestId).ToList();
-        var inScope = await employees.Select(e => e.Uid).ToListAsync(ct);
         var statuses = await db.Set<CardRequest>().Where(c => requestIds.Contains(c.Uid)).ToDictionaryAsync(c => c.Uid, c => c.Status, ct);
         var employeeIds = batches.SelectMany(b => b.Rows).Select(x => x.EmployeeId).Distinct().ToList();
         var names = await db.Set<Employee>().Where(e => employeeIds.Contains(e.Uid))
@@ -339,7 +353,7 @@ public static class RegistrationEndpoints
         var users = await db.Set<User>().Where(u => userIds.Contains(u.Uid)).ToDictionaryAsync(u => u.Uid, u => u.DisplayName, ct);
         return batches.Select(b => new RegistrationBatchDto(b.Uid, b.Bank, b.Status, b.GeneratedAt, users[b.GeneratedBy], b.UploadedAt, b.CardType,
                 b.BranchToSend,
-                b.Rows.Where(x => inScope.Contains(x.EmployeeId)).OrderBy(x => x.LineNo)
+                b.Rows.Where(x => scope == null || scope.Contains(x.ClientId)).OrderBy(x => x.LineNo)
                     .Select(x => new RegistrationBatchRowDto(x.CardRequestId, x.EmployeeId, names[x.EmployeeId], x.EmployeeNumber, statuses[x.CardRequestId]))
                     .ToList()))
             .ToList();

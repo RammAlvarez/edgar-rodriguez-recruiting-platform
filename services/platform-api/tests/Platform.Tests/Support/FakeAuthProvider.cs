@@ -39,6 +39,9 @@ public sealed class FakeAuthProvider : IAuthProvider
         return Task.CompletedTask;
     }
 
+    /// <summary>How many upcoming <see cref="CreatePasswordSetupLinkAsync"/> calls throw (a provider outage).</summary>
+    public int LinkFailures { get; set; }
+
     public Task<string> CreatePasswordSetupLinkAsync(string email, CancellationToken cancellationToken) =>
-        Task.FromResult($"https://auth.test/setup?email={Uri.EscapeDataString(email)}");
+        LinkFailures-- > 0 ? throw new InvalidOperationException("auth provider down") : Task.FromResult($"https://auth.test/setup?email={Uri.EscapeDataString(email)}");
 }
