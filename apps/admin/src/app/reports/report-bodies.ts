@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSortModule } from '@angular/material/sort';
-import { Pager, SortValue, UiPager } from '@platform/ui';
+import { Pager, type SortValue, UiPager } from '@platform/ui';
 import { DateKeyPipe, TimestampPipe } from '@platform/ui/pipes';
 import type {
   ClientOpeningsReportDto,

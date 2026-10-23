@@ -6,7 +6,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltip } from '@angular/material/tooltip';
-import { openSidePanel, Pager, Session, SortValue, TimestampPipe, UiPager } from '@platform/ui';
+import { openSidePanel, Pager, Session, type SortValue, TimestampPipe, UiPager } from '@platform/ui';
 import type { UserDto } from '../data/api-types';
 import { ROLE_LABELS } from '../data/labels';
 import { ClientsRepository, UsersRepository } from '../data/repositories';

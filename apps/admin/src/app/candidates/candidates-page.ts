@@ -9,7 +9,7 @@ import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MoneyPipe, openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
+import { MoneyPipe, openSidePanel, Pager, type SortValue, UiPager } from '@platform/ui';
 import type { CandidateDetailDto, CandidateListItemDto } from '../data/api-types';
 import { SOURCE, STAGE, STAGES, type CandidateStage } from '../data/recruiting-labels';
 import { CandidatesRepository } from '../data/recruiting-repositories';

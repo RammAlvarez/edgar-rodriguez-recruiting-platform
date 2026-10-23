@@ -8,7 +8,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { Router } from '@angular/router';
-import { openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
+import { openSidePanel, Pager, type SortValue, UiPager } from '@platform/ui';
 import type { ClientDetailDto, ClientListItemDto, PayrollGroupListItemDto } from '../data/api-types';
 import { PayrollGroupsRepository } from '../data/payroll-repositories';
 import { ClientsRepository } from '../data/repositories';

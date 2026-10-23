@@ -174,7 +174,8 @@ public static class CatalogEndpoints
                     return TypedResults.Ok(new StatutoryHolidaysResult(added.Count, year.Select(HolidayDto.From).ToList()));
                 }, ct);
             })
-            .WithName("AddStatutoryHolidays").Validate<StatutoryHolidaysRequest>().RequireAccess(Edit).Invalidates(Tag);
+            .WithName("AddStatutoryHolidays").Validate<StatutoryHolidaysRequest>().Produces<StatutoryHolidaysResult>()
+            .RequireAccess(Edit).Invalidates(Tag);
     }
 
     /// <summary>

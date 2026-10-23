@@ -9,7 +9,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ApiError } from '@platform/api-client';
-import { confirm, openSidePanel, Pager, SortValue, UiPager } from '@platform/ui';
+import { confirm, openSidePanel, Pager, type SortValue, UiPager } from '@platform/ui';
 import type { DocumentTemplateDto } from '../data/api-types';
 import { CatalogsRepository } from '../data/repositories';
 import { CATALOGS, type CatalogDef, type Row } from './catalog-defs';
