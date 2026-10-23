@@ -77,6 +77,20 @@ public sealed class BootstrapTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task Retry_matches_an_owner_stored_before_emails_were_lowercased()
+    {
+        Factory.Auth.LinkFailures = 1;
+        var failed = await InternalClient().PostAsJsonAsync("/internal/bootstrap", new { email = "edgar@example.test", displayName = "Edgar" });
+        Assert.False(failed.IsSuccessStatusCode);
+        // What the first run stored before it lowercased the address.
+        await WithDb(db => db.Set<User>().ExecuteUpdateAsync(s => s.SetProperty(u => u.Email, "Edgar@Example.test")));
+
+        var retry = await InternalClient().PostAsJsonAsync("/internal/bootstrap", new { email = "Edgar@Example.test", displayName = "Edgar" });
+        Assert.Equal(HttpStatusCode.OK, retry.StatusCode);
+        Assert.Equal(1, await WithDb(db => db.Set<User>().CountAsync()));
+    }
+
+    [Fact]
     public async Task Rerun_is_refused_for_another_email_or_once_the_administrator_signed_in()
     {
         var body = new { email = "edgar@example.test", displayName = "Edgar" };

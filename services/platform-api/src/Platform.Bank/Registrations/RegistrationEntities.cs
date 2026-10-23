@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Platform.Bank.Payments;
 using Platform.Core.Abstractions;
 using Platform.Core.Catalogs;
+using Platform.Core.Clients;
 using Platform.Core.Persistence;
 using Platform.Core.Users;
 using Platform.Payroll.Staff;
@@ -51,6 +52,11 @@ public sealed class RegistrationBatchRow : IStamped
     public int LineNo { get; set; }
     public Guid CardRequestId { get; set; }
     public Guid EmployeeId { get; set; }
+    /// <summary>
+    /// The employee's client when the batch was generated: grants are checked against it, so moving the employee to another
+    /// client's group later does not take the batch away from the admin who generated it.
+    /// </summary>
+    public Guid ClientId { get; set; }
     public required string EmployeeNumber { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
@@ -98,6 +104,7 @@ internal sealed class RegistrationBatchRowConfiguration : IEntityTypeConfigurati
         b.HasIndex(r => r.CardRequestId).IsUnique();
         b.HasOne<CardRequest>().WithMany().HasForeignKey(r => r.CardRequestId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Employee>().WithMany().HasForeignKey(r => r.EmployeeId).HasPrincipalKey(e => e.Uid).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<Client>().WithMany().HasForeignKey(r => r.ClientId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

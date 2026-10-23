@@ -64,9 +64,10 @@ public sealed class AuthenticationMiddleware(RequestDelegate next)
                 return;
             }
 
-            // Staff are authorised by uid alone, so the provider must vouch for the mailbox: an account somebody self-registered
-            // with the invited address stays unverified until its owner uses the password-setup link (which verifies it).
-            if (user.Role is UserRole.Administrator or UserRole.Recruiter && !identity.EmailVerified)
+            // Users are authorised by uid alone, so the provider must vouch for the mailbox: an account somebody self-registered
+            // with the invited address stays unverified until its owner uses the password-setup link (staff) or signs in with the
+            // email link (Cliente users), both of which verify it.
+            if (!identity.EmailVerified)
             {
                 await ApiResults.Forbidden(AccessMessages.EmailNotVerified).ExecuteAsync(http);
                 return;

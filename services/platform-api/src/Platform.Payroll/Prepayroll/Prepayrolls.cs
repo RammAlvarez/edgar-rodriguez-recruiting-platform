@@ -29,17 +29,17 @@ public static class Prepayrolls
     {
         await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
         await db.SaveChangesAsync(ct);
-        // One order for every writer, so two requests that lock several lines never wait on each other in a cycle.
-        foreach (var (employeeId, from, to) in scope.Distinct().OrderBy(x => x.EmployeeId))
+        var lines = new List<(Guid PeriodId, Guid EmployeeId)>();
+        foreach (var (employeeId, from, to) in scope.Distinct())
         {
             var groupId = await db.Set<Employee>().Where(e => e.Uid == employeeId).Select(e => e.PayrollGroupId).SingleAsync(ct);
             var periods = await db.Set<PayrollPeriod>()
                 .Where(p => p.PayrollGroupId == groupId && Open.Contains(p.Status) && p.StartDate <= to && p.EndDate >= from)
                 .Select(p => p.Uid).ToListAsync(ct);
-            foreach (var period in periods)
-                await RecomputeAsync(db, period, employeeId, now, ct);
+            lines.AddRange(periods.Select(p => (p, employeeId)));
         }
-        await db.SaveChangesAsync(ct);
+        // Locked period-major, like every other writer, so two requests that lock several lines never wait on each other in a cycle.
+        await SaveAndRecomputeLinesAsync(db, lines, now, ct);
         if (transaction is not null)
             await transaction.CommitAsync(ct);
     }

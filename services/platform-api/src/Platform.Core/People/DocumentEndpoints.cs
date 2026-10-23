@@ -119,6 +119,10 @@ public static class DocumentEndpoints
         var prefix = DocumentFiles.KeyPrefix(personId, type.Code);
         if (!r.StorageKey.StartsWith(prefix, StringComparison.Ordinal) || r.StorageKey.AsSpan(prefix.Length).ContainsAny("/\\"))
             return Field("storageKey", "El archivo no corresponde a esta persona o a este documento.");
+        // One confirm per uploaded key at a time (a double-click, a retry): the second waits for the first to move the file and
+        // commit, then finds nothing left to register instead of failing mid-copy or registering the same upload twice.
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({r.StorageKey}))", ct);
         if (await db.Set<PersonDocument>().AnyAsync(d => d.StorageKey == r.StorageKey, ct))
             return Field("storageKey", "Este archivo ya se registró.");
         var today = clock.Today();
@@ -160,7 +164,6 @@ public static class DocumentEndpoints
             return Field("storageKey", DocumentFiles.NotAFile);
         }
 
-        await using var tx = await db.Database.BeginTransactionAsync(ct);
         var previous = await db.Set<PersonDocument>()
             .SingleOrDefaultAsync(d => d.PersonId == personId && d.DocumentTypeId == type.Uid && d.SupersededBy == null, ct);
         var doc = new PersonDocument

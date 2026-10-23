@@ -60,6 +60,21 @@ public sealed class MeAndAuthenticationTests(ApiFactory factory) : ApiTest(facto
     }
 
     [Fact]
+    public async Task Client_users_whose_provider_email_is_unverified_get_403()
+    {
+        // Bound before invites stopped reusing unverified accounts: a stranger's self-registration must not open the portal.
+        var client = await WithDb(db => db.AddClient("HEB"));
+        var user = await WithDb(db => db.AddUser(UserRole.Client, "Cliente HEB", clientId: client.Uid));
+        Factory.Auth.Emails[user.AuthUid] = (user.Email, false);
+        var response = await Client(user.AuthUid).GetAsync("/v1/client-portal/openings");
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(AccessMessages.EmailNotVerified, await Detail(response));
+
+        Factory.Auth.Emails[user.AuthUid] = (user.Email, true);
+        Assert.Equal(HttpStatusCode.OK, (await Client(user.AuthUid).GetAsync("/v1/client-portal/openings")).StatusCode);
+    }
+
+    [Fact]
     public async Task Administrator_sees_role_and_grants_from_the_database()
     {
         var client = await WithDb(db => db.AddClient());

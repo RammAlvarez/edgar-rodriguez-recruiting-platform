@@ -32,7 +32,10 @@ public static class AttendanceSummaries
     /// first day not worked, as in «Cerrar captura»). Rows outside it stay in the database but are never paid.
     /// </summary>
     public static List<AttendanceRecord> WithinEmployment(IEnumerable<AttendanceRecord> days, Employee employee) =>
-        days.Where(d => d.WorkDate >= employee.HiredAt && (employee.TerminatedAt is not { } t || d.WorkDate < t)).ToList();
+        WithinEmployment(days, employee.HiredAt, employee.TerminatedAt);
+
+    public static List<AttendanceRecord> WithinEmployment(IEnumerable<AttendanceRecord> days, DateOnly hiredAt, DateOnly? terminatedAt) =>
+        days.Where(d => d.WorkDate >= hiredAt && (terminatedAt is not { } t || d.WorkDate < t)).ToList();
 
     public static AttendanceSummary Summarize(IEnumerable<AttendanceRecord> days, IReadOnlySet<DateOnly> holidays)
     {

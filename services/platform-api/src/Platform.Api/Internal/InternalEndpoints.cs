@@ -56,7 +56,8 @@ public static class InternalEndpoints
                 var admins = await db.Set<User>().AsNoTracking().Where(u => u.Role == UserRole.Administrator).ToListAsync(ct);
                 if (admins.Count > 0)
                 {
-                    if (admins is not [{ LastLoginAt: null, AcceptedAt: null } pending] || pending.Email != address)
+                    // Ignoring case: rows from before the email was lowercased here keep the casing typed at the first run.
+                    if (admins is not [{ LastLoginAt: null, AcceptedAt: null } pending] || !string.Equals(pending.Email, address, StringComparison.OrdinalIgnoreCase))
                         return ApiResults.Conflict("Ya existe un administrador; invita usuarios desde Usuarios.");
                     return Results.Ok(new BootstrapResponse(pending.Uid, pending.Email, await auth.CreatePasswordSetupLinkAsync(pending.Email, ct)));
                 }

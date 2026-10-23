@@ -260,6 +260,26 @@ public sealed class PayrollReportTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task Asistencia_totals_count_only_the_days_inside_the_employment_like_the_prenomina()
+    {
+        var a = await ArrangeAsync();
+        // A baja dated in the past: ANA's rows from the 18th on stay captured but are not paid.
+        await WithDb(async db =>
+        {
+            (await db.Set<Employee>().SingleAsync(e => e.Uid == a.Employees["ANA"])).TerminatedAt = new DateOnly(2026, 9, 18);
+            await db.SaveChangesAsync();
+        });
+
+        var attendance = await Report("attendance", $"?clientId={a.Client}&from=2026-09-11&to=2026-09-24");
+        var people = attendance.GetProperty("tables")[0];
+        var ana = Rows(people).Single(r => Text(people, r, "Empleado") == "PÉREZ LÓPEZ ANA");
+        // 11–17 September: six days present and Sunday the 13th as rest.
+        Assert.Equal(6m, Value(people, ana, "Días laborados"));
+        var days = attendance.GetProperty("tables")[1];
+        Assert.Equal("P", Rows(days).Single(r => Text(days, r, "Empleado") == "PÉREZ LÓPEZ ANA").GetProperty("cells")[8].GetProperty("display").GetString());
+    }
+
+    [Fact]
     public async Task Rotacion_and_tarjetas_y_cuentas_follow_altas_bajas_and_accounts()
     {
         var a = await ArrangeAsync();

@@ -170,9 +170,16 @@ public static class MfaEndpoints
         CancellationToken ct)
     {
         var users = db.Set<User>().Where(u => u.Uid == user.Uid);
-        // The attempt is charged before the code is looked at: only MaxAttempts checks can be in flight per window.
-        var charged = await users.Where(u => u.MfaFailedAttempts < MaxAttempts && (u.MfaLockedUntil == null || u.MfaLockedUntil <= now))
-            .ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaFailedAttempts, u => u.MfaFailedAttempts + 1).SetProperty(u => u.MfaLockedUntil, (DateTimeOffset?)null), ct);
+        // A wait that is over starts a new window. So does a full count with no wait, which only rows from before the lock moved
+        // into the charge can hold (a check that died before its lock UPDATE): left alone, nothing would ever clear it.
+        await users.Where(u => u.MfaLockedUntil <= now || (u.MfaLockedUntil == null && u.MfaFailedAttempts >= MaxAttempts))
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaFailedAttempts, 0).SetProperty(u => u.MfaLockedUntil, (DateTimeOffset?)null), ct);
+        // The attempt is charged before the code is looked at: only MaxAttempts checks can be in flight per window. The one that
+        // takes the last attempt starts the wait in the same UPDATE, so a request that dies afterwards still leaves a wait that ends.
+        var lockUntil = now.Add(LockFor);
+        var charged = await users.Where(u => u.MfaFailedAttempts < MaxAttempts && u.MfaLockedUntil == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaFailedAttempts, u => u.MfaFailedAttempts + 1)
+                .SetProperty(u => u.MfaLockedUntil, u => u.MfaFailedAttempts + 1 >= MaxAttempts ? lockUntil : (DateTimeOffset?)null), ct);
         if (charged == 0)
             return ApiResults.Validation(new Dictionary<string, string[]> { ["code"] = [Locked] });
 
@@ -201,10 +208,9 @@ public static class MfaEndpoints
                 return null;
             }
         }
-        // Wrong: the attempt stays counted; the one that used the last attempt starts the wait.
-        var locked = await users.Where(u => u.MfaFailedAttempts >= MaxAttempts && (u.MfaLockedUntil == null || u.MfaLockedUntil <= now))
-            .ExecuteUpdateAsync(s => s.SetProperty(u => u.MfaFailedAttempts, 0).SetProperty(u => u.MfaLockedUntil, (DateTimeOffset?)now.Add(LockFor)), ct);
-        return ApiResults.Validation(new Dictionary<string, string[]> { ["code"] = [locked > 0 ? Locked : WrongCode] });
+        // Wrong: the attempt stays counted, and the wait (if the charge started it) stays on.
+        var locked = await users.AnyAsync(u => u.MfaLockedUntil > now, ct);
+        return ApiResults.Validation(new Dictionary<string, string[]> { ["code"] = [locked ? Locked : WrongCode] });
     }
 
     private static async Task MarkVerifiedAsync(DbContext db, User user, long? signedInAt, DateTimeOffset now, CancellationToken ct)

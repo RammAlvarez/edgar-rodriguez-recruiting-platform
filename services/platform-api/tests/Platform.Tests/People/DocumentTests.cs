@@ -65,6 +65,23 @@ public sealed class DocumentTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
+    public async Task The_same_upload_confirmed_at_once_is_registered_once_and_the_others_get_a_field_message()
+    {
+        await Arrange();
+        var presign = await BodyOf(await _admin.PostAsJsonAsync("/v1/files/presign-upload",
+            new { personId = _person, documentTypeId = _types["INE"], fileName = "ine.pdf", contentType = "application/pdf", sizeBytes = 200_000 }));
+        var key = presign.GetProperty("storageKey").GetString()!;
+        Factory.Storage.Put(key, 200_000, "application/pdf");
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 3).Select(_ => _admin.PostAsJsonAsync($"/v1/people/{_person}/documents",
+            new { documentTypeId = _types["INE"], storageKey = key, originalFilename = "ine.pdf", issuedAt = (string?)null, expiresAt = "2030-12-31" })));
+
+        Assert.Equal(1, results.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.All(results.Where(r => r.StatusCode != HttpStatusCode.OK), r => Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode));
+        Assert.Equal(1, await WithDb(db => db.Set<PersonDocument>().CountAsync(d => d.PersonId == _person)));
+    }
+
+    [Fact]
     public async Task Confirm_records_a_delivered_document_with_a_sanitized_name()
     {
         await Arrange();

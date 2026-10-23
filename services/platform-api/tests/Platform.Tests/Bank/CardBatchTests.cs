@@ -199,4 +199,32 @@ public sealed class CardBatchTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal(BatchStatus.Generated, await WithDb(db => db.Set<RegistrationBatch>().Where(b => b.Uid == batchId).Select(b => b.Status).SingleAsync()));
         Assert.True((await _owner.PostAsync($"/v1/card-batches/{batchId}/download", null)).IsSuccessStatusCode);
     }
+
+    [Fact]
+    public async Task A_batch_stays_with_the_client_it_was_generated_for_after_an_employee_changes_client()
+    {
+        var e = await ArrangeAsync("banorte", "JUAN", "LUIS");
+        await Complete(e["JUAN"]);
+        await Complete(e["LUIS"], "PEPL900101HNLRRN09", "PEPL900101AB2");
+        var ecovia = await WithDb(db => db.Set<Platform.Core.Clients.Client>().Where(c => c.ShortName == "ECOVIA").Select(c => c.Uid).SingleAsync());
+        var (_, scoped) = await SignedIn(UserRole.Administrator, new UserPermission { Module = PermissionModule.PayrollCardRequests, ClientId = ecovia });
+        var generated = await BodyOf(await scoped.PostAsJsonAsync("/v1/card-batches", new { bank = "banorte", requestIds = (Guid[]?)null, branchToSend = "01234" }));
+        var batchId = generated.GetProperty("batch").GetProperty("id").GetGuid();
+
+        // LUIS moves to another client's group after the file was made.
+        var heb = await WithDb(db => db.AddClient("HEB"));
+        var hebGroup = (await BodyOf(await _owner.PostAsJsonAsync("/v1/payroll/groups", PayrollGroupTests.NewGroup(heb.Uid)))).GetProperty("id").GetGuid();
+        await WithDb(async db =>
+        {
+            (await db.Set<Employee>().SingleAsync(x => x.Uid == e["LUIS"])).PayrollGroupId = hebGroup;
+            await db.SaveChangesAsync();
+        });
+
+        Assert.Equal(2, (await BodyOf(await scoped.GetAsync("/v1/card-batches")))[0].GetProperty("rows").GetArrayLength());
+        Assert.True((await scoped.PostAsync($"/v1/card-batches/{batchId}/download", null)).IsSuccessStatusCode);
+        Assert.True((await scoped.PostAsync($"/v1/card-batches/{batchId}/uploaded", null)).IsSuccessStatusCode);
+        // An admin limited to the new client never had this file and still does not see it.
+        var (_, hebOnly) = await SignedIn(UserRole.Administrator, new UserPermission { Module = PermissionModule.PayrollCardRequests, ClientId = heb.Uid });
+        Assert.Empty((await BodyOf(await hebOnly.GetAsync("/v1/card-batches"))).EnumerateArray());
+    }
 }
