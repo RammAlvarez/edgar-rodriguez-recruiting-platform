@@ -74,7 +74,7 @@ edgar-rodriguez-recruiting-platform/
 │   ├── api-client/         fetch wrapper, cache tags, ApiError, upload client
 │   └── ui/                 shared Angular components (tables, document checklist, money/date pipes es-MX)
 ├── db/                     docker-compose.yml (Postgres 18 :5433, MinIO, scheduler), roles.sql
-├── deploy/                 Dockerfiles, docker-compose.same-vm.yml, providers/{gcp,digitalocean}.md
+├── deploy/                 Dockerfiles, docker-compose.same-vm.yml, providers/{gcp,digitalocean}.md, terraform/gcp
 ├── scripts/                seed (through the API), bootstrap (first admin), import-excel (one-off, SPEC §10 of DATA_MODEL)
 ├── docs/                   SPEC.md, DATA_MODEL.md, ARCHITECTURE.md, PLAN.md, HANDOFF.md, TEST_PLAN.md, tests/
 ├── design-reference/       Claude Design export + RASS Angular Material design system (read-only reference)
@@ -139,7 +139,7 @@ Deployment is documented per provider in `deploy/providers/*.md`, same images an
 
 | | Postgres | API + scheduler containers | Static apps | S3 storage |
 |---|---|---|---|---|
-| **GCP** (first) | Cloud SQL for PostgreSQL over TCP (public IP + authorized networks or the VPC) | Cloud Run (API, min 1 business hours) + Cloud Run service for the scheduler (min 1, no ingress) | Firebase Hosting (3 sites) | Cloud Storage through its S3-interoperability endpoint (HMAC keys) |
+| **GCP** (first) | Cloud SQL for PostgreSQL over TCP (public IP + authorized networks or the VPC) | Cloud Run (API, min 1 business hours) + Cloud Scheduler jobs for the crontab | Firebase Hosting (3 sites) | Cloud Storage through its S3-interoperability endpoint (HMAC keys) |
 | **DigitalOcean** | Managed PostgreSQL | App Platform or a Droplet with Compose | App Platform static sites | Spaces |
 | **Same VM** | Postgres container | Compose: api, scheduler, caddy | Caddy serves the three builds | MinIO container |
 

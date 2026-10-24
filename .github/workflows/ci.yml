@@ -15,6 +15,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  terraform:
+    name: Terraform (fmt, validate)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: deploy/terraform/gcp
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.15.8
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
   web:
     name: Web (lint, type-check, Vitest, builds)
     runs-on: ubuntu-24.04
