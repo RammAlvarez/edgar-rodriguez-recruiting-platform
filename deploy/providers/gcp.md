@@ -5,10 +5,13 @@
 | Postgres | Cloud SQL for PostgreSQL 18, smallest shared-core tier, automatic backups + point-in-time recovery |
 | API | Cloud Run service `platform-api` (min 1 instance during business hours, max 3) |
 | Migrations | Cloud Run **job** `platform-migrate`, same image, command `./efbundle` |
-| Scheduler | Cloud Run service `platform-scheduler` (min 1, max 1, ingress internal, no public URL) |
+| Scheduler | Cloud Scheduler, one HTTP job per line of `services/scheduler/crontab` (the crond image has no HTTP port for Cloud Run) |
 | Apps | Firebase Hosting, three sites (admin, candidatos, clientes) |
 | Storage | Cloud Storage, two buckets, through the S3-interoperability endpoint with an HMAC key |
 | Identity | Firebase Auth of the same project |
+
+> **Terraform:** [`deploy/terraform/gcp`](../terraform/gcp/README.md) creates §1–3, §5 and the Hosting sites of §6 (database on its
+> private IP, the scheduler as Cloud Scheduler jobs). The steps below are the same setup by hand.
 
 All commands are run by a person with `gcloud` signed in to the project. Region: `us-central1` (or the closest one).
 
@@ -51,8 +54,7 @@ access key.
 
 ```sh
 docker build -f services/platform-api/Dockerfile -t us-central1-docker.pkg.dev/PROJECT/platform/api:2026-10-17 .
-docker build -t us-central1-docker.pkg.dev/PROJECT/platform/scheduler:2026-10-17 services/scheduler
-docker push …/api:2026-10-17 && docker push …/scheduler:2026-10-17
+docker push …/api:2026-10-17
 ```
 (On an Apple-silicon laptop add `--platform linux/amd64`.)
 
@@ -65,9 +67,12 @@ gcloud run jobs create platform-migrate --image …/api:2026-10-17 --region us-c
 gcloud run jobs execute platform-migrate --region us-central1 --wait
 gcloud run deploy platform-api --image …/api:2026-10-17 --region us-central1 --env-vars-file api.env.yaml \
   --min-instances 1 --max-instances 3 --allow-unauthenticated --port 8080
-gcloud run deploy platform-scheduler --image …/scheduler:2026-10-17 --region us-central1 --ingress internal \
-  --no-allow-unauthenticated --min-instances 1 --max-instances 1 --no-cpu-throttling \
-  --set-env-vars API_URL=https://platform-api-….run.app,INTERNAL_SECRET=…
+for job in attendance-lock:'*/15 * * * *' period-roll:'0 8 * * *' status-roll:'5 8 * * *' \
+    document-expiry:'0 9 * * *' notifications-digest:'0 14 * * *'; do
+  gcloud scheduler jobs create http "platform-${job%%:*}" --location us-central1 --schedule "${job#*:}" --time-zone Etc/UTC \
+    --http-method POST --uri "https://platform-api-….run.app/internal/jobs/${job%%:*}" \
+    --headers X-Internal-Secret=… --attempt-deadline 300s --max-retry-attempts 3
+done
 ```
 The API's `/internal/*` stays on its public URL protected by `INTERNAL_SECRET` (≥ 32 characters, compared in constant time);
 for a tighter setup, put the API behind a load balancer with a rule that blocks `/internal`, and let the scheduler call the
