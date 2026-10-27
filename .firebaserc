@@ -1,5 +1,21 @@
 {
   "projects": {
-    "default": "demo-platform"
+    "default": "demo-platform",
+    "dev": "rass-project-2"
+  },
+  "targets": {
+    "rass-project-2": {
+      "hosting": {
+        "admin": [
+          "rass-project-2-admin"
+        ],
+        "candidatos": [
+          "rass-project-2-candidatos"
+        ],
+        "clientes": [
+          "rass-project-2-clientes"
+        ]
+      }
+    }
   }
 }

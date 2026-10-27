@@ -87,7 +87,8 @@ Every upgrade: build and push, `gcloud run jobs update platform-migrate --image 
 
 `firebase.json` with three targets (`admin`, `candidatos`, `clientes`), each `public` = `dist/<app>/browser` and a rewrite of
 `**` to `/index.html`. Build with `npx ng build admin` (etc.), **replace** `dist/<app>/browser/config.json` with the
-environment's (`deploy/config/*.json.example`), then `firebase deploy --only hosting`. Connect the three custom domains in
+environment's (`deploy/config/*.json.example`), then `firebase deploy --only hosting`. `scripts/deploy-hosting.sh <alias>` does the build, the `config.json` swap and the deploy (targets in `.firebaserc`;
+the Terraform output `app_config` is the file's body). Connect the three custom domains in
 Hosting and add them to Auth → Authorized domains and to `APP_ORIGINS`.
 
 ## 7. After

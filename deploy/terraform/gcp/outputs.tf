@@ -19,3 +19,15 @@ output "manual_secrets" {
   description = "Secrets that need a version added by hand before the first API deploy."
   value       = sort([for s in google_secret_manager_secret.manual : s.secret_id])
 }
+
+output "app_config" {
+  description = "Body of deploy/config/{admin,candidates,clients}.json for this environment."
+  value = {
+    apiUrl = google_cloud_run_v2_service.api.uri
+    auth = {
+      apiKey     = data.google_firebase_web_app_config.platform.api_key
+      authDomain = data.google_firebase_web_app_config.platform.auth_domain
+      projectId  = var.project_id
+    }
+  }
+}

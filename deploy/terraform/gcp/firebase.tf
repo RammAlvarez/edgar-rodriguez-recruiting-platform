@@ -12,3 +12,17 @@ resource "google_firebase_hosting_site" "apps" {
   project  = google_firebase_project.platform.project
   site_id  = each.value
 }
+
+# The web config the three apps read from /config.json (deploy/config/*.json); none of it is secret.
+resource "google_firebase_web_app" "platform" {
+  provider        = google-beta
+  project         = google_firebase_project.platform.project
+  display_name    = "Platform"
+  deletion_policy = "DELETE"
+}
+
+data "google_firebase_web_app_config" "platform" {
+  provider   = google-beta
+  project    = google_firebase_project.platform.project
+  web_app_id = google_firebase_web_app.platform.app_id
+}
