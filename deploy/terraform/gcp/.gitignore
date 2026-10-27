@@ -5,3 +5,7 @@ terraform.tfvars
 *.tfvars
 !*.tfvars.example
 *.auto.tfvars
+# Saved plans hold sensitive values in plain text.
+*.plan
+plan.txt
+apply.txt
