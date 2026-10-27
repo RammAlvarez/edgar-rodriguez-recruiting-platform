@@ -12,6 +12,10 @@ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'platform_api') \gexec
 SELECT format('CREATE ROLE platform_readonly LOGIN PASSWORD %L', :'readonly_password')
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'platform_readonly') \gexec
 
+-- The admin running this must be a member of platform_owner to create the schema and set its default privileges
+-- (Postgres 16+: creating a role no longer grants it to a non-superuser creator, e.g. Cloud SQL's postgres, DO's doadmin).
+GRANT platform_owner TO CURRENT_USER;
+
 -- Trusted extension used by users.email / people.email.
 CREATE EXTENSION IF NOT EXISTS citext;
 
