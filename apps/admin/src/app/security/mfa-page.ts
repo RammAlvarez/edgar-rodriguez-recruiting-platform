@@ -34,7 +34,7 @@ import { mfaPending } from './mfa-guard';
           </ul>
           <div class="end"><button matButton="filled" type="button" (click)="leave()">Ya los guardé</button></div>
         } @else {
-          @if (notice(); as text) {
+          @if (mode() !== 'manage' && notice(); as text) {
             <p class="form-alert" role="alert">{{ text }}</p>
           }
           @switch (mode()) {
@@ -197,7 +197,7 @@ export class MfaPage {
   code = '';
 
   constructor() {
-    const notice: unknown = this.router.getCurrentNavigation()?.extras.state?.['notice'];
+    const notice: unknown = this.router.currentNavigation()?.extras.state?.['notice'];
     if (typeof notice === 'string') this.notice.set(notice);
     // Leave once the session (reloaded by the API's «me» invalidation) no longer asks for the code.
     effect(() => {

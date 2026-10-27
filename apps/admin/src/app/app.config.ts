@@ -23,6 +23,8 @@ export function createAppConfig(config: RuntimeConfig, auth: PasswordAuthProvide
   const coverMode = new CoverMode();
   // The API client is built before the router exists: the initializer below fills this in.
   let onMfaRequired: (error: ApiError) => void = () => undefined;
+  // Every call of a burst (a screen loading several lists) is refused at once: only the first one moves the app.
+  let routing = false;
   return {
     providers: [
       providePlatformMaterial(),
@@ -41,9 +43,11 @@ export function createAppConfig(config: RuntimeConfig, auth: PasswordAuthProvide
         const router = inject(Router);
         const api = inject(API_CLIENT);
         onMfaRequired = (error) => {
+          if (routing || router.url.startsWith('/verificacion')) return;
+          routing = true;
           // The session's copy of «me» predates the change (the API refuses everything else now): reload it, then show why.
           api.cache.invalidate(['me']);
-          if (!router.url.startsWith('/verificacion')) void router.navigateByUrl('/verificacion', { state: { notice: error.message } });
+          void router.navigateByUrl('/verificacion', { state: { notice: error.message } }).finally(() => (routing = false));
         };
       }),
     ],

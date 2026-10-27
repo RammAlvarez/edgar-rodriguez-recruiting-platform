@@ -99,7 +99,9 @@ describe('ApiClient', () => {
       .fn()
       .mockResolvedValueOnce(respond(403, mfa))
       .mockResolvedValueOnce(respond(403, { type: 'https://platform.local/problems/forbidden', detail: 'No tienes permiso.' }))
-      .mockResolvedValueOnce(respond(403, { detail: 'Sin tipo.' }));
+      .mockResolvedValueOnce(respond(403, { detail: 'Sin tipo.' }))
+      .mockResolvedValueOnce(respond(403, { type: 'https://platform.local/problems/mfa-foo', detail: 'Parecido.' }))
+      .mockResolvedValueOnce(respond(401, { type: 'https://platform.local/problems/mfa', detail: 'Otro estado.' }));
     const onMfaRequired = vi.fn();
     const client = new ApiClient({ baseUrl: 'http://api.test', auth: auth(), fetch, onMfaRequired });
 
@@ -107,8 +109,7 @@ describe('ApiClient', () => {
     expect(blocked).toMatchObject({ status: 403, isMfaRequired: true, message: mfa.detail });
     expect(onMfaRequired).toHaveBeenCalledTimes(1);
 
-    await client.get('/v1/users').catch(() => undefined);
-    await client.get('/v1/users').catch(() => undefined);
+    for (let i = 0; i < 4; i++) await client.get('/v1/users').catch(() => undefined);
     expect(onMfaRequired).toHaveBeenCalledTimes(1);
   });
 
