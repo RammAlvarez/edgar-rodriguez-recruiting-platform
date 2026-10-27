@@ -56,7 +56,7 @@ access key.
 docker build -f services/platform-api/Dockerfile -t us-central1-docker.pkg.dev/PROJECT/platform/api:2026-10-17 .
 docker push …/api:2026-10-17
 ```
-(On an Apple-silicon laptop add `--platform linux/amd64`.)
+(On an Apple-silicon laptop add `--platform linux/amd64`; the Dockerfile cross-compiles, so the SDK never runs emulated.)
 
 ## 5. Migrations, API, scheduler
 
