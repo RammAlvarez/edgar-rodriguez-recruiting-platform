@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
@@ -13,6 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiError } from '@platform/api-client';
 import { email as emailSchema, type PermissionModule, type UserRole } from '@platform/shared';
 import { applyServerErrors, confirm, errorMessage, zodValidator } from '@platform/ui';
+import { Session } from '@platform/ui/session';
 import type { ClientOptionDto, UserDto } from '../data/api-types';
 import { DEFAULT_ADMIN_GRANTS, GRANTS, ROLE_LABELS } from '../data/labels';
 import { MfaRepository } from '../data/mfa-repository';
@@ -90,6 +91,11 @@ export interface UserPanelData {
         @if (editing) {
           <mat-slide-toggle formControlName="isActive">Activo</mat-slide-toggle>
           <mat-slide-toggle formControlName="mfaRequired">Requerir verificación en dos pasos</mat-slide-toggle>
+          @if (ownAccountRequiresMfa()) {
+            <p class="access" role="status">
+              Es tu propia cuenta: al guardar, te pediremos activar la verificación en dos pasos de inmediato; ten tu app de autenticación a la mano.
+            </p>
+          }
         }
         @if (role() === 'administrator') {
           <h3 class="section-title">Permisos delegados</h3>
@@ -159,6 +165,7 @@ export class UserPanel {
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly mfa = inject(MfaRepository);
+  private readonly session = inject(Session);
 
   readonly editing = this.data.user !== null;
   /** What the user can reach and over which clients, as saved (the checkboxes below edit it). */
@@ -191,6 +198,15 @@ export class UserPanel {
     onlyClientId: [this.initial.onlyClientId],
   });
 
+  private readonly mfaRequired = toSignal(this.form.controls.mfaRequired.valueChanges, {
+    initialValue: this.form.controls.mfaRequired.value,
+  });
+  /** Turning it on for yourself sends you to set it up as soon as you save (the API refuses everything else until then). */
+  readonly ownAccountRequiresMfa = computed(() => {
+    const me = this.session.me();
+    const user = this.data.user;
+    return !!me && !!user && me.id === user.id && this.mfaRequired() === true && !user.mfaRequired && !me.mfaEnabled;
+  });
   readonly role = toSignal(this.form.controls.role.valueChanges, { initialValue: this.form.controls.role.value });
   readonly busy = signal(false);
   readonly alert = signal<string | null>(null);

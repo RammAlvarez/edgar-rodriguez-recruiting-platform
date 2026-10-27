@@ -93,6 +93,25 @@ describe('ApiClient', () => {
     expect(bare.message).toContain('demasiadas solicitudes');
   });
 
+  it('tells the app when two-step verification is required, and only then', async () => {
+    const mfa = { type: 'https://platform.local/problems/mfa', detail: 'Tu cuenta requiere verificación en dos pasos: actívala para continuar.' };
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(respond(403, mfa))
+      .mockResolvedValueOnce(respond(403, { type: 'https://platform.local/problems/forbidden', detail: 'No tienes permiso.' }))
+      .mockResolvedValueOnce(respond(403, { detail: 'Sin tipo.' }));
+    const onMfaRequired = vi.fn();
+    const client = new ApiClient({ baseUrl: 'http://api.test', auth: auth(), fetch, onMfaRequired });
+
+    const blocked = await client.get('/v1/users').catch((e: unknown) => e);
+    expect(blocked).toMatchObject({ status: 403, isMfaRequired: true, message: mfa.detail });
+    expect(onMfaRequired).toHaveBeenCalledTimes(1);
+
+    await client.get('/v1/users').catch(() => undefined);
+    await client.get('/v1/users').catch(() => undefined);
+    expect(onMfaRequired).toHaveBeenCalledTimes(1);
+  });
+
   it('turns a network failure into a Spanish ApiError', async () => {
     const client = new ApiClient({
       baseUrl: 'http://api.test',

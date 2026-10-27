@@ -196,12 +196,5 @@ API on the copy answered `ok`, and another key answered `failed`.
 
 ## 11. Known issues (to fix)
 
-- **Admin app: no message when two-step verification becomes required for yourself** (found on the GCP dev deploy,
-  2026-10-27). An Administrador who switches on «requerir verificación en dos pasos» for their own account in Usuarios gets
-  the save accepted (200), and from then on every call except `/v1/me` and `/v1/me/mfa` answers 403 with problem type
-  `https://platform.local/problems/mfa` and `MustEnroll` ("Tu cuenta requiere verificación en dos pasos: actívala para
-  continuar.", `Platform.Core/Users/Mfa.cs`). The API side is as designed (D89, `AuthenticationMiddleware`); the app shows
-  nothing, so the screens just fail. Fix in the app: on that problem type, send the user to the account menu's
-  «Verificación en dos pasos» setup (or `MustVerify` → the code prompt) with the API's message; and either warn before
-  requiring it for yourself in Usuarios or turn the switch into "set it up now". Workaround: account menu → Verificación en
-  dos pasos → activate.
+None open. (Fixed 2026-10-27: when the API refuses a call because the account must set up two-step verification, the admin app now
+sends the user to «Verificación en dos pasos» with the API's message, and Usuarios warns before you require it for yourself.)
