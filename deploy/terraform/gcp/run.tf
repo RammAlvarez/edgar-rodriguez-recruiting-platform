@@ -77,7 +77,8 @@ resource "google_cloud_run_v2_service" "api" {
   location            = var.region
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
-  depends_on          = [google_secret_manager_secret_iam_member.api]
+  # The generated values too: Cloud Run rejects a secret with no version yet.
+  depends_on = [google_secret_manager_secret_iam_member.api, google_secret_manager_secret_version.generated]
 
   template {
     service_account = google_service_account.api.email
