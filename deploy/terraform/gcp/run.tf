@@ -5,7 +5,7 @@ resource "google_service_account" "api" {
 
 resource "google_secret_manager_secret_iam_member" "api" {
   for_each  = local.secret_ids
-  secret_id = each.value
+  secret_id = try(google_secret_manager_secret.manual[each.key].secret_id, google_secret_manager_secret.generated[each.key].secret_id)
   role      = "roles/secretmanager.secretAccessor"
   member    = google_service_account.api.member
 }

@@ -10,11 +10,12 @@ locals {
     "FIREBASE_SERVICE_ACCOUNT_JSON",
     "RESEND_API_KEY",
   ])
+  generated_secrets = toset(["INTERNAL_SECRET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"])
 }
 
 resource "google_secret_manager_secret" "manual" {
   for_each  = local.manual_secrets
-  secret_id = replace(lower(each.value), "_", "-")
+  secret_id = local.secret_ids[each.value]
   replication {
     auto {}
   }
@@ -28,8 +29,8 @@ resource "random_password" "internal_secret" {
 }
 
 resource "google_secret_manager_secret" "generated" {
-  for_each  = toset(["INTERNAL_SECRET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"])
-  secret_id = replace(lower(each.value), "_", "-")
+  for_each  = local.generated_secrets
+  secret_id = local.secret_ids[each.value]
   replication {
     auto {}
   }
@@ -46,9 +47,8 @@ resource "google_secret_manager_secret_version" "generated" {
   secret_data = each.value
 }
 
+# Built from the names, not the resources, so for_each keys are known before the secrets exist. Cloud Run still waits
+# for the secrets through google_secret_manager_secret_iam_member.api, which references them.
 locals {
-  secret_ids = merge(
-    { for k, s in google_secret_manager_secret.manual : k => s.secret_id },
-    { for k, s in google_secret_manager_secret.generated : k => s.secret_id },
-  )
+  secret_ids = { for name in setunion(local.manual_secrets, local.generated_secrets) : name => replace(lower(name), "_", "-") }
 }
