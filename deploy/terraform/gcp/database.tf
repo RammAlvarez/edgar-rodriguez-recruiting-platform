@@ -2,7 +2,7 @@ resource "google_sql_database_instance" "platform" {
   name                = "platform-db"
   database_version    = "POSTGRES_18"
   region              = var.region
-  deletion_protection = true
+  deletion_protection = var.db_deletion_protection
   depends_on          = [google_service_networking_connection.sql]
 
   settings {

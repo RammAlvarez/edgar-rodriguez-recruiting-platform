@@ -1,0 +1,14 @@
+# Production. Copy to prod.tfvars (ignored by git) and fill in.
+project_id         = "CHANGE_ME"
+region             = "us-central1"
+image_tag          = "2026-10-17"
+admin_app_url      = "https://admin.example.com"
+candidates_app_url = "https://candidatos.example.com"
+clients_app_url    = "https://clientes.example.com"
+email_from         = "Plataforma <no-reply@example.com>"
+hosting_site_ids = {
+  admin      = "CHANGE_ME-admin"
+  candidatos = "CHANGE_ME-candidatos"
+  clientes   = "CHANGE_ME-clientes"
+}
+# db_postgres_password: pass with TF_VAR_db_postgres_password instead of writing it here.

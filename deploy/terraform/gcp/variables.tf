@@ -19,6 +19,12 @@ variable "db_tier" {
   default     = "db-g1-small"
 }
 
+variable "db_deletion_protection" {
+  description = "Off only in dev, so the environment can be torn down."
+  type        = bool
+  default     = true
+}
+
 variable "db_postgres_password" {
   description = "Password of the instance's postgres user, used once to run db/roles.sql."
   type        = string
