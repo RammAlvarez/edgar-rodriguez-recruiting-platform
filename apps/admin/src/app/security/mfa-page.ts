@@ -34,6 +34,9 @@ import { mfaPending } from './mfa-guard';
           </ul>
           <div class="end"><button matButton="filled" type="button" (click)="leave()">Ya los guardé</button></div>
         } @else {
+          @if (mode() !== 'manage' && notice(); as text) {
+            <p class="form-alert" role="alert">{{ text }}</p>
+          }
           @switch (mode()) {
             @case ('enroll') {
               @if (me()?.mfaRequired) {
@@ -188,10 +191,14 @@ export class MfaPage {
   readonly recovery = signal<string[] | null>(null);
   readonly error = signal<string | null>(null);
   readonly busy = signal(false);
+  /** Why the API sent the user here (the app was refused because two-step verification is required), if it did. */
+  readonly notice = signal<string | null>(null);
   private readonly leaving = signal(false);
   code = '';
 
   constructor() {
+    const notice: unknown = this.router.currentNavigation()?.extras.state?.['notice'];
+    if (typeof notice === 'string') this.notice.set(notice);
     // Leave once the session (reloaded by the API's «me» invalidation) no longer asks for the code.
     effect(() => {
       if (this.leaving() && !mfaPending(this.me())) void this.router.navigateByUrl('/');

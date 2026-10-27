@@ -10,6 +10,8 @@ export interface ApiClientOptions {
   readonly cache?: QueryCache;
   /** Recruiter uid while an Administrador is in "Ver como reclutador" (sent as X-Acting-For). */
   readonly actingFor?: () => string | null;
+  /** Called once per response that refuses the call because the account must set up or pass two-step verification. */
+  readonly onMfaRequired?: (error: ApiError) => void;
   /** Injected for tests; defaults to the global fetch. */
   readonly fetch?: typeof fetch;
 }
@@ -69,7 +71,11 @@ export class ApiClient {
     }
 
     this.cache.invalidate(parseInvalidates(response.headers.get(INVALIDATES_HEADER)));
-    if (!response.ok) throw await toApiError(response);
+    if (!response.ok) {
+      const error = await toApiError(response);
+      if (error.isMfaRequired) this.options.onMfaRequired?.(error);
+      throw error;
+    }
     if (response.status === 204) return undefined as T;
     return parseJson<T>(await response.text());
   }
