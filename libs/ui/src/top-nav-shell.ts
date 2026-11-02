@@ -6,6 +6,7 @@ import { MatTabLink, MatTabNav, MatTabNavPanel } from '@angular/material/tabs';
 import { MatToolbar } from '@angular/material/toolbar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { BrandLogo } from './brand-logo';
 import { RefreshButton } from './refresh-button';
 import { Session } from './session';
 import { ThemePicker } from './theme';
@@ -18,12 +19,12 @@ export interface TopNavItem {
 /** Mobile-first shell of the candidates and clients apps: a toolbar and 2–3 top tabs (prototype "simple top navigation"). */
 @Component({
   selector: 'ui-top-nav-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatToolbar, MatTabNav, MatTabLink, MatTabNavPanel, MatIconButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip, RefreshButton, ThemePicker],
+  imports: [BrandLogo, RouterOutlet, RouterLink, RouterLinkActive, MatToolbar, MatTabNav, MatTabLink, MatTabNavPanel, MatIconButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip, RefreshButton, ThemePicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host { display: flex; flex-direction: column; min-height: 100%; }
     .toolbar { gap: 4px; background: var(--mat-sys-surface); }
-    .brand { color: var(--mat-sys-primary); margin-right: 4px; }
+    .brand { width: 56px; height: 29px; margin-right: 8px; }
     .title { flex: 1; font: var(--mat-sys-title-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     nav { background: var(--mat-sys-surface); border-bottom: 1px solid var(--mat-sys-outline-variant); }
     .user { padding: 12px 16px; font: var(--mat-sys-label-large); color: var(--mat-sys-on-surface-variant); }
@@ -32,7 +33,7 @@ export interface TopNavItem {
   `,
   template: `
     <mat-toolbar class="toolbar">
-      <mat-icon class="brand" fontSet="material-symbols-outlined">badge</mat-icon>
+      <ui-brand-logo class="brand" variant="mark" />
       <span class="title">{{ title() }}</span>
       <ui-refresh-button />
       <button matIconButton type="button" [matMenuTriggerFor]="menu" aria-label="Cuenta" matTooltip="Cuenta">

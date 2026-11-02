@@ -32,6 +32,13 @@
   border-radius: 0;
 }
 
+.logo {
+  align-self: center;
+  width: 112px;
+  height: 126px;
+  margin: 8px 0 4px;
+}
+
 .section {
   margin: 20px 0 0;
   padding: 0 16px 6px;
@@ -59,11 +66,19 @@
   border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
-.menu-fab {
-  position: fixed;
-  top: 8px;
-  left: 8px;
+// Below 960px the sidenav is modal; its toggle gets its own bar so it never sits over the page title.
+.top {
+  position: sticky;
+  top: 0;
   z-index: 2;
+}
+
+.compact-bar {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--mat-sys-surface);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .user-label {
@@ -74,9 +89,6 @@
 
 // «Ver como reclutador»: persistent while covering (SPEC §4.4).
 .cover-banner {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;

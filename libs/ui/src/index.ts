@@ -12,3 +12,4 @@ export * from './forms';
 export * from './material';
 export * from './theme';
 export * from './pager';
+export * from './brand-logo';

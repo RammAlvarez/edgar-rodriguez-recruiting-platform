@@ -8,10 +8,11 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { Router } from '@angular/router';
 import { PASSWORD_AUTH } from '../auth-token';
 import { SignInError } from '@platform/api-client';
+import { BrandLogo } from '@platform/ui';
 
 @Component({
   selector: 'app-sign-in',
-  imports: [ReactiveFormsModule, MatCard, MatCardHeader, MatCardTitle, MatCardContent, MatFormField, MatLabel, MatError, MatInput, MatButton, MatProgressBar],
+  imports: [BrandLogo, ReactiveFormsModule, MatCard, MatCardHeader, MatCardTitle, MatCardContent, MatFormField, MatLabel, MatError, MatInput, MatButton, MatProgressBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './sign-in.scss',
   template: `
@@ -20,6 +21,7 @@ import { SignInError } from '@platform/api-client';
         @if (busy()) {
           <mat-progress-bar mode="indeterminate" />
         }
+        <ui-brand-logo class="logo" />
         <mat-card-header>
           <mat-card-title>Plataforma de Reclutamiento y Prenómina</mat-card-title>
         </mat-card-header>
