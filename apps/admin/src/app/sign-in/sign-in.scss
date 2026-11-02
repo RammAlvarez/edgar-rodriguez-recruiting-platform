@@ -11,6 +11,13 @@
   width: min(400px, 100%);
 }
 
+.logo {
+  align-self: center;
+  width: 128px;
+  height: 144px;
+  margin-top: 24px;
+}
+
 form {
   display: flex;
   flex-direction: column;

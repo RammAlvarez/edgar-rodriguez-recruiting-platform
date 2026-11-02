@@ -1,6 +1,7 @@
 <div class="frame">
 <mat-sidenav-container class="shell">
   <mat-sidenav #nav [mode]="compact() ? 'over' : 'side'" [opened]="!compact()" class="sidenav">
+    <ui-brand-logo class="logo" />
     <mat-nav-list>
       @for (section of sections(); track $index) {
         @if (section.label) {
@@ -49,18 +50,22 @@
   </mat-sidenav>
 
   <mat-sidenav-content>
-    @if (compact()) {
-      <button matIconButton type="button" class="menu-fab" aria-label="Menú" matTooltip="Menú" (click)="nav.toggle()">
-        <mat-icon fontSet="material-symbols-outlined">menu</mat-icon>
-      </button>
-    }
-    @if (covering(); as c) {
-      <div class="cover-banner" role="status">
-        <mat-icon fontSet="material-symbols-outlined">visibility</mat-icon>
-        <span>Viendo como <strong>{{ c.name }}</strong> · estás cubriendo su trabajo; lo que hagas queda registrado a tu nombre.</span>
-        <button matButton type="button" (click)="exitCover()">Salir</button>
-      </div>
-    }
+    <div class="top">
+      @if (compact()) {
+        <div class="compact-bar">
+          <button matIconButton type="button" aria-label="Menú" matTooltip="Menú" (click)="nav.toggle()">
+            <mat-icon fontSet="material-symbols-outlined">menu</mat-icon>
+          </button>
+        </div>
+      }
+      @if (covering(); as c) {
+        <div class="cover-banner" role="status">
+          <mat-icon fontSet="material-symbols-outlined">visibility</mat-icon>
+          <span>Viendo como <strong>{{ c.name }}</strong> · estás cubriendo su trabajo; lo que hagas queda registrado a tu nombre.</span>
+          <button matButton type="button" (click)="exitCover()">Salir</button>
+        </div>
+      }
+    </div>
     <main>
       <router-outlet />
     </main>

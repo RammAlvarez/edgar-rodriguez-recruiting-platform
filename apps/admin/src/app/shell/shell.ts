@@ -9,7 +9,7 @@ import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 import { MatTooltip } from '@angular/material/tooltip';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { RefreshButton, Session } from '@platform/ui';
+import { BrandLogo, RefreshButton, Session } from '@platform/ui';
 import { map } from 'rxjs';
 import { API_CLIENT } from '@platform/ui';
 import { CoverMode } from './cover-mode';
@@ -41,6 +41,7 @@ const ROLE_LABELS = { administrator: 'Administrador', recruiter: 'Reclutador', c
     MatDivider,
     MatTooltip,
     RefreshButton,
+    BrandLogo,
     NotificationBell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

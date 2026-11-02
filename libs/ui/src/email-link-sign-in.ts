@@ -8,6 +8,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { Router } from '@angular/router';
 import { SignInError } from '@platform/api-client';
 import { EMAIL_LINK_AUTH } from './api';
+import { BrandLogo } from './brand-logo';
 
 /**
  * Passwordless sign-in (candidates and clients apps). `/entrar` asks for the email and sends the link;
@@ -15,11 +16,12 @@ import { EMAIL_LINK_AUTH } from './api';
  */
 @Component({
   selector: 'ui-email-link-sign-in',
-  imports: [ReactiveFormsModule, MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatFormField, MatLabel, MatHint, MatError, MatInput, MatButton, MatProgressBar],
+  imports: [BrandLogo, ReactiveFormsModule, MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatFormField, MatLabel, MatHint, MatError, MatInput, MatButton, MatProgressBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .sign-in { display: grid; place-items: center; min-height: 100%; padding: 16px; box-sizing: border-box; background: var(--mat-sys-surface-container-low); }
     .card { width: min(420px, 100%); }
+    .logo { align-self: center; width: 128px; height: 144px; margin-top: 24px; }
     form { display: flex; flex-direction: column; gap: 8px; padding-top: 16px; }
     .message { margin: 0; }
     .error { color: var(--mat-sys-error); }
@@ -31,6 +33,7 @@ import { EMAIL_LINK_AUTH } from './api';
         @if (busy()) {
           <mat-progress-bar mode="indeterminate" />
         }
+        <ui-brand-logo class="logo" />
         <mat-card-header>
           <mat-card-title>{{ appName() }}</mat-card-title>
           <mat-card-subtitle>Te enviaremos un enlace a tu correo para entrar, sin contraseña.</mat-card-subtitle>
