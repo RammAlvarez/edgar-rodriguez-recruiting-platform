@@ -1,0 +1,8 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "admin", "runtimeExecutable": "npx", "runtimeArgs": ["ng", "serve", "admin"], "port": 4300 },
+    { "name": "candidates", "runtimeExecutable": "npx", "runtimeArgs": ["ng", "serve", "candidates"], "port": 4301 },
+    { "name": "clients", "runtimeExecutable": "npx", "runtimeArgs": ["ng", "serve", "clients"], "port": 4302 }
+  ]
+}
