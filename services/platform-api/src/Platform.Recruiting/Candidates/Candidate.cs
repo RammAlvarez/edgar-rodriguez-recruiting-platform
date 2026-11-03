@@ -44,8 +44,6 @@ public sealed class Candidate : IStamped
     public decimal? OfferedSalary { get; set; }
     public string? Comments { get; set; }
     public string? DiscardReason { get; set; }
-    /// <summary>Set by «Convertir en empleado» (S7); the FK arrives with <c>employees</c> (PLAN D72).</summary>
-    public Guid? EmployeeId { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
     public Guid? CreatedBy { get; set; }

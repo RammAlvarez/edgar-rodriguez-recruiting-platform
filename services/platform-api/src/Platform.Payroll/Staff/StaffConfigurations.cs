@@ -33,7 +33,6 @@ internal sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         b.HasOne<Person>().WithMany().HasForeignKey(e => e.PersonId).HasPrincipalKey(p => p.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<PayrollGroup>().WithMany().HasForeignKey(e => e.PayrollGroupId).HasPrincipalKey(g => g.Uid).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Position>().WithMany().HasForeignKey(e => e.PositionId).HasPrincipalKey(p => p.Uid).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne<Candidate>().WithMany().HasForeignKey(e => e.CandidateId).HasPrincipalKey(c => c.Uid).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

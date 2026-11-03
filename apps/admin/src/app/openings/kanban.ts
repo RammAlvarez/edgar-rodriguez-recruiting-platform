@@ -1,7 +1,6 @@
 import { CdkDrag, type CdkDragDrop, CdkDropList, CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
 import { Router } from '@angular/router';
 import type { CandidateListItemDto } from '../data/api-types';
 import { SOURCE, STAGE, STAGES, type CandidateStage } from '../data/recruiting-labels';
@@ -13,7 +12,7 @@ import { StageMove } from '../candidates/stage-move';
  */
 @Component({
   selector: 'app-kanban',
-  imports: [CdkDropListGroup, CdkDropList, CdkDrag, MatButton, MatIcon],
+  imports: [CdkDropListGroup, CdkDropList, CdkDrag, MatButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="kanban" cdkDropListGroup>
@@ -30,12 +29,6 @@ import { StageMove } from '../candidates/stage-move';
               <div class="muted">{{ source[c.source!] ?? '—' }} · {{ c.daysInProcess }} d</div>
               <div class="card-actions">
                 <button matButton type="button" (click)="open(c)">Ver perfil</button>
-                @if (c.stage === 'hired') {
-                  <!-- «Convertir en empleado» lives on the candidate's profile, which knows whether it was converted. -->
-                  <button matButton type="button" (click)="open(c)">
-                    <mat-icon fontSet="material-symbols-outlined">badge</mat-icon>Convertir
-                  </button>
-                }
               </div>
             </div>
           }

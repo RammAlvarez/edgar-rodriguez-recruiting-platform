@@ -72,7 +72,7 @@ public static class EmployeeQueries
             person.Email, person.IsForeign, group.ClientId, client, group.Uid, group.Name, e.PositionId, position, e.Shift, e.HiredAt,
             e.TerminatedAt, current?.Status ?? EmployeeStatus.Active, Dto(current), Dto(StaffRules.Next(periods, today)),
             e.DailySalaryPocketOverride, e.DailySalaryImssOverride, e.HourlyRateOverride, e.DaysWorkedBonusOverride,
-            rates is null ? null : StaffRules.Rates(rates), StaffRules.Effective(e, rates), e.Notes, e.CandidateId,
+            rates is null ? null : StaffRules.Rates(rates), StaffRules.Effective(e, rates), e.Notes,
             // A request is moot once the person has a principal account, whichever app added it (the Candidates app does not
             // know about payroll): hidden here, left out of the queue, cancelled by the alta files that skip it (S10).
             await EmployeeTemplate(db, ct), hasAccount, hasAccount ? null : card);

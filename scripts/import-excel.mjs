@@ -181,7 +181,7 @@ for (const r of rows) {
     personId: person.id, payrollGroupId: group.id, positionId: positionIds[r.puesto], shift: r.turno, hiredAt: r.hiredAt,
     dailySalaryPocketOverride: overrides ? r.rates.pocket.toFixed(2) : null, dailySalaryImssOverride: overrides ? r.rates.imss.toFixed(2) : null,
     hourlyRateOverride: overrides ? String(r.rates.hourly) : null, daysWorkedBonusOverride: null,
-    notes: splitComments(raw(r.row)).comments, cardBank: usable ? null : args['card-bank'], candidateId: null,
+    notes: splitComments(raw(r.row)).comments, cardBank: usable ? null : args['card-bank'],
     bankAccount: usable ? {
       bankId: banks[usable.bankCode], accountType: usable.type, accountNumber: usable.digits, holderName: null, alias: null, validFrom: r.hiredAt,
       makePrimary: true,

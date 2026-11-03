@@ -3495,10 +3495,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
-                    b.Property<Guid?>("CandidateId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("candidate_id");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -3584,9 +3580,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
                     b.HasAlternateKey("Uid")
                         .HasName("ak_employees_uid");
-
-                    b.HasIndex("CandidateId")
-                        .HasDatabaseName("ix_employees_candidate_id");
 
                     b.HasIndex("PayrollGroupId")
                         .HasDatabaseName("ix_employees_payroll_group_id");
@@ -3813,10 +3806,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
                     b.Property<string>("DiscardReason")
                         .HasColumnType("text")
                         .HasColumnName("discard_reason");
-
-                    b.Property<Guid?>("EmployeeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("employee_id");
 
                     b.Property<DateOnly?>("HiredAt")
                         .HasColumnType("date")
@@ -5078,13 +5067,6 @@ namespace Platform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Platform.Payroll.Staff.Employee", b =>
                 {
-                    b.HasOne("Platform.Recruiting.Candidates.Candidate", null)
-                        .WithMany()
-                        .HasForeignKey("CandidateId")
-                        .HasPrincipalKey("Uid")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_employees_candidates_candidate_id");
-
                     b.HasOne("Platform.Payroll.Groups.PayrollGroup", null)
                         .WithMany()
                         .HasForeignKey("PayrollGroupId")

@@ -32,17 +32,17 @@ public sealed record EmployeeDetailDto(Guid Id, Guid PersonId, string FullName, 
     string? Email, bool IsForeign, Guid ClientId, string ClientName, Guid PayrollGroupId, string GroupName, Guid PositionId,
     string PositionName, string Shift, DateOnly HiredAt, DateOnly? TerminatedAt, EmployeeStatus Status, StatusPeriodDto? Period,
     StatusPeriodDto? NextPeriod, decimal? DailySalaryPocketOverride, decimal? DailySalaryImssOverride, decimal? HourlyRateOverride,
-    decimal? DaysWorkedBonusOverride, EmployeeRatesDto? PositionRates, EmployeeRatesDto? Rates, string? Notes, Guid? CandidateId,
+    decimal? DaysWorkedBonusOverride, EmployeeRatesDto? PositionRates, EmployeeRatesDto? Rates, string? Notes,
     Guid? DocumentTemplateId, bool HasAccount, CardRequestDto? CardRequest);
 
 /// <summary>
-/// «Alta de empleado», direct or «Convertir en empleado» (<see cref="CandidateId"/>). The worker's account can be typed at
+/// «Alta de empleado». The worker's account can be typed at
 /// alta (<see cref="BankAccount"/>, it becomes the principal); without it and without a current principal account the
 /// employee is queued for a card at <see cref="CardBank"/> (SPEC §5.5, §5.7).
 /// </summary>
 public sealed record EmployeeRequest(Guid PersonId, Guid PayrollGroupId, Guid PositionId, string Shift, DateOnly? HiredAt,
     decimal? DailySalaryPocketOverride, decimal? DailySalaryImssOverride, decimal? HourlyRateOverride, decimal? DaysWorkedBonusOverride,
-    string? Notes, RegistrationBank? CardBank, Guid? CandidateId, BankAccountRequest? BankAccount = null);
+    string? Notes, RegistrationBank? CardBank, BankAccountRequest? BankAccount = null);
 
 public sealed record UpdateEmployeeRequest(string Shift, decimal? DailySalaryPocketOverride, decimal? DailySalaryImssOverride,
     decimal? HourlyRateOverride, decimal? DaysWorkedBonusOverride, string? Notes);
@@ -72,10 +72,6 @@ public sealed record SiteOptionDto(Guid Id, string Name);
 /// <summary>A group for the alta and assignment pickers, with its puestos and the active sitios of its client (horarios).</summary>
 public sealed record GroupOptionDto(Guid Id, Guid ClientId, string ClientName, string Name, IReadOnlyList<PositionOptionDto> Positions,
     IReadOnlyList<SiteOptionDto> Sites);
-
-/// <summary>What «Convertir en empleado» pre-fills: the hire date and the bank the vacante pays with.</summary>
-public sealed record ConversionDto(Guid CandidateId, Guid PersonId, string FullName, Guid ClientId, string OpeningName, DateOnly? HiredAt,
-    RegistrationBank? SuggestedBank, bool HasAccount, Guid? EmployeeId);
 
 public sealed record EmployeeOptionsDto(IReadOnlyList<GroupOptionDto> Groups, IReadOnlyList<string> Shifts,
     IReadOnlyList<string> TerminationReasons);

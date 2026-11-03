@@ -17,7 +17,6 @@ import type {
   PrepayrollGridDto,
   PrepayrollLineDetailDto,
   ReportExportDto,
-  ConversionDto,
   EmployeeDetailDto,
   EmployeeListItemDto,
   EmployeeOptionsDto,
@@ -122,10 +121,6 @@ export class EmployeesRepository {
 
   options() {
     return liveQuery(() => this.api.get<EmployeeOptionsDto>('/v1/employees/options'), ['payroll-groups']);
-  }
-
-  conversion(candidateId: string): Promise<ConversionDto> {
-    return this.api.get(`/v1/employees/conversion/${candidateId}`);
   }
 
   create(body: EmployeeRequest): Promise<EmployeeDetailDto> {

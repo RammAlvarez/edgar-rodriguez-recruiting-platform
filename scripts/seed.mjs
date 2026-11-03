@@ -332,7 +332,7 @@ if ((await api(token, 'GET', '/v1/payroll/groups')).body.length > 0) {
       personId: person.id, payrollGroupId: groupIds.PG1, positionId: positionIds[puesto.id], shift: r.turno, hiredAt: r.hiredAt,
       dailySalaryPocketOverride: own ? r.rates.pocket.toFixed(2) : null, dailySalaryImssOverride: own ? r.rates.imss.toFixed(2) : null,
       hourlyRateOverride: own ? r.rates.hourly.toFixed(2) : null, daysWorkedBonusOverride: null,
-      notes: null, cardBank: bankAccount ? null : NO_ACCOUNT[k], candidateId: null, bankAccount,
+      notes: null, cardBank: bankAccount ? null : NO_ACCOUNT[k], bankAccount,
     })).body;
     if (THIRD_PARTY[k]) {
       await api(token, 'POST', `/v1/employees/${employee.id}/bank-accounts`, {
@@ -379,7 +379,7 @@ if ((await api(token, 'GET', '/v1/payroll/groups')).body.length > 0) {
     const employee = (await api(token, 'POST', '/v1/employees', {
       personId: person.id, payrollGroupId: groupIds[e.grupoId], positionId: positionIds[e.puestoId], shift: e.turno, hiredAt,
       dailySalaryPocketOverride: null, dailySalaryImssOverride: null, hourlyRateOverride: null, daysWorkedBonusOverride: null,
-      notes: null, cardBank: null, candidateId: null,
+      notes: null, cardBank: null,
       bankAccount: {
         bankId: banks[BANK_CODE[bankName]], accountType: isClabe ? 'clabe' : 'debit_card',
         accountNumber: isClabe ? clabe(BANK_CODE[bankName], i) : card(i), holderName: holder(e.nombre),

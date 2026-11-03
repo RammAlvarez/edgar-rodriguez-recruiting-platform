@@ -15,7 +15,7 @@ import { curp, type DateKey, decimalString, mobilePhone, todayKey } from '@platf
 import { API_CLIENT, zodValidator } from '@platform/ui';
 import { debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs';
 import { z } from 'zod';
-import type { BankAccountType, ConversionDto, EmployeeDetailDto, PersonSummaryDto, RegistrationBank } from '../data/api-types';
+import type { BankAccountType, EmployeeDetailDto, PersonSummaryDto, RegistrationBank } from '../data/api-types';
 import { ACCOUNT_TYPES, hourlyText, REGISTRATION_BANK } from '../data/payroll-labels';
 import { EmployeesRepository } from '../data/payroll-repositories';
 import { PeopleRepository } from '../data/recruiting-repositories';
@@ -23,9 +23,8 @@ import { CatalogsRepository } from '../data/repositories';
 import { PanelState } from '../clients/panel-base';
 
 export interface EmployeePanelData {
-  /** alta: from Personal · convert: «Convertir en empleado» of a Contratado · rehire: «Reingreso» after a baja. */
-  readonly mode: 'alta' | 'convert' | 'rehire';
-  readonly conversion?: ConversionDto;
+  /** alta: from Personal · rehire: «Reingreso» after a baja. */
+  readonly mode: 'alta' | 'rehire';
   readonly employee?: EmployeeDetailDto;
 }
 
@@ -65,7 +64,7 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
       <form class="panel-form" [formGroup]="form" (ngSubmit)="save()" id="employee-form" novalidate>
         <h3 class="section-title">Persona</h3>
         @if (fixedPerson; as p) {
-          <p class="fixed"><strong>{{ p.fullName }}</strong>@if (data.conversion; as c) { <span class="muted"> · {{ c.openingName }}</span> }</p>
+          <p class="fixed"><strong>{{ p.fullName }}</strong></p>
         } @else {
           <mat-button-toggle-group [value]="personMode()" (change)="personMode.set($event.value)" aria-label="Persona" hideSingleSelectionIndicator>
             <mat-button-toggle value="existing">Buscar persona</mat-button-toggle>
@@ -124,9 +123,6 @@ const hourly = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Importe con has
               <mat-option [value]="g.id">{{ g.clientName }} — {{ g.name }}</mat-option>
             }
           </mat-select>
-          @if (data.conversion && !groups().length) {
-            <mat-hint>{{ data.conversion.openingName.split(' – ')[0] }} no tiene grupos de nómina: créalo en Clientes (nómina).</mat-hint>
-          }
           <mat-error>{{ s.msg('payrollGroupId') }}</mat-error>
         </mat-form-field>
         <div class="row">
@@ -281,14 +277,10 @@ export class EmployeePanel {
   private readonly catalogs = inject(CatalogsRepository).catalogs();
   readonly options = this.employees.options();
 
-  readonly title = { alta: 'Alta de empleado', convert: 'Convertir en empleado', rehire: 'Reingreso' }[this.data.mode];
-  readonly action = { alta: 'Dar de alta', convert: 'Convertir', rehire: 'Registrar reingreso' }[this.data.mode];
-  readonly fixedPerson = this.data.conversion
-    ? { id: this.data.conversion.personId, fullName: this.data.conversion.fullName }
-    : this.data.employee
-      ? { id: this.data.employee.personId, fullName: this.data.employee.fullName }
-      : null;
-  readonly personHasAccount = this.data.conversion?.hasAccount ?? this.data.employee?.hasAccount ?? false;
+  readonly title = { alta: 'Alta de empleado', rehire: 'Reingreso' }[this.data.mode];
+  readonly action = { alta: 'Dar de alta', rehire: 'Registrar reingreso' }[this.data.mode];
+  readonly fixedPerson = this.data.employee ? { id: this.data.employee.personId, fullName: this.data.employee.fullName } : null;
+  readonly personHasAccount = this.data.employee?.hasAccount ?? false;
 
   readonly personMode = signal<'existing' | 'new'>('existing');
   readonly person = signal<PersonSummaryDto | null>(null);
@@ -310,10 +302,10 @@ export class EmployeePanel {
     payrollGroupId: [null as string | null, Validators.required],
     positionId: [null as string | null, Validators.required],
     shift: ['C/DÍA', [Validators.required, Validators.maxLength(30)]],
-    hiredAt: [(this.data.conversion?.hiredAt ?? todayKey()) as string, Validators.required],
+    hiredAt: [todayKey() as string, Validators.required],
     pocket: ['', zodValidator(decimalString())],
     hourly: ['', zodValidator(hourly)],
-    cardBank: [(this.data.conversion?.suggestedBank ?? 'banorte') as RegistrationBank | null],
+    cardBank: ['banorte' as RegistrationBank | null],
     // Named like the request field, so the server's «bankAccount.accountNumber» error lands under the field.
     bankAccount: this.fb.nonNullable.group({
       bankId: [null as string | null, Validators.required],
@@ -328,10 +320,7 @@ export class EmployeePanel {
   private readonly positionId = toSignal(this.form.controls.positionId.valueChanges, { initialValue: null });
   private readonly accountType = toSignal(this.form.controls.bankAccount.controls.accountType.valueChanges, { initialValue: 'debit_card' as BankAccountType });
 
-  /** A conversion offers only the vacante's client's groups. */
-  readonly groups = computed(() =>
-    (this.options.value()?.groups ?? []).filter((g) => !this.data.conversion || g.clientId === this.data.conversion.clientId),
-  );
+  readonly groups = computed(() => this.options.value()?.groups ?? []);
   readonly positions = computed(() => this.groups().find((g) => g.id === this.groupId())?.positions ?? []);
   readonly selectedPosition = computed(() => this.positions().find((p) => p.id === this.positionId()));
   readonly banks = computed(() => (this.catalogs.value()?.banks ?? []).filter((b) => b.isActive));
@@ -391,7 +380,7 @@ export class EmployeePanel {
           : await this.employees.create({
               personId, payrollGroupId: v.payrollGroupId!, positionId: v.positionId!, shift: v.shift, hiredAt: v.hiredAt as DateKey,
               dailySalaryPocketOverride: text(v.pocket), dailySalaryImssOverride: null, hourlyRateOverride: text(v.hourly),
-              daysWorkedBonusOverride: null, notes: null, cardBank, candidateId: this.data.conversion?.candidateId ?? null,
+              daysWorkedBonusOverride: null, notes: null, cardBank,
               bankAccount: account,
             });
       this.snack.open(`${saved.fullName} · ${saved.clientName} ${saved.positionName}`, undefined, { duration: 5000 });
