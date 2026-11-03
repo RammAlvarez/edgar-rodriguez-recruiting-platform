@@ -45,13 +45,7 @@ public sealed record CandidateDetailDto(
     int DaysInProcess,
     decimal? OfferedSalary,
     string? Comments,
-    string? DiscardReason,
-    /// <summary>
-    /// «Convertir en empleado» (S7): a Contratado not converted yet, for an Administrador with the Personal grant
-    /// (<c>payroll_staff</c>); afterwards <see cref="EmployeeId"/> links to the employee.
-    /// </summary>
-    bool CanConvertToEmployee,
-    Guid? EmployeeId);
+    string? DiscardReason);
 
 /// <summary>
 /// «Nuevo candidato»: an existing person (<see cref="PersonId"/>) or a new one (<see cref="Person"/>, created in the same
@@ -96,7 +90,6 @@ public static class CandidateMessages
 {
     public const string ReasonRequired = "Indica el motivo.";
     public const string HiredAtRequired = "Indica la fecha de ingreso.";
-    public const string Converted = "El candidato ya se convirtió en empleado; su contratación no se puede deshacer aquí.";
     public const string SameStage = "El candidato ya está en esa etapa.";
     public const string HiredBeforeCapture = "La fecha de ingreso no puede ser anterior a la fecha de captura.";
 

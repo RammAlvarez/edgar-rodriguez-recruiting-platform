@@ -41,7 +41,6 @@ erDiagram
     payroll_groups ||--o{ employees : employs
     positions ||--o{ employees : holds
     people ||--o{ employees : "is"
-    candidates |o--o| employees : "converted to"
     client_sites ||--o{ work_schedules : at
     employees ||--o{ work_schedules : follows
     employees ||--o{ attendance_records : daily
@@ -349,7 +348,6 @@ Every DTO that references a vacante carries `display_name`; the UI never shows i
 | offered_salary | numeric(12,2) | |
 | comments | text | |
 | discard_reason | text | required when `discarded` / `not_suitable` |
-| employee_id | uuid NULL | set by "Convertir en empleado"; FK to `employees` added with that table in S7 (PLAN D72) |
 | UNIQUE | (person_id, job_opening_id) | |
 
 `days_in_process` = `(hired_at ?? current_date) - captured_at` (view).
@@ -559,7 +557,6 @@ Seed (codes → Excel column):
 | terminated_at | date | BAJA — mirrors the `terminated` period |
 | status | employee_status default `active` | maintained from `employee_status_periods` (5.4b) |
 | daily_salary_pocket_override, daily_salary_imss_override, hourly_rate_override, days_worked_bonus_override | numeric NULL | per-employee overrides |
-| candidate_id | uuid FK platform.candidates NULL | origin |
 | notes | text | COMENTARIOS |
 | UNIQUE | (person_id, payroll_group_id) WHERE terminated_at IS NULL | one active employment per group |
 

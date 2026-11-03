@@ -81,7 +81,6 @@ export type EmployeeRequest = S['EmployeeRequest'];
 export type UpdateEmployeeRequest = S['UpdateEmployeeRequest'];
 export type EmployeeOptionsDto = S['EmployeeOptionsDto'];
 export type GroupOptionDto = S['GroupOptionDto'];
-export type ConversionDto = S['ConversionDto'];
 export type StatusPeriodDto = S['StatusPeriodDto'];
 export type StatusPeriodRequest = S['StatusPeriodRequest'];
 export type BankAccountDto = S['BankAccountDto'];

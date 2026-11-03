@@ -70,7 +70,6 @@ public sealed class CandidateTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal("HEB – Auxiliar de limpieza", c.GetProperty("openingName").GetString());
         Assert.Equal("new", c.GetProperty("stage").GetString());
         Assert.Equal("Mónica Soto", c.GetProperty("recruiterName").GetString());
-        Assert.False(c.GetProperty("canConvertToEmployee").GetBoolean());
         Assert.Equal("in_progress", (await Opening()).GetProperty("status").GetString());
 
         var history = Assert.Single((await BodyOf(await _admin.GetAsync($"/v1/candidates/{c.GetProperty("id").GetGuid()}/history")))

@@ -97,7 +97,7 @@ Data: `npm run seed` (3 payroll groups, 5 puestos, 32 employees: two vacations, 
 4. «Agregar cuenta» with a wrong card digit → the field error; with the right one → «•••• 1237 · Principal», the card banner disappears.
 5. Documentos uses «Empleado — expediente»; Horario: a weekly schedule; Calendario day / week / month shows it, with vacations and incapacidad on the expected people.
 6. Clientes (nómina) → ECOVIA: VALIDADORES 12 H, its puestos and rates, bonuses off.
-7. A Contratado candidate → «Convertir en empleado» pre-fills the hire date and the bank; afterwards the candidate shows «Ver empleado».
+7. A Contratado candidate has no way into Personal (PLAN D101): no «Convertir en empleado» on the profile or the Kanban card.
 8. Candidates app → Mi perfil → «Cuenta para tu pago» adds a card, shown as «•••• 1237».
 9. 390 px: Personal, employee detail, Calendario, payroll client detail.
 
@@ -240,9 +240,8 @@ ECOVIA weeks so it does not wait on the new hire.
 23. The candidate detail shows the CURP, RFC, address and birth date from step 18; the documents *Entregado* → Validar both
     → *Validado*; Mónica has «… subió Identificación oficial» in her bell; «Comentarios del cliente» has step 22's comment.
 24. Move to Apto → the client sees the full name, sueldo ofrecido, entrevista and documentos % (reload :4302); «Mover a
-    Contratado» with today's fecha de ingreso → «… 1 de 2 cubiertas»; «Convertir en empleado» offers only HAPPY SA's group
-    and says «Ya tiene cuenta principal; no se solicita tarjeta» → Convertir → the employee, with step 18's card as
-    *Principal*.
+    Contratado» with today's fecha de ingreso → «… 1 de 2 cubiertas»; the profile and the Kanban card offer no
+    «Convertir en empleado» (PLAN D101).
 25. 390 px: one screen of each app (Prenómina, Mi perfil, the client's vacante) has no page-wide horizontal scroll.
 
 ### 4.2 FORMS — stress test of every form
@@ -409,10 +408,10 @@ the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a n
     as paid (the grid and the Asistencia report do not change; the day view reads «Estatus registrado después del pago: Vacaciones»).
 
 **Live week (D0) — the hire joins**
-33. Mónica: c1 → Apto (client sees the full name) → Contratado, fecha de ingreso D0 → «1 de 2 cubiertas»; «Convertir en
-    empleado» into OPERACIÓN (bank from the candidate's own account) → appears in Personal and in today's roster.
+33. Mónica: c1 → Apto (client sees the full name) → Contratado, fecha de ingreso D0 → «1 de 2 cubiertas»; recruiting ends
+    here (PLAN D101). Owner: «Alta de empleado» of a new worker into OPERACIÓN → appears in Personal and in today's roster.
 34. (If D0 is a Sunday nobody works Lunes–Sábado schedules: give each active person a one-off schedule for D0.) Supervisor E2E at
-    390 px (a 390 px iframe, since the window does not resize): sidebar Calendario + Asistencia only; Planta Norte today → capture everyone incl. c1 → Guardar;
+    390 px (a 390 px iframe, since the window does not resize): sidebar Calendario + Asistencia only; Planta Norte today → capture everyone incl. the new worker → Guardar;
     yesterday → no «Cambiar»; ECOVIA is not offered.
 35. The bell (owner): «falta captura» for any site left without today's capture after the lock time; «documento por vencer»
     if one was set to expire within the warning window in step 12 (the template's 90 days put it out of the window, so set an earlier date or the item is not exercised).
@@ -422,7 +421,7 @@ the run record. Sign-ins: the owner unless stated; Mónica Soto (recruiter); a n
 37. Resumen de pago → the payments of steps 29–31 with the rejected-then-paid row.
 38. Incidencias → the tiempo extra doble and the Descuento, priced as in the grid.
 39. Asistencia (with «Por día») → the days of steps 7–19 exactly.
-40. Rotación → six altas at L0 − 7, the Baja of E, the alta of c1.
+40. Rotación → six altas at L0 − 7, the Baja of E, the alta of step 33.
 41. Tarjetas y cuentas → the Banorte card received, the accounts by bank.
 42. Recruiting Reportes → Mónica: E2E vacante with one cubierta and its días para cubrir; Fuentes counts the three candidates.
 43. Excel and PDF of steps 36 and 42 open with the same figures; `audit_log` has their `export` rows.

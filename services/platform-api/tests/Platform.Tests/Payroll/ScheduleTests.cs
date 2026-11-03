@@ -51,7 +51,6 @@ public sealed class ScheduleTests(ApiFactory factory) : ApiTest(factory)
             daysWorkedBonusOverride = (string?)null,
             notes = (string?)null,
             cardBank = "banorte",
-            candidateId = (Guid?)null,
         }))).GetProperty("id").GetGuid();
     }
 

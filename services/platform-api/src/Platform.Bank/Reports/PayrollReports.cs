@@ -477,7 +477,7 @@ public static class PayrollReports
             .Concat(inRange.Select(x => (Date: x.e.TerminatedAt!.Value, Kind: "Baja", x, Reason: reasons.GetValueOrDefault(x.e.Uid))))
             .OrderBy(m => m.Date).ThenBy(m => m.x.FullName, StringComparer.Ordinal)
             .Select(m => new PayrollReportRowDto([ReportCell.Text(Date(m.Date)), ReportCell.Text(m.Kind), ReportCell.Text(m.x.FullName),
-                ReportCell.Text($"{m.x.Client} · {m.x.Group}"), ReportCell.Text(m.x.Position), ReportCell.Text(m.x.e.CandidateId is null ? "Directo" : "Vacante"),
+                ReportCell.Text($"{m.x.Client} · {m.x.Group}"), ReportCell.Text(m.x.Position),
                 ReportCell.Text(m.Reason)]))
             .ToList();
         return new(PayrollReport.Turnover, Title(PayrollReport.Turnover), r.Filters,
@@ -485,8 +485,8 @@ public static class PayrollReports
             new("Por cliente y mes", ["Cliente", "Mes", "Plantilla al inicio", "Altas", "Bajas", "Bajas en 30 días o menos", "Plantilla al cierre",
                 "Antigüedad promedio (días)"], rows),
             new("Motivos de baja", ["Motivo", "Bajas", "%"], byReason),
-            new("Altas y bajas", ["Fecha", "Movimiento", "Empleado", "Cliente · grupo", "Puesto", "Origen", "Motivo"], moves),
-        ], "Un reingreso cuenta como alta nueva. Origen «Vacante»: convertido desde un candidato contratado.");
+            new("Altas y bajas", ["Fecha", "Movimiento", "Empleado", "Cliente · grupo", "Puesto", "Motivo"], moves),
+        ], "Un reingreso cuenta como alta nueva.");
     }
 
     // ---- 6 · Tarjetas y cuentas ----

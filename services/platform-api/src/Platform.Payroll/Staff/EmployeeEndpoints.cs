@@ -18,7 +18,7 @@ using Platform.Recruiting.Openings;
 namespace Platform.Payroll.Staff;
 
 /// <summary>
-/// Personal (SPEC §5.1, §5.8): alta (direct or «Convertir en empleado»), edit, cambio de cliente / puesto, Cambiar estatus,
+/// Personal (SPEC §5.1, §5.8): alta, edit, cambio de cliente / puesto, Cambiar estatus,
 /// reingreso, «Solicitar tarjeta» and the Cuentas de pago tab. Grant <c>payroll_staff</c>, limited to the clients of a
 /// client-scoped grant through the employee's group (DATA_MODEL §8).
 /// </summary>
@@ -37,7 +37,6 @@ public static class EmployeeEndpoints
     public const string AlreadyEmployed = "La persona ya trabaja en ese grupo de nómina.";
     public const string CardBankRequired = "La persona no tiene cuenta principal: elige el banco para solicitar su tarjeta.";
     public const string CandidateNotHired = "Solo un candidato Contratado se convierte en empleado.";
-    public const string CandidateConverted = "Este candidato ya se convirtió en empleado.";
     public const string PeriodNotFound = "El periodo no existe.";
     public const string HasAccountAlready = "El empleado ya tiene cuenta principal; no necesita tarjeta.";
     public const string CardAlreadyRequested = "Ya hay una solicitud de tarjeta en curso.";
@@ -50,10 +49,6 @@ public static class EmployeeEndpoints
         g.MapGet("/options", async (DbContext db, RequestContext ctx, IClock clock, CancellationToken ct) =>
                 TypedResults.Ok(new EmployeeOptionsDto(await GroupOptions(db, ctx, clock.Today(), ct), StaffRules.Shifts, StaffRules.TerminationReasons)))
             .WithName("GetEmployeeOptions").RequireAccess(Access);
-
-        g.MapGet("/conversion/{candidateId:guid}", async (Guid candidateId, DbContext db, IClock clock, CancellationToken ct) =>
-                await Conversion(db, candidateId, clock.Today(), ct) is { } dto ? TypedResults.Ok(dto) : ApiResults.NotFound(CandidateNotHired))
-            .WithName("GetEmployeeConversion").Produces<ConversionDto>().ProducesProblem(StatusCodes.Status404NotFound).RequireAccess(Access);
 
         g.MapGet("", async (Guid? clientId, Guid? groupId, Guid? positionId, string? status, bool? includeTerminated, DbContext db,
                 RequestContext ctx, IClock clock, CancellationToken ct) =>
@@ -87,17 +82,6 @@ public static class EmployeeEndpoints
                     return bad;
                 if (!await db.Set<Person>().AnyAsync(p => p.Uid == r.PersonId && p.DeletedAt == null, ct))
                     return ApiResults.NotFound(PersonNotFound);
-                var hiredAt = r.HiredAt;
-                Candidate? candidate = null;
-                if (r.CandidateId is { } cid)
-                {
-                    candidate = await db.Set<Candidate>().SingleOrDefaultAsync(c => c.Uid == cid && c.PersonId == r.PersonId, ct);
-                    if (candidate is null || candidate.Stage != CandidateStage.Hired)
-                        return ApiResults.Conflict(CandidateNotHired);
-                    if (candidate.EmployeeId is not null)
-                        return ApiResults.Conflict(CandidateConverted);
-                    hiredAt ??= candidate.HiredAt;
-                }
                 if (await db.Set<Employee>().AnyAsync(e => e.PersonId == r.PersonId && e.PayrollGroupId == r.PayrollGroupId && e.TerminatedAt == null, ct))
                     return ApiResults.Conflict(AlreadyEmployed);
                 var hasAccount = await StaffRules.HasAccountAsync(db, r.PersonId, today, ct);
@@ -118,17 +102,14 @@ public static class EmployeeEndpoints
                     PayrollGroupId = r.PayrollGroupId,
                     PositionId = r.PositionId,
                     Shift = Shift(r.Shift),
-                    HiredAt = hiredAt ?? today,
+                    HiredAt = r.HiredAt ?? today,
                     DailySalaryPocketOverride = r.DailySalaryPocketOverride,
                     DailySalaryImssOverride = r.DailySalaryImssOverride,
                     HourlyRateOverride = r.HourlyRateOverride,
                     DaysWorkedBonusOverride = r.DaysWorkedBonusOverride,
                     Notes = r.Notes.Clean(),
-                    CandidateId = r.CandidateId,
                 };
                 db.Add(employee);
-                if (candidate is not null)
-                    candidate.EmployeeId = employee.Uid;
                 // An employee created without an account is queued for a card automatically (SPEC §5.5).
                 if (!hasAccount)
                     db.Add(new CardRequest { EmployeeId = employee.Uid, Bank = r.CardBank!.Value, RequestedAt = clock.UtcNow });
@@ -490,21 +471,5 @@ public static class EmployeeEndpoints
                 .Select(p => new PositionOptionDto(p.Uid, p.Name, rates.TryGetValue(p.Uid, out var r) ? StaffRules.Rates(r) : null)).ToList(),
             sites.Where(s => s.ClientId == x.g.ClientId).OrderBy(s => s.Name, StringComparer.Ordinal).Select(s => new SiteOptionDto(s.Uid, s.Name)).ToList()))
             .ToList();
-    }
-
-    /// <summary>What «Convertir en empleado» pre-fills; <c>null</c> unless the candidate is Contratado.</summary>
-    private static async Task<ConversionDto?> Conversion(DbContext db, Guid candidateId, DateOnly today, CancellationToken ct)
-    {
-        var c = await db.Set<Candidate>().AsNoTracking().SingleOrDefaultAsync(x => x.Uid == candidateId && x.Stage == CandidateStage.Hired, ct);
-        if (c is null)
-            return null;
-        var opening = await db.Set<JobOpening>().AsNoTracking().SingleAsync(o => o.Uid == c.JobOpeningId, ct);
-        var person = await db.Set<Person>().Where(p => p.Uid == c.PersonId).Select(p => p.FullName).SingleAsync(ct);
-        // The bank the vacante pays with, when it issues cards (SPEC §5.7 «default from the client's BANCO preference»).
-        var bank = await db.Set<Bank>().Where(b => opening.PaymentBankIds.Contains(b.Uid) && b.SupportsRegistration != null)
-            .Select(b => b.SupportsRegistration).FirstOrDefaultAsync(ct);
-        var name = (await OpeningQueries.DisplayNames(db, [opening.Uid], ct))[opening.Uid];
-        return new ConversionDto(c.Uid, c.PersonId, person, opening.ClientId, name, c.HiredAt, bank,
-            await StaffRules.HasAccountAsync(db, c.PersonId, today, ct), c.EmployeeId);
     }
 }

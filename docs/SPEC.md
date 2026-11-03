@@ -35,7 +35,9 @@ One platform, two business lines, one shared core.
 | **Reclutamiento** | Excel with 5 tabs, shared by WhatsApp; clients ask for status by phone | Pipeline per vacante, recruiter workspace, client portal with live progress |
 | **Servicios profesionales / Nómina** | Weekly Excel per client; attendance reported on Fridays from memory; bank data read by eye from a comments column; Banco Azteca file hand-typed | Daily, locked attendance capture → live pre-payroll grid with payment columns → one button produces the Banco Azteca file (and card-request files for new hires) |
 
-The shared core is a **people registry** (one record per person, candidate or employee) with a **document vault** (RFC, CURP, Acta de Nacimiento, NSS, INE, comprobante de domicilio, CLABE/tarjeta, …). A candidate marked *Contratado* becomes an employee without re-capturing anything — that conversion is the narrative of the demo.
+The shared core is a **people registry** (one record per person, candidate or employee) with a **document vault** (RFC, CURP, Acta de Nacimiento, NSS, INE, comprobante de domicilio, CLABE/tarjeta, …).
+
+**Two businesses, one company (PLAN D101).** Reclutamiento and Servicios profesionales / Nómina are run as separate businesses. A candidate marked *Contratado* is hired **by the client** and becomes the client's employee, not one of Personal: recruiting ends at *Contratado* and nothing moves a candidate into Nómina. Personal is fed only by «Alta de empleado». The two businesses share the client records (a client says which services it uses), the people registry and the document vault, so a person known to both is captured once.
 
 ### What matters most to the client (verbatim priorities)
 
@@ -202,7 +204,7 @@ Mirrors `BD_CANDIDATOS`. A **candidate** is a *person applying to a vacante* (on
 
 Views: Kanban by etapa per vacante (drag & drop), table with filters, candidate detail. **Candidate detail layout:** header (name, vacante, cliente, etapa pill, reclutador); left column: *Datos personales* card (teléfono, correo, domicilio, CURP, RFC, fuente…) and below it the **Notas** card; right column: tab group *Documentos* (checklist with completeness %) · *Entrevistas* · *Historial* (stage history). Duplicate warning if CURP/RFC already exists.
 
-**Notas (rich text).** A list of dated notes per candidate, newest first, each with author (and "cubriendo a …" in cover mode), editable by its author or an Administrador. Editor toolbar: H1, H2, H3, Bold, Italic, numbered list, bulleted list, hyperlink — nothing else (no images, tables or colours). Content is stored as sanitized HTML plus the editor's JSON; links open in a new tab; `@` is plain text (no mentions in v1). Notes are internal: never visible in the Clients app or the Candidates app. The legacy free-text `COMENTARIOS` column from the Excel is imported as the first note. Action **"Convertir en empleado"** when Contratado: creates the `employees` record for the vacante's client, copying person + documents (see 5.1).
+**Notas (rich text).** A list of dated notes per candidate, newest first, each with author (and "cubriendo a …" in cover mode), editable by its author or an Administrador. Editor toolbar: H1, H2, H3, Bold, Italic, numbered list, bulleted list, hyperlink — nothing else (no images, tables or colours). Content is stored as sanitized HTML plus the editor's JSON; links open in a new tab; `@` is plain text (no mentions in v1). Notes are internal: never visible in the Clients app or the Candidates app. The legacy free-text `COMENTARIOS` column from the Excel is imported as the first note.
 
 ### 4.3 Candidate stages
 
@@ -213,7 +215,7 @@ Views: Kanban by etapa per vacante (drag & drop), table with filters, candidate 
 | Entrevista | interview scheduled/held; date, interviewer, outcome notes | visible to client portal as "en entrevista" |
 | Apto | approved for presentation to client | `apto = Sí`; client portal now shows full name and summary |
 | No apto | rejected after interview | `apto = No`; reason required |
-| Contratado | hired | `contratado = Sí`, fecha de ingreso required; vacante counter +1; enables *Convertir en empleado* |
+| Contratado | hired | `contratado = Sí`, fecha de ingreso required; vacante counter +1; the end of the process — the hire is the client's employee (D101) |
 | Descartado | withdrawn / no-show / rejected by client | reason required |
 
 ### 4.4 Reclutadores
@@ -271,7 +273,7 @@ An **employee** is a person working for one of the owner's clients (ECOVIA valid
 
 | Field | Source |
 |---|---|
-| Persona | people registry (from a *Contratado* candidate or created directly) |
+| Persona | people registry (found or captured at «Alta de empleado»; never moved from Reclutamiento, D101) |
 | Cliente / grupo de nómina | e.g. *ECOVIA — Validadores 12 h* |
 | Puesto | per payroll group: VALIDADOR, SUPERVISOR, LIMPIEZA, TÉCNICO, … |
 | Turno | C/DÍA, C/NOCHE, custom |

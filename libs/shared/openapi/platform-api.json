@@ -6165,47 +6165,6 @@
         }
       }
     },
-    "/v1/employees/conversion/{candidateId}": {
-      "get": {
-        "tags": [
-          "Employees"
-        ],
-        "operationId": "GetEmployeeConversion",
-        "parameters": [
-          {
-            "name": "candidateId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversionDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/employees": {
       "get": {
         "tags": [
@@ -10057,9 +10016,7 @@
           "daysInProcess",
           "offeredSalary",
           "comments",
-          "discardReason",
-          "canConvertToEmployee",
-          "employeeId"
+          "discardReason"
         ],
         "type": "object",
         "properties": {
@@ -10167,16 +10124,6 @@
               "null",
               "string"
             ]
-          },
-          "canConvertToEmployee": {
-            "type": "boolean"
-          },
-          "employeeId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           }
         }
       },
@@ -11450,67 +11397,6 @@
           }
         }
       },
-      "ConversionDto": {
-        "required": [
-          "candidateId",
-          "personId",
-          "fullName",
-          "clientId",
-          "openingName",
-          "hiredAt",
-          "suggestedBank",
-          "hasAccount",
-          "employeeId"
-        ],
-        "type": "object",
-        "properties": {
-          "candidateId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "personId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "fullName": {
-            "type": "string"
-          },
-          "clientId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "openingName": {
-            "type": "string"
-          },
-          "hiredAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "suggestedBank": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/RegistrationBank"
-              }
-            ]
-          },
-          "hasAccount": {
-            "type": "boolean"
-          },
-          "employeeId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          }
-        }
-      },
       "CreateCandidateRequest": {
         "required": [
           "personId",
@@ -11991,7 +11877,6 @@
           "positionRates",
           "rates",
           "notes",
-          "candidateId",
           "documentTemplateId",
           "hasAccount",
           "cardRequest"
@@ -12157,13 +12042,6 @@
               "null",
               "string"
             ]
-          },
-          "candidateId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           },
           "documentTemplateId": {
             "type": [
@@ -12379,8 +12257,7 @@
           "hourlyRateOverride",
           "daysWorkedBonusOverride",
           "notes",
-          "cardBank",
-          "candidateId"
+          "cardBank"
         ],
         "type": "object",
         "properties": {
@@ -12453,13 +12330,6 @@
                 "$ref": "#/components/schemas/RegistrationBank"
               }
             ]
-          },
-          "candidateId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           },
           "bankAccount": {
             "oneOf": [

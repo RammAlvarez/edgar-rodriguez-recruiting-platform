@@ -37,20 +37,19 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
         (_validador, _supervisor) = (positions["Validador"], positions["Supervisor"]);
     }
 
-    private object Alta(Guid personId, string? cardBank = "banorte", Guid? candidateId = null, int hiredDaysAgo = 100) => new
+    private object Alta(Guid personId, string? cardBank = "banorte", int hiredDaysAgo = 100) => new
     {
         personId,
         payrollGroupId = _group,
         positionId = _validador,
         shift = "c/día",
-        hiredAt = candidateId is null ? Day(_today.AddDays(-hiredDaysAgo)) : null,
+        hiredAt = Day(_today.AddDays(-hiredDaysAgo)),
         dailySalaryPocketOverride = (string?)null,
         dailySalaryImssOverride = (string?)null,
         hourlyRateOverride = (string?)null,
         daysWorkedBonusOverride = (string?)null,
         notes = (string?)null,
         cardBank,
-        candidateId,
     };
 
     private async Task<Guid> Hire(Guid personId, string? cardBank = "banorte")
@@ -264,36 +263,22 @@ public sealed class EmployeeTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
-    public async Task Convertir_en_empleado_takes_the_hire_date_and_the_vacantes_bank_once()
+    public async Task A_contratado_candidate_stays_in_recruiting_and_never_becomes_staff()
     {
+        // Reclutamiento and Nómina are separate businesses: the hire is the client's employee, not one of Personal.
         await Arrange();
-        var banorte = await WithDb(db => db.Set<Platform.Core.Catalogs.Bank>().Where(b => b.SpeiCode == "072").Select(b => b.Uid).SingleAsync());
-        var opening = OpeningTests.NewOpening(_ecovia, position: "Validador");
-        var json = JsonSerializer.SerializeToNode(opening)!.AsObject();
-        json["paymentBankIds"] = new System.Text.Json.Nodes.JsonArray(banorte.ToString());
-        var openingId = (await BodyOf(await _owner.PostAsJsonAsync("/v1/openings", json))).GetProperty("id").GetGuid();
+        var openingId = (await BodyOf(await _owner.PostAsJsonAsync("/v1/openings", OpeningTests.NewOpening(_ecovia, position: "Validador"))))
+            .GetProperty("id").GetGuid();
         var candidate = await BodyOf(await _owner.PostAsJsonAsync("/v1/candidates", CandidateTests.NewCandidate(openingId,
             new { firstNames = "Rosa", lastNamePaternal = "Leal", lastNameMaternal = "Garza", isForeign = false })));
         var candidateId = candidate.GetProperty("id").GetGuid();
         var personId = candidate.GetProperty("person").GetProperty("id").GetGuid();
 
-        Assert.Equal(HttpStatusCode.NotFound, (await _owner.GetAsync($"/v1/employees/conversion/{candidateId}")).StatusCode);
         var hired = await _owner.PostAsJsonAsync($"/v1/candidates/{candidateId}/stage", new { stage = "hired", reason = (string?)null, hiredAt = Day(_today) });
         Assert.True(hired.IsSuccessStatusCode, await hired.Content.ReadAsStringAsync());
 
-        var conversionResponse = await _owner.GetAsync($"/v1/employees/conversion/{candidateId}");
-        Assert.True(conversionResponse.IsSuccessStatusCode, await conversionResponse.Content.ReadAsStringAsync());
-        var conversion = await BodyOf(conversionResponse);
-        Assert.Equal("banorte", conversion.GetProperty("suggestedBank").GetString());
-        Assert.Equal(Day(_today), conversion.GetProperty("hiredAt").GetString());
-
-        var createdResponse = await _owner.PostAsJsonAsync("/v1/employees", Alta(personId, "banorte", candidateId));
-        Assert.True(createdResponse.IsSuccessStatusCode, await createdResponse.Content.ReadAsStringAsync());
-        var created = await BodyOf(createdResponse);
-        Assert.Equal(Day(_today), created.GetProperty("hiredAt").GetString());
-        var employeeId = created.GetProperty("id").GetGuid();
-        Assert.Equal(employeeId, await WithDb(db => db.Set<Candidate>().Where(c => c.Uid == candidateId).Select(c => c.EmployeeId).SingleAsync()));
-        Assert.Equal(EmployeeEndpoints.CandidateConverted, await DetailOf(await _owner.PostAsJsonAsync("/v1/employees", Alta(personId, "banorte", candidateId))));
+        Assert.Equal(HttpStatusCode.NotFound, (await _owner.GetAsync($"/v1/employees/conversion/{candidateId}")).StatusCode);
+        Assert.False(await WithDb(db => db.Set<Employee>().AnyAsync(e => e.PersonId == personId)));
     }
 
     [Fact]

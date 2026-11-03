@@ -60,7 +60,6 @@ public sealed class Employee : IStamped
     public decimal? DailySalaryImssOverride { get; set; }
     public decimal? HourlyRateOverride { get; set; }
     public decimal? DaysWorkedBonusOverride { get; set; }
-    public Guid? CandidateId { get; set; }
     /// <summary>COMENTARIOS of the Excel.</summary>
     public string? Notes { get; set; }
 

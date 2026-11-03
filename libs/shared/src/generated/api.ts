@@ -1570,22 +1570,6 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
-    "/v1/employees/conversion/{candidateId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["GetEmployeeConversion"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/employees": {
         parameters: {
             query?: never;
@@ -2575,9 +2559,6 @@ export type components = {
             offeredSalary: Decimal | null;
             comments: null | string;
             discardReason: null | string;
-            canConvertToEmployee: boolean;
-            /** Format: uuid */
-            employeeId: null | string;
         };
         CandidateInvitationResultDto: {
             sent: boolean;
@@ -2866,22 +2847,6 @@ export type components = {
             jobTitle: null | string;
             isPrimary: boolean;
         };
-        ConversionDto: {
-            /** Format: uuid */
-            candidateId: string;
-            /** Format: uuid */
-            personId: string;
-            fullName: string;
-            /** Format: uuid */
-            clientId: string;
-            openingName: string;
-            /** Format: date */
-            hiredAt: DateKey | null;
-            suggestedBank: null | components["schemas"]["RegistrationBank"];
-            hasAccount: boolean;
-            /** Format: uuid */
-            employeeId: null | string;
-        };
         CreateCandidateRequest: {
             /** Format: uuid */
             personId: null | string;
@@ -3035,8 +3000,6 @@ export type components = {
             rates: null | components["schemas"]["EmployeeRatesDto"];
             notes: null | string;
             /** Format: uuid */
-            candidateId: null | string;
-            /** Format: uuid */
             documentTemplateId: null | string;
             hasAccount: boolean;
             cardRequest: null | components["schemas"]["CardRequestDto"];
@@ -3109,8 +3072,6 @@ export type components = {
             daysWorkedBonusOverride: Decimal | null;
             notes: null | string;
             cardBank: null | components["schemas"]["RegistrationBank"];
-            /** Format: uuid */
-            candidateId: null | string;
             bankAccount?: null | components["schemas"]["BankAccountRequest"];
         };
         /** @enum {unknown} */
@@ -4730,7 +4691,6 @@ export type ConceptKind = components['schemas']['ConceptKind'];
 export type ConfirmDocumentRequest = components['schemas']['ConfirmDocumentRequest'];
 export type ContactDto = components['schemas']['ContactDto'];
 export type ContactRequest = components['schemas']['ContactRequest'];
-export type ConversionDto = components['schemas']['ConversionDto'];
 export type CreateCandidateRequest = components['schemas']['CreateCandidateRequest'];
 export type CreateClientRequest = components['schemas']['CreateClientRequest'];
 export type CreatePeriodRequest = components['schemas']['CreatePeriodRequest'];
@@ -9539,37 +9499,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmployeeOptionsDto"];
-                };
-            };
-        };
-    };
-    GetEmployeeConversion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                candidateId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversionDto"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

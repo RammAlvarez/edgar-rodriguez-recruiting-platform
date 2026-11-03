@@ -116,10 +116,7 @@ public static class CandidateEndpoints
         var name = (await OpeningQueries.DisplayNames(db, [o.Uid], ct))[o.Uid];
         return new CandidateDetailDto(c.Uid, PersonDto.From(person), o.Uid, name, o.ClientId, client, o.Status, o.DocumentTemplateId,
             c.RecruiterId, recruiter, c.Source, c.Stage, c.IsSuitable, c.IsHired, c.CapturedAt, c.HiredAt, c.DaysInProcess(clock.Today()),
-            c.OfferedSalary, c.Comments, c.DiscardReason,
-            CanConvertToEmployee: c.Stage == CandidateStage.Hired && c.EmployeeId is null
-                && ctx.RequiredPrincipal.HasGrant(Platform.Core.Users.PermissionModule.PayrollStaff),
-            c.EmployeeId);
+            c.OfferedSalary, c.Comments, c.DiscardReason);
     }
 
     private static async Task<IResult> Create(CreateCandidateRequest r, DbContext db, RequestContext ctx, IClock clock,
@@ -203,8 +200,6 @@ public static class CandidateEndpoints
             return ApiResults.Conflict(CandidateMessages.SameStage);
         if (opening.Status is OpeningStatus.Paused or OpeningStatus.Cancelled)
             return ApiResults.Conflict(CandidateMessages.OpeningClosed(opening.Status));
-        if (c.Stage == CandidateStage.Hired && c.EmployeeId is not null)
-            return ApiResults.Conflict(CandidateMessages.Converted);
         if (r.Stage == CandidateStage.Hired)
         {
             if (r.HiredAt < c.CapturedAt)
