@@ -3,6 +3,41 @@ import eslint from '@eslint/js';
 import angular from 'angular-eslint';
 import tseslint from 'typescript-eslint';
 
+
+const APPS = ['admin', 'candidates', 'clients'];
+
+const firebasePattern = {
+  group: ['firebase', 'firebase/*', '@firebase/*'],
+  message: 'Only apps/*/src/auth/firebase-*.ts may import Firebase.',
+};
+
+/**
+ * Import boundaries (ARCHITECTURE "Front end"): an app never imports another app, libs never import apps, and the libs layer
+ * upward only as shared ← api-client ← ui. The Firebase JS SDK stays in apps/*\/src/auth/firebase-*.ts (also checked by
+ * scripts/check-neutrality.sh). One `no-restricted-imports` block per scope, because a later block replaces an earlier one's patterns.
+ */
+function importBoundaries() {
+  const rule = (...patterns) => ({ 'no-restricted-imports': ['error', { patterns }] });
+  const noApps = { group: ['**/apps/**'], message: 'Libs must not import from apps.' };
+  const noUi = { group: ['@platform/ui', '@platform/ui/*', '**/libs/ui/**'], message: 'Only apps and libs/ui may import @platform/ui (layering: shared ← api-client ← ui).' };
+  const noApiClient = { group: ['@platform/api-client', '**/libs/api-client/**'], message: 'libs/shared must not import @platform/api-client (layering: shared ← api-client ← ui).' };
+  const blocks = [];
+  for (const app of APPS) {
+    const others = APPS.filter((a) => a !== app);
+    const crossApp = { group: others.flatMap((o) => [`**/apps/${o}/**`, `**/${o}/src/**`]), message: `apps/${app} must not import another app; share through libs/*.` };
+    blocks.push(
+      { files: [`apps/${app}/**/*.ts`], ignores: ['apps/*/src/auth/firebase-*.ts'], rules: rule(crossApp, firebasePattern) },
+      { files: [`apps/${app}/src/auth/firebase-*.ts`], rules: rule(crossApp) },
+    );
+  }
+  blocks.push(
+    { files: ['libs/ui/**/*.ts'], rules: rule(noApps, firebasePattern) },
+    { files: ['libs/api-client/**/*.ts'], rules: rule(noApps, noUi, firebasePattern) },
+    { files: ['libs/shared/**/*.ts'], rules: rule(noApps, noUi, noApiClient, firebasePattern) },
+  );
+  return blocks;
+}
+
 export default tseslint.config(
   {
     ignores: ['**/dist/**', '**/node_modules/**', '**/.angular/**', 'services/**', 'design-reference/**', 'libs/shared/src/generated/**', '**/bin/**', '**/obj/**', '.claude/**'],
@@ -28,14 +63,7 @@ export default tseslint.config(
       ],
     },
   },
-  {
-    // The Firebase JS SDK only in apps/*/src/auth/firebase-*.ts (also checked by scripts/check-neutrality.sh).
-    files: ['apps/**/*.ts', 'libs/**/*.ts'],
-    ignores: ['apps/*/src/auth/firebase-*.ts'],
-    rules: {
-      'no-restricted-imports': ['error', { patterns: [{ group: ['firebase', 'firebase/*', '@firebase/*'], message: 'Only apps/*/src/auth/firebase-*.ts may import Firebase.' }] }],
-    },
-  },
+  ...importBoundaries(),
   {
     files: ['**/*.html'],
     extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
