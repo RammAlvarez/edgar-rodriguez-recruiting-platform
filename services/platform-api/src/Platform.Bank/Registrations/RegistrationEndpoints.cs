@@ -151,7 +151,7 @@ public static class RegistrationEndpoints
                 }
                 await storage.UploadAsync(StorageBucket.Exports, batch.StoragePath, file, ReportFormat.Xlsx.ContentType(), ct);
                 db.Add(batch);
-                db.Add(Export(ctx, now, new { bank = r.Bank.ToString(), batchId = batch.Uid, rows = batch.RowCount }));
+                db.Add(AuditEntry.ForExport(ctx, now, "registration_batches", new { bank = r.Bank.ToString(), batchId = batch.Uid, rows = batch.RowCount }));
                 await db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
                 return TypedResults.Ok(new GeneratedRegistrationDto((await BatchesAsync(db, ctx, batch.Uid, ct)).Single(),
@@ -169,7 +169,7 @@ public static class RegistrationEndpoints
                 if (!await CoversEveryRowAsync(db, ctx, id, ct))
                     return ApiResults.NotFound(BatchNotFound);
                 var batch = await db.Set<RegistrationBatch>().AsNoTracking().SingleAsync(b => b.Uid == id, ct);
-                db.Add(Export(ctx, clock.UtcNow, new { download = true, batchId = id }));
+                db.Add(AuditEntry.ForExport(ctx, clock.UtcNow, "registration_batches", new { download = true, batchId = id }));
                 await db.SaveChangesAsync(ct);
                 return TypedResults.Ok(await Link(storage, batch, ct));
             })
@@ -375,16 +375,4 @@ public static class RegistrationEndpoints
         var download = await storage.PresignDownloadAsync(StorageBucket.Exports, batch.StoragePath, name, DownloadLifetime, ct);
         return new ReportExportDto(download.Url, name, download.ExpiresAt);
     }
-
-    private static AuditEntry Export(RequestContext ctx, DateTimeOffset now, object after) => new()
-    {
-        OccurredAt = now,
-        UserId = ctx.RequiredPrincipal.UserId,
-        ActingForUserId = ctx.ActingFor?.UserId,
-        Action = AuditAction.Export,
-        SchemaName = "platform",
-        TableName = "registration_batches",
-        After = JsonSerializer.Serialize(after),
-        RequestId = ctx.RequestId,
-    };
 }
