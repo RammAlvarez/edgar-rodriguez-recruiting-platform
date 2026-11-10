@@ -3,6 +3,11 @@ import { ApiError } from '@platform/api-client';
 import type { MeDto, PermissionModule } from '@platform/shared';
 import { API_CLIENT, AUTH_PROVIDER } from './api';
 
+/** An Administrador holding the grant (limited to some clients or not); every other role has none. */
+export function hasGrant(me: MeDto | null | undefined, module: PermissionModule): boolean {
+  return !!me && me.role === 'administrator' && me.grants.some((g) => g.module === module);
+}
+
 export type SessionState =
   | { readonly status: 'loading'; readonly message?: string }
   | { readonly status: 'signed-out' }
@@ -48,8 +53,7 @@ export class Session {
   }
 
   hasGrant(module: PermissionModule): boolean {
-    const me = this.me();
-    return !!me && me.role === 'administrator' && me.grants.some((g) => g.module === module);
+    return hasGrant(this.me(), module);
   }
 
   async signOut(): Promise<void> {

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { accessGuard, signedInGuard, signedOutGuard } from '@platform/ui';
+import { accessGuard, hasGrant, signedInGuard, signedOutGuard } from '@platform/ui';
 import { guardHarness, makeMe } from '@platform/ui/testing/guard-harness';
 import { describe, expect, it } from 'vitest';
 
@@ -61,5 +61,14 @@ describe('accessGuard', () => {
   it('sends someone without a users row to «sin acceso»', async () => {
     const { run } = guardHarness({ status: 'denied', message: 'x' });
     expect(await run(accessGuard(['administrator']))).toEqual({ redirect: '/sin-acceso' });
+  });
+});
+
+describe('hasGrant', () => {
+  it('is true only for an administrator holding the module', () => {
+    expect(hasGrant(makeMe('administrator', ['payroll_staff']), 'payroll_staff')).toBe(true);
+    expect(hasGrant(makeMe('administrator', ['recruiting']), 'payroll_staff')).toBe(false);
+    expect(hasGrant(makeMe('recruiter', ['payroll_staff']), 'payroll_staff')).toBe(false);
+    expect(hasGrant(null, 'payroll_staff')).toBe(false);
   });
 });
