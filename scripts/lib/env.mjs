@@ -38,10 +38,42 @@ export function loadEnv() {
   return process.env;
 }
 
+const LOCAL_DB_HOSTS = ['localhost', '127.0.0.1', '::1', 'postgres'];
+const LOCAL_API_HOSTS = ['localhost', '127.0.0.1', '[::1]', '::1'];
+
 /** The seed and other local-only scripts refuse anything that is not a database on this machine. */
 export function assertLocalDatabase(url = process.env.DATABASE_URL ?? '') {
   const host = /^postgres(?:ql)?:\/\/[^@]*@([^:/?]+)/.exec(url)?.[1] ?? /Host=([^;]+)/i.exec(url)?.[1];
-  if (!host || !['localhost', '127.0.0.1', '::1', 'postgres'].includes(host)) {
+  if (!host || !LOCAL_DB_HOSTS.includes(host)) {
     throw new Error(`Refusing to run against a non-local database (host "${host ?? '?'}").`);
+  }
+}
+
+/**
+ * `scripts/run.mjs` (api, db:migrate, test:api) runs against local databases only. A DATABASE_URL or MIGRATIONS_DATABASE_URL
+ * exported in the shell or `.env` that points elsewhere (DEV, production) stops here; PLATFORM_ALLOW_REMOTE_DB=1 is the explicit opt-out.
+ */
+export function assertLocalDatabases(env = process.env) {
+  if (env.PLATFORM_ALLOW_REMOTE_DB === '1') return;
+  for (const name of ['DATABASE_URL', 'MIGRATIONS_DATABASE_URL']) {
+    if (!env[name]) continue;
+    try {
+      assertLocalDatabase(env[name]);
+    } catch (error) {
+      throw new Error(`${name}: ${error.message} Set PLATFORM_ALLOW_REMOTE_DB=1 only if you really mean to.`, { cause: error });
+    }
+  }
+}
+
+/** Scripts that call a deployed API (bootstrap, import-excel) need `--yes` when API_URL is not on this machine. */
+export function assertConfirmedIfRemote(apiUrl, confirmed, action) {
+  let host;
+  try {
+    host = new URL(apiUrl).hostname;
+  } catch (error) {
+    throw new Error(`API_URL is not a valid URL: "${apiUrl}".`, { cause: error });
+  }
+  if (!LOCAL_API_HOSTS.includes(host) && !confirmed) {
+    throw new Error(`${action} would run against ${apiUrl}, which is not on this machine. Pass --yes to confirm.`);
   }
 }

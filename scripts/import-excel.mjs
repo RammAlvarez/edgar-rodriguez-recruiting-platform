@@ -2,7 +2,9 @@
 // One-time import of the client's workbooks into a NEW installation (DATA_MODEL §10, PLAN D90), through the API so every
 // derived figure is the platform's own. Run by a human after `scripts/bootstrap.mjs`:
 //
-//   API_URL=https://api.example.com IMPORT_TOKEN=<owner's ID token> node scripts/import-excel.mjs --dir ./excel --out ./import.md
+//   API_URL=https://api.example.com IMPORT_TOKEN=<owner's ID token> node scripts/import-excel.mjs --dir ./excel --out ./import.md --yes
+//
+// `--yes` is required when API_URL is not on this machine (the import writes to that installation).
 //
 // --dir holds the six workbooks under the sample names of FILES below; a copy named otherwise is passed by path with its key
 // (--recruiting, --sem38, --banorte, --banregio, --master, --frequent). Missing ones stop the run before anything is written.
@@ -20,7 +22,7 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { loadEnv } from './lib/env.mjs';
+import { assertConfirmedIfRemote, loadEnv } from './lib/env.mjs';
 import { accountsFromComments, differs, masked, nameKey, positionRates, shown, statusFromComments } from './lib/import.mjs';
 import { SEM38, sem38Rows, sem38Week, splitComments } from './lib/sem38.mjs';
 import { readSheet } from './lib/xlsx.mjs';
@@ -30,6 +32,7 @@ const { values: args } = parseArgs({
     dir: { type: 'string', default: 'examples' },
     out: { type: 'string' },
     force: { type: 'boolean', default: false },
+    yes: { type: 'boolean', default: false },
     // Someone without an account in COMENTARIOS is queued for a card here (an alta needs one or the other, D82).
     'card-bank': { type: 'string', default: 'banorte' },
     // Each workbook by its own path when the client's copy is named differently from the samples (FILES below).
@@ -42,6 +45,7 @@ const { values: args } = parseArgs({
   },
 });
 const env = loadEnv();
+assertConfirmedIfRemote(env.API_URL, args.yes, 'The import');
 const API = env.API_URL.replace(/\/$/, '');
 const FILES = {
   recruiting: 'Sistema_Reclutamiento_Completo_2026.xlsx',
