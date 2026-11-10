@@ -90,4 +90,12 @@ describe('admin navigation', () => {
     expect(homePath(me('client'))).toBeNull();
     expect(homePath(me('candidate'))).toBeNull();
   });
+
+  it('never shows a section header with nothing under it', () => {
+    for (const user of [me('recruiter'), me('administrator', ['users']), me('administrator', ['payroll_attendance']), me('client')]) {
+      for (const section of visibleNavigation(user)) expect(section.items.length).toBeGreaterThan(0);
+    }
+    expect(visibleNavigation(me('administrator', ['payroll_attendance'])).map((s) => s.label)).toHaveLength(1);
+    expect(visibleNavigation(me('client'))).toEqual([]);
+  });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ApiClient } from './api-client';
 import type { AuthProvider } from './auth';
-import { ApiError, apiFieldMessage, apiMessage } from './errors';
+import { ApiError, apiFieldMessage, apiMessage, toApiError } from './errors';
 import { isoDateReviver } from './json';
 
 const auth = (token: string | null = 'tok'): AuthProvider => ({
@@ -160,5 +160,32 @@ describe('apiMessage / apiFieldMessage', () => {
   it('falls back to the message when there are no field issues, and to the fallback for other errors', () => {
     expect(apiFieldMessage(new ApiError(409, 'Ya existe'), 'Falló')).toBe('Ya existe');
     expect(apiFieldMessage(new Error('boom'), 'Falló')).toBe('Falló');
+  });
+});
+
+describe('toApiError without a problem body', () => {
+  it.each([401, 404, 409, 500])('answers %i with the generic message and the matching flags', async (status) => {
+    const error = await toApiError(new Response('not json', { status }));
+    expect(error.status).toBe(status);
+    expect(error.message).toBe('No se pudo completar la operación. Inténtalo de nuevo.');
+    expect(error.fieldErrors).toEqual({});
+    expect(error.isUnauthorized).toBe(status === 401);
+    expect(error.isForbidden).toBe(false);
+    expect(error.isValidation).toBe(false);
+    expect(error.isRateLimited).toBe(false);
+    expect(error.isMfaRequired).toBe(false);
+  });
+
+  it('keeps a 403 that is not the MFA problem apart from the MFA one', async () => {
+    const plain = await toApiError(respond(403, { detail: 'No tienes permiso.' }));
+    expect(plain.isForbidden).toBe(true);
+    expect(plain.isMfaRequired).toBe(false);
+  });
+
+  it('reads the first field issue of a 400 as its message and exposes fieldError()', async () => {
+    const error = await toApiError(respond(400, { errors: { email: ['Correo inválido'], name: ['Obligatorio'] } }));
+    expect(error.message).toBe('Correo inválido');
+    expect(error.fieldError('name')).toBe('Obligatorio');
+    expect(error.fieldError('other')).toBeUndefined();
   });
 });

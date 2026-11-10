@@ -44,5 +44,6 @@ export function compareDecimal(a: Decimal, b: Decimal): -1 | 0 | 1 {
   if (isZero(a) && isZero(b)) return 0;
   if (sa !== sb) return sa ? -1 : 1;
   const r = cmpAbs();
+  if (r === 0) return 0; // not -0, which `Object.is` and `toBe` tell apart from 0
   return (sa ? -r : r) as -1 | 0 | 1;
 }

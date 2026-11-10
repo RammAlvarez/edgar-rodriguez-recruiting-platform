@@ -15,6 +15,10 @@ describe('formatMoney', () => {
     ['-500', '-$ 500.00'],
     ['-0.004', '$ 0.00'],
     ['1000000', '$ 1,000,000.00'],
+    ['007.5', '$ 7.50'], // leading zeros dropped, one decimal padded
+    ['00', '$ 0.00'],
+    ['-0.00', '$ 0.00'], // never a negative zero
+    ['-5.05', '-$ 5.05'],
   ])('%s → %s', (value, expected) => expect(formatMoney(d(value))).toBe(expected));
 
   it('adds the currency on request', () => expect(formatMoney(d('1'), { currency: true })).toBe('$ 1.00 MXN'));
@@ -39,5 +43,9 @@ describe('compareDecimal', () => {
     ['-2', '-1', -1],
     ['0.001', '0.0009', 1],
     ['-0', '0', 0],
+    ['00', '0.000', 0], // leading and trailing zeros are not magnitude
+    ['-1.5', '-1.50', 0],
+    ['-5.05', '-5.5', 1], // less negative is greater
+    ['-5.5', '-5.05', -1],
   ] as const)('%s vs %s → %i', (a, b, expected) => expect(compareDecimal(d(a), d(b))).toBe(expected));
 });
