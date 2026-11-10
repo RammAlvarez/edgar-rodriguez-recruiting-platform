@@ -36,3 +36,27 @@ API 5080; admin 4300, candidates 4301, clients 4302; Postgres 5433 by default (o
 
 - Tests live next to what they test (`*.spec.ts` for Angular/libs; `services/platform-api/tests/Platform.Tests/<Area>/` for the API, with `Support/` holding `ApiFactory`, builders and fakes).
 - Docs in `docs/` are the record: update them in the same change as the behavior, and note a superseded decision in the old D row.
+
+## Recipes
+
+**New API endpoint** (`services/platform-api/src/Platform.<Module>/<Area>/<Thing>Endpoints.cs`)
+1. Copy the shape of `IncidentEndpoints.cs`: a static class with `Tag`, `Access = AccessRule.Administrator(PermissionModule.X)` and `Map<Thing>Endpoints(this IEndpointRouteBuilder v1)` using `v1.MapGroup(...)`.
+2. Every route gets `.WithName`, `.Produces<…>` and `.RequireAccess(Access)`; mutating routes also `.Invalidates(Tag, …)` / `.Mutation()`. `RouteConventionTests` fails a route without exactly one access rule or a mutation without cache tags.
+3. Scope every query to the caller's grant (`PayrollScope` for payroll): out of scope answers 404, not 403. Validate with a FluentValidation validator (Spanish messages). Write audit rows in the same transaction as the change.
+4. Register `v1.Map<Thing>Endpoints()` in `Platform.Api/Program.cs`, then `npm run generate:api-types` and commit `libs/shared/src/generated`.
+5. Tests in `services/platform-api/tests/Platform.Tests/<Area>/` (use `ApiTest`, `SignedIn`, `Builders`). For a mutating payroll route also add a line to `PayrollScopedWriteTests`.
+
+**New migration**
+1. Change the entity or its configuration; never hand-edit `Migrations/` or the model snapshot.
+2. `node scripts/run.mjs dotnet ef migrations add <Name> --project services/platform-api/src/Platform.Infrastructure --startup-project services/platform-api/src/Platform.Infrastructure`
+3. `npm run db:migrate`, then `npm run check:migrations` (no pending model changes) and `npm run test:api`.
+
+**New admin screen**
+1. Component in `apps/admin/src/app/<area>/<name>-page.ts`; data through a repository in `apps/admin/src/app/data/` (`API_CLIENT` + `liveQuery`), never `fetch`.
+2. Add a `NavItem` (`path`, `label`, `icon`, `roles`, optional `grant`) to `shell/navigation.ts` and the lazy import to `SCREENS` in `app.routes.ts`; the route guard follows the item's roles and grant.
+3. Cover visibility in `shell/navigation.spec.ts`.
+
+**New form or side panel**
+1. Use `PanelState` from `@platform/ui` (busy flag, 400 → field errors, alert line) and `openSidePanel`; for actions outside a form use `runExclusive`.
+2. Toasts say `apiMessage(e, 'fallback')` / `apiFieldMessage(e, 'fallback')`; copy is es-MX.
+3. Cover a shared guard or helper with the harness in `libs/ui/src/testing/guard-harness.ts` (run through an app's `ng test`).
