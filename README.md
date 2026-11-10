@@ -44,4 +44,4 @@ npm start -- admin          # http://localhost:4300  (candidates :4301, clients 
 Local overrides go in a gitignored `.env`; start from `.env.local.example` (`.env.example` lists the production variables).
 Vocabulary: [docs/GLOSSARY.md](docs/GLOSSARY.md) · agent and contributor rules: [CLAUDE.md](CLAUDE.md).
 
-Checks: `npm run check` (everything CI runs) · `npm run check:fast` · `npm test` · `npm run lint` · `npm run check:neutrality` · `npm run check:migrations` · `npm run generate:api-types`.
+Checks: `npm run check` (CI's web and api jobs; not Terraform) · `npm run check:fast` · `npm test` · `npm run lint` · `npm run check:neutrality` · `npm run check:migrations` · `npm run generate:api-types`.

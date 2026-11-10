@@ -22,6 +22,24 @@ describe('assertLocalDatabase', () => {
     expect(() => assertLocalDatabase('postgres://u:p@localhost/platform?host=localhost')).not.toThrow();
   });
 
+  it('judges the host the API would really use: case-insensitive keys, Server = Host, the last one wins', () => {
+    for (const url of [
+      'postgres://u:p@localhost/db?Host=10.0.0.5',
+      'postgres://u:p@localhost/db?server=10.0.0.5',
+      'postgres://u:p@localhost/db?host=localhost&host=10.0.0.5',
+      'Host=localhost;Host=10.0.0.5',
+      'Server=localhost;Host=10.0.0.5',
+      'Host=localhost,10.0.0.5',
+    ]) expect(() => assertLocalDatabase(url), url).toThrow(/non-local/);
+    expect(() => assertLocalDatabase('postgres://u:p@localhost/db?host=10.0.0.5&host=localhost')).not.toThrow();
+  });
+
+  it('accepts local hosts however they are capitalised, and the compose hostname', () => {
+    expect(() => assertLocalDatabase('postgres://u:p@LOCALHOST/db')).not.toThrow();
+    expect(() => assertLocalDatabase('Host=LocalHost;Database=platform')).not.toThrow();
+    expect(() => assertLocalDatabase('postgres://u:p@postgres:5432/platform')).not.toThrow();
+  });
+
   it('refuses remote, socket-only or unparseable targets', () => {
     expect(() => assertLocalDatabase(remote)).toThrow(/non-local/);
     expect(() => assertLocalDatabase('Host=/cloudsql/proj:region:db;Database=platform')).toThrow(/non-local/);

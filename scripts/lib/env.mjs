@@ -41,20 +41,27 @@ export function loadEnv() {
 const LOCAL_DB_HOSTS = ['localhost', '127.0.0.1', '::1', 'postgres'];
 const LOCAL_API_HOSTS = ['localhost', '127.0.0.1', '[::1]', '::1'];
 
-/** Host of a Postgres URL (`postgres://user@host:port/db?host=…`) or an Npgsql string (`Host=…;Database=…`); null when there is none. */
+/**
+ * The host the API would really connect to for a Postgres URL (`postgres://user@host:port/db?…`) or an Npgsql string
+ * (`Host=…;Database=…`); null when there is none or it is a failover list. Mirrors `PostgresConnection.ToConnectionString`, which
+ * copies every query key into the Npgsql builder: keys are case-insensitive, `Server` is a synonym of `Host` and the last one wins.
+ */
 function databaseHost(url) {
+  let host = null;
   if (/^postgres(?:ql)?:\/\//i.test(url)) {
     try {
       const parsed = new URL(url);
-      // libpq lets `?host=` override the authority, so a remote target can hide behind a local-looking address.
-      const override = parsed.searchParams.get('host');
-      const host = override ?? parsed.hostname;
-      return host.replace(/^\[|\]$/g, '') || null;
+      host = parsed.hostname;
+      for (const [key, value] of parsed.searchParams) if (/^(host|server)$/i.test(key)) host = value;
     } catch {
       return null;
     }
+  } else {
+    for (const match of url.matchAll(/(?:^|;)\s*(?:Host|Server)\s*=\s*([^;]*)/gi)) host = match[1].trim();
   }
-  return /(?:^|;)\s*(?:Host|Server)\s*=\s*([^;,]+)/i.exec(url)?.[1]?.trim() ?? null;
+  if (host === null) return null;
+  host = host.replace(/^\[|\]$/g, '').toLowerCase();
+  return host && !host.includes(',') ? host : null;
 }
 
 /** The seed and other local-only scripts refuse anything that is not a database on this machine. */

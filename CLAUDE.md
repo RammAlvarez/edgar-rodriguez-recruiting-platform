@@ -8,7 +8,7 @@ Es-MX back-office platform. Read [README.md](README.md) for the layout; the auth
 |---|---|
 | Unit tests (libs / apps / API) | `npm run test:libs` · `npm run test:apps` · `npm run test:api` (API needs Postgres + the Firebase emulator up) |
 | Fast check after an edit (neutrality, lint, lib types, Vitest) | `npm run check:fast` |
-| Everything CI runs (needs the local stack up) | `npm run check` |
+| What CI's web and api jobs run, with a Debug API build (needs the local stack up; not the Terraform job) | `npm run check` |
 | Tests only | `npm test` |
 | Lint (ESLint + `dotnet format --verify-no-changes`) | `npm run lint` |
 | Type-check all apps | `npm run typecheck` |
@@ -26,7 +26,7 @@ API 5080; admin 4300, candidates 4301, clients 4302; Postgres 5433 by default (o
 - **Reclutamiento and Nómina are separate businesses (D101).** A hired candidate never becomes a Personal employee: there is no «Convertir en empleado», no `candidateId` on the employee alta. Do not reintroduce it. Shared on purpose: client records, the people registry and the document vault.
 - **Provider neutrality.** Vendor SDKs live only in their adapter files (Firebase in `apps/*/src/auth/firebase-*.ts` and `Platform.Api/Auth/Firebase*.cs`, S3 in `Platform.Infrastructure/Storage/`). `npm run check:neutrality` enforces it.
 - **Components reach the API only through `libs/api-client`** (no `fetch`).
-- **Initial bundles have a 1 MB budget (D62).** Files in the initial bundle (`app.routes.ts`, `app.config.ts`, `shell/*`) import `@platform/ui/<file>` (e.g. `@platform/ui/session`), never the `@platform/ui` barrel, which drags Material and every panel in. Lazy screens may use the barrel. `npm run typecheck` does not enforce the budget; `npm run build:apps` does.
+- **Initial bundles have a 1 MB budget (D62).** Files in the initial bundle (`app.routes.ts`, `app.config.ts`, `shell/navigation.ts`, `shell/cover-mode.ts`; `shell/shell.ts` is lazy) import `@platform/ui/<file>` (e.g. `@platform/ui/session`), never the `@platform/ui` barrel, which drags Material and every panel in. Lazy screens may use the barrel. `npm run typecheck` does not enforce the budget; `npm run build:apps` does.
 - **Never hand-edit** `libs/shared/src/generated/**` or EF `Migrations/`; regenerate (`generate:api-types`) or add a migration.
 - **User-facing copy is Spanish (es-MX).** Identifiers and code are English; `docs/GLOSSARY.md` maps one to the other (add new terms there). Money is a string on the wire (D46).
 - **Never deploy.** Do not run `terraform apply/destroy`, `gcloud`, `firebase deploy` or `scripts/deploy-hosting.sh` (denied in `.claude/settings.json`); the DEV environment is shared with the client's testing. Ask the owner.

@@ -25,7 +25,7 @@
     "test:api": "node scripts/run.mjs dotnet test services/platform-api/Platform.slnx",
     "check:neutrality": "bash scripts/check-neutrality.sh",
     "check:migrations": "node scripts/run.mjs dotnet ef migrations has-pending-model-changes --project services/platform-api/src/Platform.Infrastructure --startup-project services/platform-api/src/Platform.Infrastructure",
-    "check:api-types": "npm run generate:api-types && git diff --exit-code -- libs/shared",
+    "check:api-types": "npm run generate:api-types && git diff --exit-code -- libs/shared/src/generated libs/shared/openapi",
     "check:fast": "npm run check:neutrality && npm run lint && npm run typecheck:libs && npm run test:libs",
     "check": "npm run check:fast && npm run test:apps && npm run build && npm run test:api && npm run check:migrations && npm run check:api-types",
     "import-excel": "node scripts/import-excel.mjs"

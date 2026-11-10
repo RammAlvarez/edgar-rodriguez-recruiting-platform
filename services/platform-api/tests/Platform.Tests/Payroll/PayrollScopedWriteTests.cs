@@ -12,7 +12,7 @@ namespace Platform.Tests.Payroll;
 /// The mutating routes of Prenómina, Incidencias, Asistencia (day save), Personal (employee, status, bank accounts, card request),
 /// Horarios and Grupos/Puestos follow the client scope of the caller's grant: a user whose grants are limited to another client
 /// gets 404. Each case also runs the same request as a user scoped to the right client, so a 404 cannot come from a malformed
-/// request. Not covered yet: creating employees and groups, attendance unlock, and the Platform.Bank routes (payment files,
+/// request or a crash. The tests do not assert that a denied call wrote nothing. Not covered yet: creating employees and groups, attendance unlock, and the Platform.Bank routes (payment files,
 /// registrations, payroll reports).
 /// </summary>
 public sealed class PayrollScopedWriteTests(ApiFactory factory) : ApiTest(factory)
@@ -25,6 +25,8 @@ public sealed class PayrollScopedWriteTests(ApiFactory factory) : ApiTest(factor
 
     private async Task Arrange()
     {
+        // The dates below are fixed in 2026; the clock must not drift past them.
+        Factory.Clock.SetMonterrey(new DateTime(2026, 9, 14, 10, 0, 0));
         _owner = await AsOwner();
         var (ecovia, heb) = await WithDb(async db => (await db.AddClient("ECOVIA"), await db.AddClient("HEB")));
         _ecovia = ecovia.Uid;
@@ -117,8 +119,8 @@ public sealed class PayrollScopedWriteTests(ApiFactory factory) : ApiTest(factor
         var denied = await send(_otherClient);
         Assert.True(denied.StatusCode == HttpStatusCode.NotFound, $"{name}: another client's grant got {(int)denied.StatusCode}, expected 404");
         var allowed = await send(_inScope);
-        Assert.True(allowed.StatusCode is not (HttpStatusCode.NotFound or HttpStatusCode.Forbidden),
-            $"{name}: the right client's grant got {(int)allowed.StatusCode}, so the 404 above proves nothing");
+        Assert.True(allowed.StatusCode is not (HttpStatusCode.NotFound or HttpStatusCode.Forbidden) && (int)allowed.StatusCode < 500,
+            $"{name}: the right client's grant got {(int)allowed.StatusCode}, so the 404 above proves nothing (or the request crashed)");
     }
 
     [Fact]

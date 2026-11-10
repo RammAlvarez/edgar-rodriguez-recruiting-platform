@@ -10,7 +10,8 @@ if (!command) {
 }
 const env = loadEnv();
 try {
-  assertLocalDatabases(env);
+  // `docker compose` (db:up / db:down) only starts the local containers; it never connects with these URLs.
+  if (command !== 'docker') assertLocalDatabases(env);
 } catch (error) {
   console.error(error.message);
   process.exit(2);

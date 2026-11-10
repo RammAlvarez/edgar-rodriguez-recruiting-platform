@@ -10,6 +10,7 @@ export default defineConfig({
     },
   },
   test: {
+    // libs/ui specs here must be plain TypeScript; anything needing Angular's TestBed runs through an app (`ng test <app>`).
     include: ['libs/shared/**/*.spec.ts', 'libs/api-client/**/*.spec.ts', 'libs/ui/**/*.spec.ts', 'scripts/**/*.spec.ts'],
     environment: 'node',
   },

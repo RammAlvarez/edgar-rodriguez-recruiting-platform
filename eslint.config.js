@@ -1,10 +1,11 @@
 // @ts-check
+import { readdirSync } from 'node:fs';
 import eslint from '@eslint/js';
 import angular from 'angular-eslint';
 import tseslint from 'typescript-eslint';
 
 
-const APPS = ['admin', 'candidates', 'clients'];
+const APPS = readdirSync('apps', { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
 
 const firebasePattern = {
   group: ['firebase', 'firebase/*', '@firebase/*'],
@@ -19,8 +20,8 @@ const firebasePattern = {
 function importBoundaries() {
   const rule = (...patterns) => ({ 'no-restricted-imports': ['error', { patterns }] });
   const noApps = { group: ['**/apps/**'], message: 'Libs must not import from apps.' };
-  const noUi = { group: ['@platform/ui', '@platform/ui/*', '**/libs/ui/**'], message: 'Only apps and libs/ui may import @platform/ui (layering: shared ← api-client ← ui).' };
-  const noApiClient = { group: ['@platform/api-client', '**/libs/api-client/**'], message: 'libs/shared must not import @platform/api-client (layering: shared ← api-client ← ui).' };
+  const noUi = { group: ['@platform/ui', '@platform/ui/*', '**/libs/ui/**', '**/ui/src/**'], message: 'Only apps and libs/ui may import @platform/ui (layering: shared ← api-client ← ui).' };
+  const noApiClient = { group: ['@platform/api-client', '@platform/api-client/*', '**/libs/api-client/**', '**/api-client/src/**'], message: 'libs/shared must not import @platform/api-client (layering: shared ← api-client ← ui).' };
   const blocks = [];
   for (const app of APPS) {
     const others = APPS.filter((a) => a !== app);

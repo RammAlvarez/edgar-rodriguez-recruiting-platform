@@ -2,7 +2,7 @@ import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { type CanActivateFn, Router } from '@angular/router';
 import type { MeDto, MeRole, PermissionModule } from '@platform/shared';
-import { firstValueFrom, type Observable } from 'rxjs';
+import { firstValueFrom, from, isObservable, type Observable } from 'rxjs';
 import { hasGrant, Session, type SessionState } from '../session';
 
 /** For specs only (not exported from the index): the signed-in user as `/v1/me` would describe them. */
@@ -34,8 +34,9 @@ export function guardHarness(initial: SessionState) {
   });
 
   const run = async (guard: CanActivateFn): Promise<unknown> => {
-    const result = TestBed.runInInjectionContext(() => guard({} as never, {} as never)) as Observable<unknown> | unknown;
-    const settled = firstValueFrom(result as Observable<unknown>);
+    const result = TestBed.runInInjectionContext(() => guard({} as never, {} as never)) as unknown;
+    // A guard may answer with an Observable, a Promise or a plain value.
+    const settled = firstValueFrom(isObservable(result) ? (result as Observable<unknown>) : from(Promise.resolve(result)));
     TestBed.tick();
     return settled;
   };
