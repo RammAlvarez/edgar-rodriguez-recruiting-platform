@@ -27,7 +27,7 @@ API 5080; admin 4300, candidates 4301, clients 4302; Postgres 5433 by default (o
 - **Provider neutrality.** Vendor SDKs live only in their adapter files (Firebase in `apps/*/src/auth/firebase-*.ts` and `Platform.Api/Auth/Firebase*.cs`, S3 in `Platform.Infrastructure/Storage/`). `npm run check:neutrality` enforces it.
 - **Components reach the API only through `libs/api-client`** (no `fetch`).
 - **Never hand-edit** `libs/shared/src/generated/**` or EF `Migrations/`; regenerate (`generate:api-types`) or add a migration.
-- **User-facing copy is Spanish (es-MX).** Identifiers and code are English. Money is a string on the wire (D46).
+- **User-facing copy is Spanish (es-MX).** Identifiers and code are English; `docs/GLOSSARY.md` maps one to the other (add new terms there). Money is a string on the wire (D46).
 - **Never deploy.** Do not run `terraform apply/destroy`, `gcloud`, `firebase deploy` or `scripts/deploy-hosting.sh` (denied in `.claude/settings.json`); the DEV environment is shared with the client's testing. Ask the owner.
 - **Never log secrets or email bodies** (they carry sign-in and password-setup links).
 - Local DB scripts assume a local database; never point `DATABASE_URL` at a remote one while running `db:migrate`, `test:api`, `seed`, `import-excel` or `bootstrap`.

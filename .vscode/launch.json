@@ -2,13 +2,10 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
-    {
-      "name": "ng serve",
-      "type": "chrome",
-      "request": "launch",
-      "preLaunchTask": "npm: start",
-      "url": "http://localhost:4200/"
-    },
+    // Start the app first (`npm start -- admin`, `candidates` or `clients`); these only attach Chrome to its dev server.
+    { "name": "admin (4300)", "type": "chrome", "request": "launch", "url": "http://localhost:4300/" },
+    { "name": "candidates (4301)", "type": "chrome", "request": "launch", "url": "http://localhost:4301/" },
+    { "name": "clients (4302)", "type": "chrome", "request": "launch", "url": "http://localhost:4302/" },
     {
       "name": "ng test",
       "type": "chrome",

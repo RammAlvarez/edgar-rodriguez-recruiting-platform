@@ -62,3 +62,4 @@ deploy/.env
 node_modules/
 # Claude Code agent worktrees (full copies of the repo)
 .claude/worktrees/
+!.env.local.example
