@@ -41,9 +41,25 @@ export function loadEnv() {
 const LOCAL_DB_HOSTS = ['localhost', '127.0.0.1', '::1', 'postgres'];
 const LOCAL_API_HOSTS = ['localhost', '127.0.0.1', '[::1]', '::1'];
 
+/** Host of a Postgres URL (`postgres://user@host:port/db?host=…`) or an Npgsql string (`Host=…;Database=…`); null when there is none. */
+function databaseHost(url) {
+  if (/^postgres(?:ql)?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url);
+      // libpq lets `?host=` override the authority, so a remote target can hide behind a local-looking address.
+      const override = parsed.searchParams.get('host');
+      const host = override ?? parsed.hostname;
+      return host.replace(/^\[|\]$/g, '') || null;
+    } catch {
+      return null;
+    }
+  }
+  return /(?:^|;)\s*(?:Host|Server)\s*=\s*([^;,]+)/i.exec(url)?.[1]?.trim() ?? null;
+}
+
 /** The seed and other local-only scripts refuse anything that is not a database on this machine. */
 export function assertLocalDatabase(url = process.env.DATABASE_URL ?? '') {
-  const host = /^postgres(?:ql)?:\/\/[^@]*@([^:/?]+)/.exec(url)?.[1] ?? /Host=([^;]+)/i.exec(url)?.[1];
+  const host = databaseHost(url);
   if (!host || !LOCAL_DB_HOSTS.includes(host)) {
     throw new Error(`Refusing to run against a non-local database (host "${host ?? '?'}").`);
   }
@@ -55,7 +71,8 @@ export function assertLocalDatabase(url = process.env.DATABASE_URL ?? '') {
  */
 export function assertLocalDatabases(env = process.env) {
   if (env.PLATFORM_ALLOW_REMOTE_DB === '1') return;
-  for (const name of ['DATABASE_URL', 'MIGRATIONS_DATABASE_URL']) {
+  // TEST_* are what the API tests connect to (and truncate, as the owner role).
+  for (const name of ['DATABASE_URL', 'MIGRATIONS_DATABASE_URL', 'TEST_DATABASE_URL', 'TEST_MIGRATIONS_DATABASE_URL']) {
     if (!env[name]) continue;
     try {
       assertLocalDatabase(env[name]);

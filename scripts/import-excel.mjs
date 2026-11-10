@@ -45,7 +45,12 @@ const { values: args } = parseArgs({
   },
 });
 const env = loadEnv();
-assertConfirmedIfRemote(env.API_URL, args.yes, 'The import');
+try {
+  assertConfirmedIfRemote(env.API_URL, args.yes, 'The import');
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
 const API = env.API_URL.replace(/\/$/, '');
 const FILES = {
   recruiting: 'Sistema_Reclutamiento_Completo_2026.xlsx',

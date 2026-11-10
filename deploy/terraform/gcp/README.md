@@ -52,3 +52,9 @@ together; the second deploy sets `encryption_previous_keys_version = ""`.
 Any other changed secret value takes effect on the next revision: `gcloud run services update platform-api --region us-central1`.
 
 `terraform fmt -check -recursive && terraform validate` runs in CI.
+
+## Deletion protection
+
+`cloud_run_deletion_protection` (API service and migrate job) and `db_deletion_protection` default to **true**. A dev environment that must be
+torn down sets both to `false` in its own `dev.tfvars` (see `dev.tfvars.example`); one that predates the Cloud Run variable shows an in-place
+`deletion_protection` false → true on the next plan until it does.

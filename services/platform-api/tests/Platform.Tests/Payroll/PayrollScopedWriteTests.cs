@@ -9,9 +9,11 @@ using Platform.Tests.Support;
 namespace Platform.Tests.Payroll;
 
 /// <summary>
-/// Every mutating payroll route follows the client scope of the caller's grant: a user whose grants are limited to another client
-/// gets 404 (never a write, never a 403 that would confirm the record exists). Each case also runs the same request as a user
-/// scoped to the right client, so a 404 cannot come from a malformed request.
+/// The mutating routes of Prenómina, Incidencias, Asistencia (day save), Personal (employee, status, bank accounts, card request),
+/// Horarios and Grupos/Puestos follow the client scope of the caller's grant: a user whose grants are limited to another client
+/// gets 404. Each case also runs the same request as a user scoped to the right client, so a 404 cannot come from a malformed
+/// request. Not covered yet: creating employees and groups, attendance unlock, and the Platform.Bank routes (payment files,
+/// registrations, payroll reports).
 /// </summary>
 public sealed class PayrollScopedWriteTests(ApiFactory factory) : ApiTest(factory)
 {

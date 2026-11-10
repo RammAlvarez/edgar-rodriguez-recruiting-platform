@@ -101,6 +101,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<PayrollGroupRequest>(includ
 
 var app = builder.Build();
 
+// Without a Resend key nothing is sent (invitations, password-setup links); outside Development the log does not carry the links either.
+if (!app.Environment.IsDevelopment() && settings.Email.ResendApiKey is not { Length: > 0 })
+    Log.Warning("RESEND_API_KEY is empty: emails are NOT sent and their links are not logged. Set it before inviting users.");
+
 if (settings.RateLimits.TrustedProxyHops > 0)
     app.UseForwardedHeaders();
 // ClientIp after the forwarded headers: what the per-address limit counts (PLAN D92, HANDOFF §9).

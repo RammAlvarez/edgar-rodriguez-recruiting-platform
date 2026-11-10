@@ -15,6 +15,7 @@ public sealed class ArchitectureTests
         { "Platform.Core", [] },
         { "Platform.Payroll.Engine", [] },
         { "Platform.Recruiting", ["Platform.Core"] },
+        // Payroll still uses Recruiting's cache tags and its shared report-export DTO (not conversion: removed in D101); the reverse never.
         { "Platform.Payroll", ["Platform.Core", "Platform.Payroll.Engine", "Platform.Recruiting"] },
         { "Platform.Bank", ["Platform.Core", "Platform.Payroll", "Platform.Payroll.Engine", "Platform.Recruiting"] },
         {

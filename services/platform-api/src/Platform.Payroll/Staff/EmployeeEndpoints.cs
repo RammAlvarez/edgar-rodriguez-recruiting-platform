@@ -36,7 +36,6 @@ public static class EmployeeEndpoints
     public const string PersonNotFound = "La persona no existe.";
     public const string AlreadyEmployed = "La persona ya trabaja en ese grupo de nómina.";
     public const string CardBankRequired = "La persona no tiene cuenta principal: elige el banco para solicitar su tarjeta.";
-    public const string CandidateNotHired = "Solo un candidato Contratado se convierte en empleado.";
     public const string PeriodNotFound = "El periodo no existe.";
     public const string HasAccountAlready = "El empleado ya tiene cuenta principal; no necesita tarjeta.";
     public const string CardAlreadyRequested = "Ya hay una solicitud de tarjeta en curso.";

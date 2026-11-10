@@ -56,7 +56,7 @@ projectId). It is public by nature; it changes per environment without rebuildin
    the offline copy of §6 before going further.
 6. **Deploy** following the provider guide: migrations, then the API, the scheduler and the apps.
 7. **Check:** `GET https://api…/health` → `{"status":"ok","database":"ok","bucket":"ok"}`; the apps open.
-8. **Owner:** `API_URL=… INTERNAL_SECRET=… node scripts/bootstrap.mjs --email dueno@empresa.mx --name "Edgar Rodríguez"`
+8. **Owner:** `API_URL=… INTERNAL_SECRET=… node scripts/bootstrap.mjs --email dueno@empresa.mx --name "Edgar Rodríguez" --yes`
    prints the link to set the password. The owner then turns on **Verificación en dos pasos** (account menu) and can require it
    for every Administrador in Usuarios.
 9. **Import** (once, on the empty installation, PLAN D90). Put the client's six workbooks in one folder under these names, or
@@ -78,7 +78,7 @@ projectId). It is public by nature; it changes per environment without rebuildin
      -d '{"email":"dueno@empresa.mx","password":"…","returnSecureToken":true}' | jq -r .idToken
    ```
    then, with the current code of the owner's authenticator if two-step verification is on,
-   `API_URL=… IMPORT_TOKEN=… [IMPORT_MFA_CODE=123456] node scripts/import-excel.mjs --dir ./excel --out ./importacion.md`.
+   `API_URL=… IMPORT_TOKEN=… [IMPORT_MFA_CODE=123456] node scripts/import-excel.mjs --dir ./excel --out ./importacion.md --yes`.
    **Before anyone generates an alta file:** the import queues a Banorte card for everyone without an account in COMENTARIOS
    (34 of the 115 in the sample; `--card-bank` picks the bank). Capture in Personal the accounts the payroll clerk already
    knows for those people first, or the cards are requested for nothing.

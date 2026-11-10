@@ -31,7 +31,7 @@ API 5080; admin 4300, candidates 4301, clients 4302; Postgres 5433 by default (o
 - **User-facing copy is Spanish (es-MX).** Identifiers and code are English; `docs/GLOSSARY.md` maps one to the other (add new terms there). Money is a string on the wire (D46).
 - **Never deploy.** Do not run `terraform apply/destroy`, `gcloud`, `firebase deploy` or `scripts/deploy-hosting.sh` (denied in `.claude/settings.json`); the DEV environment is shared with the client's testing. Ask the owner.
 - **Never log secrets or email bodies** (they carry sign-in and password-setup links).
-- Local DB scripts assume a local database; never point `DATABASE_URL` at a remote one while running `db:migrate`, `test:api`, `seed`, `import-excel` or `bootstrap`.
+- Local DB scripts assume a local database: `scripts/run.mjs` (`api`, `db:migrate`, `test:api`) refuses a non-local `DATABASE_URL`, `MIGRATIONS_DATABASE_URL`, `TEST_DATABASE_URL` or `TEST_MIGRATIONS_DATABASE_URL`, `seed` refuses one too, and `bootstrap` / `import-excel` need `--yes` for a non-local `API_URL`. Do not work around these guards.
 
 ## Conventions
 
@@ -45,7 +45,7 @@ API 5080; admin 4300, candidates 4301, clients 4302; Postgres 5433 by default (o
 2. Every route gets `.WithName`, `.Produces<…>` and `.RequireAccess(Access)`; mutating routes also `.Invalidates(Tag, …)` / `.Mutation()`. `RouteConventionTests` fails a route without exactly one access rule or a mutation without cache tags.
 3. Scope every query to the caller's grant (`PayrollScope` for payroll): out of scope answers 404, not 403. Validate with a FluentValidation validator (Spanish messages). Write audit rows in the same transaction as the change.
 4. Register `v1.Map<Thing>Endpoints()` in `Platform.Api/Program.cs`, then `npm run generate:api-types` and commit `libs/shared/src/generated`.
-5. Tests in `services/platform-api/tests/Platform.Tests/<Area>/` (use `ApiTest`, `SignedIn`, `Builders`). For a mutating payroll route also add a line to `PayrollScopedWriteTests`.
+5. Tests in `services/platform-api/tests/Platform.Tests/<Area>/` (use `ApiTest`, `SignedIn`, `Builders`). For a mutating payroll route (Prenómina, Incidencias, Asistencia, Personal, Horarios, Grupos) also add a line to `PayrollScopedWriteTests`; the Bank routes are not covered yet.
 
 **New migration**
 1. Change the entity or its configuration; never hand-edit `Migrations/` or the model snapshot.

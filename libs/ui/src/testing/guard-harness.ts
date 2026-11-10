@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { type CanActivateFn, Router } from '@angular/router';
 import type { MeDto, MeRole, PermissionModule } from '@platform/shared';
 import { firstValueFrom, type Observable } from 'rxjs';
-import { Session, type SessionState } from '../session';
+import { hasGrant, Session, type SessionState } from '../session';
 
 /** For specs only (not exported from the index): the signed-in user as `/v1/me` would describe them. */
 export const makeMe = (role: MeRole, grants: PermissionModule[] = []): MeDto =>
@@ -23,10 +23,8 @@ export function guardHarness(initial: SessionState) {
   const session = {
     state: state.asReadonly(),
     me,
-    hasGrant: (module: PermissionModule) => {
-      const m = me();
-      return !!m && m.role === 'administrator' && m.grants.some((g) => g.module === module);
-    },
+    // The same function Session.hasGrant delegates to.
+    hasGrant: (module: PermissionModule) => hasGrant(me(), module),
   };
   TestBed.configureTestingModule({
     providers: [
