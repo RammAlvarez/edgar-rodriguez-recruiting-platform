@@ -5,7 +5,7 @@ import { MatButtonToggle, MatButtonToggleGroup } from '@angular/material/button-
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import type { AssignmentRole, OpeningDetailDto } from '../data/api-types';
 import { OpeningsRepository, RecruitersRepository } from '../data/recruiting-repositories';
 
@@ -119,7 +119,7 @@ export class AssignRecruiterPanel {
       });
       this.ref.close(true);
     } catch (e) {
-      this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
+      this.alert.set(apiMessage(e, 'Ocurrió un error inesperado.'));
     } finally {
       this.busy.set(false);
     }

@@ -7,7 +7,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { type DateKey, formatDateKey } from '@platform/shared';
 import { confirm, openSidePanel } from '@platform/ui';
 import type { IncidentDto, PayrollPeriodDto } from '../data/api-types';
@@ -201,7 +201,7 @@ export class IncidentsPage {
       await this.repo.remove(i.id);
       this.snack.open('Incidencia quitada', undefined, { duration: 3000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo quitar.', 'Cerrar');
+      this.snack.open(apiMessage(e, 'No se pudo quitar.'), 'Cerrar');
     }
   }
 }

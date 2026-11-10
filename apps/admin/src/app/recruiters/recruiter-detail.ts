@@ -8,7 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { API_CLIENT, confirm, DateKeyPipe, openSidePanel, Pager, Session, type SortValue, UiPager } from '@platform/ui';
 import type { RecruiterAssignmentDto, RecruiterDetailDto } from '../data/api-types';
 import { OPENING_STATUS } from '../data/recruiting-labels';
@@ -228,7 +228,7 @@ export class RecruiterDetail {
       await work();
       this.snack.open(done, undefined, { duration: 4000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'Ocurrió un error inesperado.'), undefined, { duration: 6000 });
     }
   }
 }

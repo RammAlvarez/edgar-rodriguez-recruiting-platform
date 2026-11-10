@@ -7,9 +7,9 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { formatDateKey } from '@platform/shared';
-import { confirm, openSidePanel, Session } from '@platform/ui';
+import { confirm, openSidePanel, runExclusive, Session } from '@platform/ui';
 import type { PayrollPeriodDto, PrepayrollExport, PrepayrollRowDto } from '../data/api-types';
 import { columnTitle, money, PAYMENT_STATE, PERIOD_STATUS, periodLabel } from '../data/payroll-labels';
 import { PrepayrollRepository } from '../data/payroll-repositories';
@@ -406,15 +406,7 @@ export class PrepayrollPage {
     });
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    try {
-      await work();
-    } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo completar.', 'Cerrar');
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(this.busy, work, (e) => this.snack.open(apiMessage(e, 'No se pudo completar.'), 'Cerrar'));
   }
 }

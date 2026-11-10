@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
 import { SignInError } from '@platform/api-client';
 import { EMAIL_LINK_AUTH } from './api';
 import { BrandLogo } from './brand-logo';
+import { runExclusive } from './run-exclusive';
 
 /**
  * Passwordless sign-in (candidates and clients apps). `/entrar` asks for the email and sends the link;
@@ -109,16 +110,12 @@ export class EmailLinkSignIn implements OnInit {
     }
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    this.error.set(null);
-    try {
-      await work();
-    } catch (e) {
-      this.error.set(e instanceof SignInError ? e.message : 'No se pudo completar. Inténtalo de nuevo.');
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(
+      this.busy,
+      work,
+      (e) => this.error.set(e instanceof SignInError ? e.message : 'No se pudo completar. Inténtalo de nuevo.'),
+      () => this.error.set(null),
+    );
   }
 }

@@ -13,7 +13,7 @@ import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { DateKeyPipe, MoneyPipe, openSidePanel, Pager, type SortValue, TimestampPipe, UiPager } from '@platform/ui';
 import type { CandidateDetailDto, CandidateListItemDto, OpeningDetailDto, OpeningEventDto } from '../data/api-types';
 import { CandidatePanel, type CandidatePanelData } from '../candidates/candidate-panel';
@@ -407,7 +407,7 @@ export class OpeningDetail {
       this.snack.open('Vacante duplicada', undefined, { duration: 4000 });
       void this.router.navigate([this.base, copy.id]);
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo duplicar.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo duplicar.'), undefined, { duration: 6000 });
     }
   }
 
@@ -430,7 +430,7 @@ export class OpeningDetail {
       const saved = await this.repo.changeStatus(o.id, status, reason);
       this.snack.open(`Vacante ${OPENING_STATUS[saved.status].label.toLowerCase()}`, undefined, { duration: 4000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo cambiar el estatus.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo cambiar el estatus.'), undefined, { duration: 6000 });
     }
   }
 
@@ -442,7 +442,7 @@ export class OpeningDetail {
       await this.repo.postComment(o.id, text, this.commentVisible);
       this.commentText = '';
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo publicar.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo publicar.'), undefined, { duration: 6000 });
     } finally {
       this.posting.set(false);
     }

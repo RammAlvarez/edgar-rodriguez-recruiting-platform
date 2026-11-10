@@ -9,7 +9,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiFieldMessage } from '@platform/api-client';
 import { addDaysToKey, type DateKey, formatDateKey, isDateKey, todayKey } from '@platform/shared';
 import { openSidePanel } from '@platform/ui';
 import type { AttendanceEntryDto, AttendanceStatus } from '../data/api-types';
@@ -462,7 +462,7 @@ export class AttendancePage {
       this.added.set([]);
       this.snack.open(`Asistencia guardada · ${entries.length} ${entries.length === 1 ? 'persona' : 'personas'}`, undefined, { duration: 4000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? (e.fieldErrors ? Object.values(e.fieldErrors)[0]?.[0] ?? e.message : e.message) : 'No se pudo guardar.', 'Cerrar');
+      this.snack.open(apiFieldMessage(e, 'No se pudo guardar.'), 'Cerrar');
     } finally {
       this.saving.set(false);
     }

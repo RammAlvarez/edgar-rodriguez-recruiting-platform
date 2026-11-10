@@ -5,7 +5,8 @@ import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { Router } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiFieldMessage } from '@platform/api-client';
+import { runExclusive } from '@platform/ui';
 import { Session } from '@platform/ui/session';
 import { toDataURL } from 'qrcode';
 import type { MfaSetupDto } from '../data/api-types';
@@ -252,16 +253,7 @@ export class MfaPage {
     await this.router.navigateByUrl('/entrar');
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    this.error.set(null);
-    try {
-      await work();
-    } catch (e) {
-      this.error.set(e instanceof ApiError ? (e.fieldErrors ? (Object.values(e.fieldErrors)[0]?.[0] ?? e.message) : e.message) : 'No se pudo completar.');
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(this.busy, work, (e) => this.error.set(apiFieldMessage(e, 'No se pudo completar.')), () => this.error.set(null));
   }
 }

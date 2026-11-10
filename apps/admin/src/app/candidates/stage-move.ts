@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import type { MoveStageResultDto } from '../data/api-types';
 import { STAGE, type CandidateStage } from '../data/recruiting-labels';
 import { CandidatesRepository } from '../data/recruiting-repositories';
@@ -57,7 +57,7 @@ export class StageMove {
       );
       return result;
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo mover al candidato.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo mover al candidato.'), undefined, { duration: 6000 });
       return null;
     }
   }

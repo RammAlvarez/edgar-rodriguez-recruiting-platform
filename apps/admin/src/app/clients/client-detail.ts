@@ -7,7 +7,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { confirm, openSidePanel } from '@platform/ui';
 import type { ContactDto, OpeningDetailDto, OpeningListItemDto, SiteDto } from '../data/api-types';
 import { OPENING_STATUS } from '../data/recruiting-labels';
@@ -235,7 +235,7 @@ export class ClientDetail {
       await work();
       this.snack.open(done, undefined, { duration: 4000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.', 'Cerrar', { duration: 8000 });
+      this.snack.open(apiMessage(e, 'Ocurrió un error inesperado.'), 'Cerrar', { duration: 8000 });
     }
   }
 }

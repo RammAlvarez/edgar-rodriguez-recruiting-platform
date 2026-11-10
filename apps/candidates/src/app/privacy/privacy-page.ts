@@ -3,7 +3,7 @@ import { MatButton } from '@angular/material/button';
 import { MatCard, MatCardActions, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { Router } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { Session } from '@platform/ui/session';
 import { CandidatePortal } from '../data/portal';
 
@@ -77,7 +77,7 @@ export class PrivacyPage {
       await this.portal.acceptPrivacyNotice();
       await this.router.navigateByUrl('/');
     } catch (e) {
-      this.error.set(e instanceof ApiError ? e.message : 'No se pudo guardar. Inténtalo de nuevo.');
+      this.error.set(apiMessage(e, 'No se pudo guardar. Inténtalo de nuevo.'));
     } finally {
       this.busy.set(false);
     }

@@ -7,7 +7,7 @@ import { MatFormField, MatLabel, MatPrefix } from '@angular/material/form-field'
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import type { AssignmentRole, RecruiterDetailDto } from '../data/api-types';
 import { OpeningsRepository, RecruitersRepository } from '../data/recruiting-repositories';
 
@@ -131,7 +131,7 @@ export class AssignOpeningPanel {
       this.snack.open(n === 1 ? '1 vacante asignada' : `${n} vacantes asignadas`, undefined, { duration: 4000 });
       this.ref.close(true);
     } catch (e) {
-      this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
+      this.alert.set(apiMessage(e, 'Ocurrió un error inesperado.'));
     } finally {
       this.busy.set(false);
     }

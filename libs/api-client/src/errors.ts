@@ -70,3 +70,17 @@ export async function toApiError(response: Response): Promise<ApiError> {
 }
 
 export const networkError = (): ApiError => new ApiError(0, NETWORK);
+
+/** What to tell the user about a failed call: the API's message for an {@link ApiError}, else `fallback`. */
+export function apiMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
+/**
+ * Like {@link apiMessage}, but a 400 with field issues answers with the first field's message (what to fix) rather than the
+ * generic one, for toasts and alerts that have no field to hang it on.
+ */
+export function apiFieldMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof ApiError)) return fallback;
+  return Object.values(error.fieldErrors)[0]?.[0] ?? error.message;
+}

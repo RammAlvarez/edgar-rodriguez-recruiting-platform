@@ -9,8 +9,8 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
-import { confirm } from '@platform/ui';
+import { apiFieldMessage } from '@platform/api-client';
+import { confirm, runExclusive } from '@platform/ui';
 import type { GeneratedRegistrationDto, RegistrationBank, RegistrationBatchDto, RegistrationPreviewDto } from '../data/api-types';
 import { REGISTRATION_BANK } from '../data/payroll-labels';
 import { CardBatchesRepository, PrepayrollRepository } from '../data/payroll-repositories';
@@ -317,15 +317,7 @@ export class CardQueuePanel {
     });
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    try {
-      await work();
-    } catch (e) {
-      this.snack.open(e instanceof ApiError ? (e.fieldErrors ? (Object.values(e.fieldErrors)[0]?.[0] ?? e.message) : e.message) : 'No se pudo completar.', 'Cerrar');
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(this.busy, work, (e) => this.snack.open(apiFieldMessage(e, 'No se pudo completar.'), 'Cerrar'));
   }
 }

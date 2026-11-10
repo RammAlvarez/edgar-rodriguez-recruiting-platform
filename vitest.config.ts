@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['libs/shared/**/*.spec.ts', 'libs/api-client/**/*.spec.ts', 'scripts/**/*.spec.ts'],
+    include: ['libs/shared/**/*.spec.ts', 'libs/api-client/**/*.spec.ts', 'libs/ui/**/*.spec.ts', 'scripts/**/*.spec.ts'],
     environment: 'node',
   },
 });
