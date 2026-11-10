@@ -7,7 +7,9 @@ Es-MX back-office platform. Read [README.md](README.md) for the layout; the auth
 | Task | Command |
 |---|---|
 | Unit tests (libs / apps / API) | `npm run test:libs` · `npm run test:apps` · `npm run test:api` (API needs Postgres + the Firebase emulator up) |
-| Everything | `npm test` |
+| Fast check after an edit (neutrality, lint, lib types, Vitest) | `npm run check:fast` |
+| Everything CI runs (needs the local stack up) | `npm run check` |
+| Tests only | `npm test` |
 | Lint (ESLint + `dotnet format --verify-no-changes`) | `npm run lint` |
 | Type-check all apps | `npm run typecheck` |
 | Provider neutrality | `npm run check:neutrality` |
