@@ -1,5 +1,5 @@
 import type { MeDto, MeRole, PermissionModule } from '@platform/shared';
-import { hasGrant } from '@platform/ui';
+import { hasGrant } from '@platform/ui/session';
 
 /** Sidebar of the prototype (design-reference/Plataforma.dc.html), filtered by role and delegated grants. */
 export interface NavItem {
