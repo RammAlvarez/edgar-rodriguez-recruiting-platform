@@ -358,7 +358,7 @@ Add client and position assignment.
   • Employee detail → tab "Datos": add a card "Asignación" showing Cliente · Grupo de nómina · Puesto · Turno · Desde (date), with a button "Cambiar asignación" that opens the same cascading selects plus Fecha efectiva and Motivo. Saving updates the card and appends a row to a small "Historial de asignaciones" list under it (Desde, Hasta, Cliente, Grupo, Puesto, Motivo).
   • The pre-payroll grid in "Prenómina" must use the assigned Puesto's rates for each employee, so creating a new position in Clientes (nómina) and assigning an employee to it changes that employee's row when "Calcular" is pressed.
 
-Add to the demo path, after step 4: "4b. Clientes (nómina) → open HEB → Puestos → 'Nuevo puesto' AUXILIAR DE LIMPIEZA (SD bolsillo 350.00, SD IMSS 278.80, costo por hora 29.17, bono 300.00) → Personal → open the employee converted in step 4 → 'Cambiar asignación' to HEB / Limpieza oficinas / AUXILIAR DE LIMPIEZA → Prenómina shows the new rates for that employee."
+Add to the demo path, after step 4: "4b. Clientes (nómina) → open HEB → Puestos → 'Nuevo puesto' AUXILIAR DE LIMPIEZA (SD bolsillo 350.00, SD IMSS 278.80, costo por hora 29.17, bono 300.00) → Personal → open any employee in Personal (employees are not created from candidates, D101) → 'Cambiar asignación' to HEB / Limpieza oficinas / AUXILIAR DE LIMPIEZA → Prenómina shows the new rates for that employee."
 ```
 
 ### 9.2 Iteration 2 — Creating clients from each module (2026-10-07)

@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/.angular/**', 'services/**', 'design-reference/**', 'libs/shared/src/generated/**', '**/bin/**', '**/obj/**'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/.angular/**', 'services/**', 'design-reference/**', 'libs/shared/src/generated/**', '**/bin/**', '**/obj/**', '.claude/**'],
   },
   {
     files: ['**/*.ts'],
