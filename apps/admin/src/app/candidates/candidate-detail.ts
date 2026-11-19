@@ -7,7 +7,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { DateKeyPipe, MoneyPipe, openSidePanel, TimestampPipe } from '@platform/ui';
 import { DocumentChecklist, type ChecklistDocument, type ChecklistItem } from '@platform/ui/document-checklist';
 import type { CandidateDetailDto, InterviewDto, NoteDto, TimelineEntryDto } from '../data/api-types';
@@ -344,7 +344,7 @@ export class CandidateDetail {
       this.editor()?.reset();
       this.editingNote.set(null);
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo guardar la nota.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo guardar la nota.'), undefined, { duration: 6000 });
     } finally {
       this.savingNote.set(false);
     }
@@ -356,7 +356,7 @@ export class CandidateDetail {
       await this.people.upload(c.person.id, item, file, (progress) => this.uploading.set({ documentTypeId: item.documentTypeId, progress }));
       this.snack.open(`${item.nameEs} entregado`, undefined, { duration: 4000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo subir el archivo.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo subir el archivo.'), undefined, { duration: 6000 });
     } finally {
       this.uploading.set(null);
     }
@@ -371,7 +371,7 @@ export class CandidateDetail {
       else window.open(url, '_blank', 'noopener');
     } catch (e) {
       tab?.close();
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo abrir el documento.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo abrir el documento.'), undefined, { duration: 6000 });
     }
   }
 
@@ -394,7 +394,7 @@ export class CandidateDetail {
       this.snack.open(r.sent ? `Invitación enviada a ${r.email}` : 'No se pudo enviar el correo; inténtalo más tarde.', undefined,
         { duration: r.sent ? 4000 : 6000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'Ocurrió un error inesperado.'), undefined, { duration: 6000 });
     } finally {
       this.inviting.set(false);
     }
@@ -405,7 +405,7 @@ export class CandidateDetail {
       await work();
       this.snack.open(done, undefined, { duration: 4000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'Ocurrió un error inesperado.'), undefined, { duration: 6000 });
     }
   }
 }

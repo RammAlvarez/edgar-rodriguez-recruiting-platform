@@ -117,6 +117,7 @@ export class NotificationBell {
   }
 
   async open(n: NotificationDto): Promise<void> {
+    // Marking it read is best effort: a failure must not stop the user from reaching what the notification links to.
     if (!n.read) await this.repo.read(n.id).catch(() => undefined);
     if (n.link) await this.router.navigateByUrl(n.link);
   }

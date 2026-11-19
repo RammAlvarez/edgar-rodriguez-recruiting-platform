@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -7,15 +7,16 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { formatDateKey } from '@platform/shared';
-import { confirm, openSidePanel, Session } from '@platform/ui';
+import { confirm, hasGrant, openSidePanel, runExclusive, Session } from '@platform/ui';
 import type { PayrollPeriodDto, PrepayrollExport, PrepayrollRowDto } from '../data/api-types';
 import { columnTitle, money, PAYMENT_STATE, PERIOD_STATUS, periodLabel } from '../data/payroll-labels';
 import { PrepayrollRepository } from '../data/payroll-repositories';
 import { CardQueuePanel } from './card-queue-panel';
 import { LinePanel, type LinePanelData } from './line-panel';
 import { PaymentPanel, type PaymentPanelData } from './payment-panel';
+import { bindPeriodSelection, groupPeriods } from './period-selection';
 
 const ACCOUNT_TYPE_SHORT = { own_account: 'Cuenta', debit_card: 'Tarjeta', clabe: 'CLABE' } as const;
 
@@ -312,42 +313,18 @@ export class PrepayrollPage {
   readonly grid = this.repo.grid(() => this.periodId());
   readonly queue = this.repo.cardQueue();
   private readonly me = inject(Session).me;
-  readonly canPay = computed(() => this.me()?.grants.some((g) => g.module === 'payroll_payment_files') ?? false);
-  readonly canCards = computed(() => this.me()?.grants.some((g) => g.module === 'payroll_card_requests') ?? false);
+  readonly canPay = computed(() => hasGrant(this.me(), 'payroll_payment_files'));
+  readonly canCards = computed(() => hasGrant(this.me(), 'payroll_card_requests'));
   readonly busy = signal(false);
 
   /** Periods by client · group, newest first. */
-  readonly groups = computed(() => {
-    const map = new Map<string, { key: string; label: string; periods: PayrollPeriodDto[] }>();
-    for (const p of this.periods.value() ?? []) {
-      const g = map.get(p.groupId) ?? { key: p.groupId, label: `${p.clientName} · ${p.groupName}`, periods: [] };
-      g.periods.push(p);
-      map.set(p.groupId, g);
-    }
-    return [...map.values()];
-  });
+  readonly groups = computed(() => groupPeriods(this.periods.value()));
   readonly footers = computed(() => (this.grid.value()?.footers ?? []) as string[]);
   readonly missing = computed(() => this.grid.value()?.rows.filter((r) => r.payment.state === 'missing_account').length ?? 0);
   readonly adjusted = computed(() => this.grid.value()?.rows.filter((r) => r.adjusted).length ?? 0);
 
   constructor() {
-    // The period in the URL; by default the oldest one still open (what needs work), else the newest.
-    effect(() => {
-      const periods = this.periods.value();
-      if (!periods?.length || periods.some((p) => p.id === untracked(this.periodId))) return;
-      const open = periods.filter((p) => p.status !== 'paid' && Number(p.lines) > 0);
-      this.periodId.set((open.at(-1) ?? periods[0]).id);
-    });
-    let first = true;
-    effect(() => {
-      const period = this.periodId();
-      void this.router.navigate([], { queryParams: { period }, replaceUrl: true });
-      if (first) {
-        first = false;
-        return;
-      }
-      untracked(() => this.grid.reload());
-    });
+    bindPeriodSelection({ periods: () => this.periods.value(), periodId: this.periodId, router: this.router, reload: () => this.grid.reload() });
   }
 
   label(p: PayrollPeriodDto): string {
@@ -406,15 +383,7 @@ export class PrepayrollPage {
     });
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    try {
-      await work();
-    } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo completar.', 'Cerrar');
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(this.busy, work, (e) => this.snack.open(apiMessage(e, 'No se pudo completar.'), 'Cerrar'));
   }
 }

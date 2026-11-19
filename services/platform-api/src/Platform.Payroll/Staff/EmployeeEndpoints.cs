@@ -36,7 +36,6 @@ public static class EmployeeEndpoints
     public const string PersonNotFound = "La persona no existe.";
     public const string AlreadyEmployed = "La persona ya trabaja en ese grupo de nómina.";
     public const string CardBankRequired = "La persona no tiene cuenta principal: elige el banco para solicitar su tarjeta.";
-    public const string CandidateNotHired = "Solo un candidato Contratado se convierte en empleado.";
     public const string PeriodNotFound = "El periodo no existe.";
     public const string HasAccountAlready = "El empleado ya tiene cuenta principal; no necesita tarjeta.";
     public const string CardAlreadyRequested = "Ya hay una solicitud de tarjeta en curso.";
@@ -201,12 +200,10 @@ public static class EmployeeEndpoints
         g.MapPut("/{id:guid}/status/{periodId:guid}", async (Guid id, Guid periodId, UpdateStatusPeriodRequest r, DbContext db,
                 RequestContext ctx, IClock clock, CancellationToken ct) =>
             {
-                if (await Find(db, ctx, id, ct) is not { } e)
-                    return ApiResults.NotFound(NotFound);
-                if (await db.Set<EmployeeStatusPeriod>().SingleOrDefaultAsync(p => p.Uid == periodId && p.EmployeeId == id, ct) is not { } period)
-                    return ApiResults.NotFound(PeriodNotFound);
-                if (period.Status == EmployeeStatus.Terminated)
-                    return ApiResults.Conflict(StaffRules.BajaIsReingreso);
+                var loaded = await LoadStatusPeriod(db, ctx, id, periodId, ct);
+                if (loaded.Problem is { } problem)
+                    return problem;
+                var (e, period) = (loaded.Employee!, loaded.Period!);
                 if (r.EndDate < period.StartDate)
                     return ApiResults.Validation(new Dictionary<string, string[]> { ["endDate"] = ["La fecha de fin es anterior a la de inicio."] });
                 if (await Overlap(db, id, periodId, period.StartDate, r.EndDate, ct) is { } other)
@@ -231,12 +228,10 @@ public static class EmployeeEndpoints
         g.MapPost("/{id:guid}/status/{periodId:guid}/end", async (Guid id, Guid periodId, DbContext db, RequestContext ctx, IClock clock,
                 CancellationToken ct) =>
             {
-                if (await Find(db, ctx, id, ct) is not { } e)
-                    return ApiResults.NotFound(NotFound);
-                if (await db.Set<EmployeeStatusPeriod>().SingleOrDefaultAsync(p => p.Uid == periodId && p.EmployeeId == id, ct) is not { } period)
-                    return ApiResults.NotFound(PeriodNotFound);
-                if (period.Status == EmployeeStatus.Terminated)
-                    return ApiResults.Conflict(StaffRules.BajaIsReingreso);
+                var loaded = await LoadStatusPeriod(db, ctx, id, periodId, ct);
+                if (loaded.Problem is { } problem)
+                    return problem;
+                var (e, period) = (loaded.Employee!, loaded.Period!);
                 var today = clock.Today();
                 if (period.StartDate >= today)
                 {
@@ -422,6 +417,19 @@ public static class EmployeeEndpoints
     }
 
     private static IResult Detail(EmployeeDetailDto? dto) => dto is null ? ApiResults.NotFound(NotFound) : TypedResults.Ok(dto);
+
+    /// <summary>The employee in scope and one of its status periods; a Baja is not edited (it is a Reingreso).</summary>
+    private static async Task<(Employee? Employee, EmployeeStatusPeriod? Period, IResult? Problem)> LoadStatusPeriod(
+        DbContext db, RequestContext ctx, Guid id, Guid periodId, CancellationToken ct)
+    {
+        if (await Find(db, ctx, id, ct) is not { } employee)
+            return (null, null, ApiResults.NotFound(NotFound));
+        if (await db.Set<EmployeeStatusPeriod>().SingleOrDefaultAsync(p => p.Uid == periodId && p.EmployeeId == id, ct) is not { } period)
+            return (null, null, ApiResults.NotFound(PeriodNotFound));
+        if (period.Status == EmployeeStatus.Terminated)
+            return (null, null, ApiResults.Conflict(StaffRules.BajaIsReingreso));
+        return (employee, period, null);
+    }
 
     private static Task<Employee?> Find(DbContext db, RequestContext ctx, Guid id, CancellationToken ct) =>
         PayrollScope.Employees(db, ctx, PermissionModule.PayrollStaff).SingleOrDefaultAsync(e => e.Uid == id, ct);

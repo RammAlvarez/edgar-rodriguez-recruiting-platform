@@ -33,17 +33,24 @@ public sealed class ResendEmailSender(HttpClient http, EmailSettings settings) :
     }
 }
 
-/// <summary>Local development without a Resend key: the message (with its links) goes to the API log instead.</summary>
-public sealed partial class LogEmailSender(ILogger<LogEmailSender> logger) : IEmailSender
+/// <summary>
+/// No Resend key: the message is not sent. In Development the whole message (with its links) goes to the API log so it can be followed locally;
+/// anywhere else only the recipient and subject are logged, because the body carries sign-in and password-setup links that must not reach the logs.
+/// </summary>
+public sealed partial class LogEmailSender(ILogger<LogEmailSender> logger, bool includeBody) : IEmailSender
 {
     public Task SendAsync(EmailMessage message, CancellationToken cancellationToken)
     {
-        Logged(logger, message.To, message.Subject, message.Text);
+        if (includeBody) LoggedWithBody(logger, message.To, message.Subject, message.Text);
+        else LoggedWithoutBody(logger, message.To, message.Subject);
         return Task.CompletedTask;
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Email (not sent, RESEND_API_KEY is empty) to {To}: {Subject}\n{Text}")]
-    private static partial void Logged(ILogger logger, string to, string subject, string text);
+    private static partial void LoggedWithBody(ILogger logger, string to, string subject, string text);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Email NOT sent (RESEND_API_KEY is empty) to {To}: {Subject}. The body is not logged outside Development.")]
+    private static partial void LoggedWithoutBody(ILogger logger, string to, string subject);
 }
 
 public sealed class EmailNotSentException(string message) : Exception(message);

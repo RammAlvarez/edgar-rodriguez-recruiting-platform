@@ -8,7 +8,7 @@ import { MatSortModule } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { MatTooltip } from '@angular/material/tooltip';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { confirm, openSidePanel, Pager, type SortValue, UiPager } from '@platform/ui';
 import type { DocumentTemplateDto } from '../data/api-types';
 import { CatalogsRepository } from '../data/repositories';
@@ -195,7 +195,7 @@ export class CatalogsPage {
     try {
       this.snack.open(await work(), undefined, { duration: 4000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.', 'Cerrar', { duration: 8000 });
+      this.snack.open(apiMessage(e, 'Ocurrió un error inesperado.'), 'Cerrar', { duration: 8000 });
     }
   }
 }

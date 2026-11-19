@@ -4,7 +4,7 @@ import { MatButton } from '@angular/material/button';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { ActivatedRoute } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { TimestampPipe } from '@platform/ui/pipes';
 import { ClientPortal } from '../data/portal';
 
@@ -100,7 +100,7 @@ export class CommentThread {
       await this.portal.post(this.openingId, this.form.controls.body.value.trim());
       this.formDirective().resetForm();
     } catch (e) {
-      this.error.set(e instanceof ApiError ? e.message : 'No se pudo enviar. Inténtalo de nuevo.');
+      this.error.set(apiMessage(e, 'No se pudo enviar. Inténtalo de nuevo.'));
     } finally {
       this.busy.set(false);
     }

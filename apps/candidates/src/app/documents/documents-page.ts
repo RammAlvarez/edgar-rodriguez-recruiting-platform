@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { type ChecklistDocument, type ChecklistItem, DocumentChecklist } from '@platform/ui/document-checklist';
 import { CandidatePortal } from '../data/portal';
 
@@ -50,7 +50,7 @@ export class DocumentsPage {
       await this.portal.upload(personId, item, file, (progress) => this.uploading.set({ documentTypeId: item.documentTypeId, progress }));
       this.snack.open(`${item.nameEs}: entregado. Tu reclutador lo revisará.`, undefined, { duration: 5000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo.',
+      this.snack.open(apiMessage(e, 'No se pudo subir el archivo. Revisa tu conexión e inténtalo de nuevo.'),
         undefined, { duration: 6000 });
     } finally {
       this.uploading.set(null);
@@ -66,7 +66,7 @@ export class DocumentsPage {
       else window.open(url, '_blank', 'noopener');
     } catch (e) {
       tab?.close();
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo abrir el documento.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(e, 'No se pudo abrir el documento.'), undefined, { duration: 6000 });
     }
   }
 }

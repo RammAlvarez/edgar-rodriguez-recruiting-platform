@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { uploadToPresignedUrl } from '@platform/api-client';
 import type { components } from '@platform/shared';
 import { API_CLIENT } from '@platform/ui/api';
+import { uploadPersonDocument } from '@platform/ui/upload-document';
 import { liveQuery } from '@platform/ui/live-query';
 
 type S = components['schemas'];
@@ -13,7 +13,6 @@ export type ApplicationOutcome = S['ApplicationOutcome'];
 export type DocumentChecklistDto = S['DocumentChecklistDto'];
 export type ChecklistItemDto = S['ChecklistItemDto'];
 export type PersonDocumentDto = S['PersonDocumentDto'];
-type PresignUploadResponse = S['PresignUploadResponse'];
 type DocumentUrlDto = S['DocumentUrlDto'];
 export type BankAccountDto = S['BankAccountDto'];
 export type BankAccountRequest = S['BankAccountRequest'];
@@ -68,22 +67,8 @@ export class CandidatePortal {
     return liveQuery(() => this.api.get<DocumentChecklistDto>('/v1/candidate-portal/documents'), ['documents', 'candidate-portal']);
   }
 
-  async upload(personId: string, item: ChecklistItemDto, file: File, onProgress?: (f: number) => void): Promise<PersonDocumentDto> {
-    const presign = await this.api.post<PresignUploadResponse>('/v1/files/presign-upload', {
-      personId,
-      documentTypeId: item.documentTypeId,
-      fileName: file.name,
-      contentType: file.type,
-      sizeBytes: file.size,
-    });
-    await uploadToPresignedUrl(file, { url: presign.url, headers: presign.headers }, onProgress);
-    return this.api.post(`/v1/people/${personId}/documents`, {
-      documentTypeId: item.documentTypeId,
-      storageKey: presign.storageKey,
-      originalFilename: file.name,
-      issuedAt: null,
-      expiresAt: null,
-    });
+  upload(personId: string, item: ChecklistItemDto, file: File, onProgress?: (f: number) => void): Promise<PersonDocumentDto> {
+    return uploadPersonDocument(this.api, personId, item.documentTypeId, file, onProgress);
   }
 
   url(documentId: string): Promise<DocumentUrlDto> {

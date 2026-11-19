@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -7,13 +7,14 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOptgroup, MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { type DateKey, formatDateKey } from '@platform/shared';
 import { confirm, openSidePanel } from '@platform/ui';
 import type { IncidentDto, PayrollPeriodDto } from '../data/api-types';
 import { INCIDENT_CONCEPTS, money, PERIOD_STATUS, periodLabel } from '../data/payroll-labels';
 import { IncidentsRepository } from '../data/payroll-repositories';
 import { IncidentPanel, type IncidentPanelData } from './incident-panel';
+import { bindPeriodSelection, groupPeriods } from './period-selection';
 
 /**
  * Nómina → Incidencias (SPEC §5.4): what changes pay and is not attendance — horas extra, dobles y triples, retroactivos,
@@ -138,35 +139,13 @@ export class IncidentsPage {
   readonly periodId = signal<string | null>(this.params.get('period'));
   readonly list = this.repo.list(() => this.periodId());
   readonly period = computed(() => this.periods.value()?.find((p) => p.id === this.periodId()) ?? null);
-  readonly groups = computed(() => {
-    const map = new Map<string, { key: string; label: string; periods: PayrollPeriodDto[] }>();
-    for (const p of this.periods.value() ?? []) {
-      const g = map.get(p.groupId) ?? { key: p.groupId, label: `${p.clientName} · ${p.groupName}`, periods: [] };
-      g.periods.push(p);
-      map.set(p.groupId, g);
-    }
-    return [...map.values()];
-  });
+  /** Periods by client · group, newest first. */
+  readonly groups = computed(() => groupPeriods(this.periods.value()));
   /** Ajustes manuales are the grid's (its desglose lists and removes them). */
   readonly rows = computed(() => this.list.value() ?? []);
 
   constructor() {
-    effect(() => {
-      const periods = this.periods.value();
-      if (!periods?.length || periods.some((p) => p.id === untracked(this.periodId))) return;
-      const open = periods.filter((p) => p.status !== 'paid' && Number(p.lines) > 0);
-      this.periodId.set((open.at(-1) ?? periods[0]).id);
-    });
-    let first = true;
-    effect(() => {
-      const period = this.periodId();
-      void this.router.navigate([], { queryParams: { period }, replaceUrl: true });
-      if (first) {
-        first = false;
-        return;
-      }
-      untracked(() => this.list.reload());
-    });
+    bindPeriodSelection({ periods: () => this.periods.value(), periodId: this.periodId, router: this.router, reload: () => this.list.reload() });
   }
 
   label(p: PayrollPeriodDto): string {
@@ -201,7 +180,7 @@ export class IncidentsPage {
       await this.repo.remove(i.id);
       this.snack.open('Incidencia quitada', undefined, { duration: 3000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo quitar.', 'Cerrar');
+      this.snack.open(apiMessage(e, 'No se pudo quitar.'), 'Cerrar');
     }
   }
 }

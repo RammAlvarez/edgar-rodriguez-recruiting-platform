@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import type { AbstractControl, FormGroup, ValidatorFn } from '@angular/forms';
-import { ApiError } from '@platform/api-client';
+import { ApiError, apiMessage } from '@platform/api-client';
 import type { z } from 'zod';
 
 /**
@@ -98,7 +98,7 @@ export class PanelState {
         const marked = Object.keys(e.fieldErrors).length > 0;
         // A 400 without field errors (an unreadable value) still says what happened.
         this.alert.set(applyServerErrors(this.form, e)[0] ?? (marked ? null : e.message));
-      } else this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
+      } else this.alert.set(apiMessage(e, 'Ocurrió un error inesperado.'));
     } finally {
       this.busy.set(false);
     }

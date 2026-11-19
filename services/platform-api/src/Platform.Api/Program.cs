@@ -91,7 +91,7 @@ builder.Services.AddSingleton(settings.Email);
 if (settings.Email.ResendApiKey is { Length: > 0 })
     builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>(c => c.BaseAddress = ResendEmailSender.BaseAddress);
 else
-    builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
+    builder.Services.AddSingleton<IEmailSender>(sp => new LogEmailSender(sp.GetRequiredService<ILogger<LogEmailSender>>(), builder.Environment.IsDevelopment()));
 // Every rule carries its own Spanish message; a rule that forgets one still answers in Spanish, never English (D-019).
 ValidatorOptions.Global.LanguageManager.Culture = System.Globalization.CultureInfo.GetCultureInfo("es");
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
@@ -100,6 +100,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<OpeningRequest>(includeInte
 builder.Services.AddValidatorsFromAssemblyContaining<PayrollGroupRequest>(includeInternalTypes: true);
 
 var app = builder.Build();
+
+// Without a Resend key nothing is sent (invitations, password-setup links); outside Development the log does not carry the links either.
+if (!app.Environment.IsDevelopment() && settings.Email.ResendApiKey is not { Length: > 0 })
+    Log.Warning("RESEND_API_KEY is empty: emails are NOT sent and their links are not logged. Set it before inviting users.");
 
 if (settings.RateLimits.TrustedProxyHops > 0)
     app.UseForwardedHeaders();

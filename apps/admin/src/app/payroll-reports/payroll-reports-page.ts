@@ -8,7 +8,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { todayKey } from '@platform/shared';
 import type { PayrollReport, PayrollReportRowDto, ReportFormat } from '../data/api-types';
 import { type PayrollReportQuery, PayrollReportsRepository } from '../data/payroll-repositories';
@@ -379,7 +379,7 @@ export class PayrollReportsPage {
       window.location.assign(file.url);
       this.snackBar.open(`${file.fileName} generado`, undefined, { duration: 4000 });
     } catch (e) {
-      this.snackBar.open(e instanceof ApiError ? e.message : 'No se pudo generar el archivo.', 'Cerrar');
+      this.snackBar.open(apiMessage(e, 'No se pudo generar el archivo.'), 'Cerrar');
     } finally {
       this.exporting.set(null);
     }

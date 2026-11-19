@@ -8,7 +8,7 @@ import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { apiFieldMessage, apiMessage } from '@platform/api-client';
 import { type DateKey, formatDateKey } from '@platform/shared';
 import { confirm, PanelState } from '@platform/ui';
 import type { IncidentDto } from '../data/api-types';
@@ -258,7 +258,7 @@ export class LinePanel {
     try {
       await this.incidents.remove(i.id);
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? e.message : 'No se pudo quitar.', 'Cerrar');
+      this.snack.open(apiMessage(e, 'No se pudo quitar.'), 'Cerrar');
     }
   }
 
@@ -268,7 +268,7 @@ export class LinePanel {
       await this.repo.setComments(this.data.lineId, value.trim() || null);
       this.snack.open('Comentarios guardados', undefined, { duration: 3000 });
     } catch (e) {
-      this.snack.open(e instanceof ApiError ? (e.fieldErrors ? Object.values(e.fieldErrors)[0]?.[0] ?? e.message : e.message) : 'No se pudo guardar.', 'Cerrar');
+      this.snack.open(apiFieldMessage(e, 'No se pudo guardar.'), 'Cerrar');
     } finally {
       this.savingComments.set(false);
     }

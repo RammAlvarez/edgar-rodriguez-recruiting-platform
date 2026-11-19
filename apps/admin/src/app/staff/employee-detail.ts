@@ -7,7 +7,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTab, MatTabGroup } from '@angular/material/tabs';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { addDaysToKey, type DateKey, formatDateKey, todayKey } from '@platform/shared';
 import { openSidePanel } from '@platform/ui';
 import { DocumentChecklist, type ChecklistDocument, type ChecklistItem } from '@platform/ui/document-checklist';
@@ -390,7 +390,7 @@ export class EmployeeDetail {
       const person = await this.people.get(e.personId);
       openSidePanel<PersonPanel, PersonPanelData>(this.dialog, PersonPanel, { person });
     } catch (err) {
-      this.snack.open(err instanceof ApiError ? err.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(err, 'Ocurrió un error inesperado.'), undefined, { duration: 6000 });
     }
   }
 
@@ -436,7 +436,7 @@ export class EmployeeDetail {
       await this.people.upload(e.personId, item, file, (progress) => this.uploading.set({ documentTypeId: item.documentTypeId, progress }));
       this.snack.open(`${item.nameEs} entregado`, undefined, { duration: 4000 });
     } catch (err) {
-      this.snack.open(err instanceof ApiError ? err.message : 'No se pudo subir el archivo.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(err, 'No se pudo subir el archivo.'), undefined, { duration: 6000 });
     } finally {
       this.uploading.set(null);
     }
@@ -451,7 +451,7 @@ export class EmployeeDetail {
       else window.open(url, '_blank', 'noopener');
     } catch (err) {
       tab?.close();
-      this.snack.open(err instanceof ApiError ? err.message : 'No se pudo abrir el documento.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(err, 'No se pudo abrir el documento.'), undefined, { duration: 6000 });
     }
   }
 
@@ -469,7 +469,7 @@ export class EmployeeDetail {
       await work();
       this.snack.open(done, undefined, { duration: 4000 });
     } catch (err) {
-      this.snack.open(err instanceof ApiError ? err.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(err, 'Ocurrió un error inesperado.'), undefined, { duration: 6000 });
     }
   }
 }

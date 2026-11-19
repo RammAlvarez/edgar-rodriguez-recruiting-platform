@@ -1,3 +1,6 @@
+import { TestBed } from '@angular/core/testing';
+import type { CanActivateFn } from '@angular/router';
+import { guardHarness, makeMe } from '@platform/ui/testing/guard-harness';
 import { describe, expect, it } from 'vitest';
 import { statusMessage, STEPS } from './application/application-page';
 import { routes } from './app.routes';
@@ -19,13 +22,36 @@ const app = (over: Partial<CandidateApplicationDto>): CandidateApplicationDto =>
 });
 
 describe('routes', () => {
-  it('has the email-link sign-in, the aviso de privacidad and a candidate-only shell behind it', () => {
-    const paths = routes.map((r) => r.path);
-    expect(paths).toEqual(expect.arrayContaining(['entrar', 'entrar/enlace', 'aviso', 'sin-acceso']));
-    const shell = routes.find((r) => r.path === '');
-    expect(shell?.canActivate?.length).toBe(2);
-    expect(shell?.canActivateChild?.length).toBe(1);
-    expect(shell?.children?.map((c) => c.path)).toEqual(['', 'perfil', 'documentos', 'postulacion']);
+  const shell = () => routes.find((r) => r.path === '')!;
+  const route = (path: string) => routes.find((r) => r.path === path)!;
+
+  it('lets only a candidate into the shell: others go to «sin acceso», visitors to the sign-in', async () => {
+    const candidate = guardHarness({ status: 'ready', me: makeMe('candidate') });
+    expect(await candidate.runAll(shell().canActivate as CanActivateFn[])).toBe(true);
+    TestBed.resetTestingModule();
+    const client = guardHarness({ status: 'ready', me: makeMe('client') });
+    expect(await client.runAll(shell().canActivate as CanActivateFn[])).toEqual({ redirect: '/sin-acceso' });
+    TestBed.resetTestingModule();
+    const visitor = guardHarness({ status: 'signed-out' });
+    expect(await visitor.runAll(shell().canActivate as CanActivateFn[])).toEqual({ redirect: '/entrar' });
+  });
+
+  it('shows the sign-in only to visitors; the email link and «sin acceso» are open to anyone', async () => {
+    const signedIn = guardHarness({ status: 'ready', me: makeMe('candidate') });
+    expect(await signedIn.runAll(route('entrar').canActivate as CanActivateFn[])).toEqual({ redirect: '/' });
+    expect(route('entrar/enlace').canActivate).toBeUndefined();
+    expect(route('sin-acceso').canActivate).toBeUndefined();
+  });
+
+  it('guards the aviso de privacidad like the shell (it needs a candidate session)', async () => {
+    const client = guardHarness({ status: 'ready', me: makeMe('client') });
+    expect(await client.runAll(route('aviso').canActivate as CanActivateFn[])).toEqual({ redirect: '/sin-acceso' });
+  });
+
+  it('opens every item of the top navigation', () => {
+    const items = (shell().data?.['items'] as { path: string }[]).map((i) => i.path);
+    const children = shell().children!.map((c) => c.path);
+    for (const item of items) expect(children).toContain(item);
   });
 });
 

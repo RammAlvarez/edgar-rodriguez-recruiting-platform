@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -72,26 +71,16 @@ public static class ReportEndpoints
                     : $"{document.Title} {filters.From:yyyy-MM-dd} a {filters.To:yyyy-MM-dd}.{r.Format.Extension()}";
                 var download = await storage.PresignDownloadAsync(StorageBucket.Exports, key, fileName, DownloadLifetime, ct);
 
-                db.Add(new AuditEntry
+                db.Add(AuditEntry.ForExport(ctx, now, View(r.Report), new
                 {
-                    OccurredAt = now,
-                    UserId = ctx.RequiredPrincipal.UserId,
-                    ActingForUserId = ctx.ActingFor?.UserId,
-                    Action = AuditAction.Export,
-                    SchemaName = "platform",
-                    TableName = View(r.Report),
-                    After = JsonSerializer.Serialize(new
-                    {
-                        report = r.Report.ToString(),
-                        format = r.Format.ToString(),
-                        clientId = filters.ClientId,
-                        recruiterId = filters.RecruiterId,
-                        from = filters.From,
-                        to = filters.To,
-                        key,
-                    }),
-                    RequestId = ctx.RequestId,
-                });
+                    report = r.Report.ToString(),
+                    format = r.Format.ToString(),
+                    clientId = filters.ClientId,
+                    recruiterId = filters.RecruiterId,
+                    from = filters.From,
+                    to = filters.To,
+                    key,
+                }));
                 await db.SaveChangesAsync(ct);
                 return TypedResults.Ok(new ReportExportDto(download.Url, fileName, download.ExpiresAt));
             })

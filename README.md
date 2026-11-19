@@ -31,4 +31,17 @@ npm run seed                # owner: edgar@local.test / plataforma-local
 npm start -- admin          # http://localhost:4300  (candidates :4301, clients :4302)
 ```
 
-Checks: `npm test` · `npm run lint` · `npm run check:neutrality` · `npm run check:migrations` · `npm run generate:api-types`.
+### Ports
+
+| What | Port | Override |
+|---|---|---|
+| API | 5080 | `ASPNETCORE_URLS` |
+| Admin · candidates · clients dev servers | 4300 · 4301 · 4302 | `ng serve --port` |
+| Postgres | 5433 | `PLATFORM_DB_PORT` |
+| S3 emulator (MinIO) · console | 9000 · 9001 | `PLATFORM_S3_PORT` · `PLATFORM_S3_CONSOLE_PORT` |
+| Firebase Auth emulator · UI | 9199 · 4010 | `firebase.json` |
+
+Local overrides go in a gitignored `.env`; start from `.env.local.example` (`.env.example` lists the production variables).
+Vocabulary: [docs/GLOSSARY.md](docs/GLOSSARY.md) · agent and contributor rules: [CLAUDE.md](CLAUDE.md).
+
+Checks: `npm run check` (CI's web and api jobs; not Terraform) · `npm run check:fast` · `npm test` · `npm run lint` · `npm run check:neutrality` · `npm run check:migrations` · `npm run generate:api-types`.

@@ -10,7 +10,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { type DateKey, formatDateKey } from '@platform/shared';
 import { MatSortModule } from '@angular/material/sort';
 import { openSidePanel, Pager, type SortValue, UiPager } from '@platform/ui';
@@ -273,7 +273,7 @@ export class PersonalPage {
       await this.repo.requestCard(e.id, bank);
       this.snack.open(`Tarjeta ${REGISTRATION_BANK[bank]} solicitada para ${e.fullName}`, undefined, { duration: 4000 });
     } catch (err) {
-      this.snack.open(err instanceof ApiError ? err.message : 'Ocurrió un error inesperado.', undefined, { duration: 6000 });
+      this.snack.open(apiMessage(err, 'Ocurrió un error inesperado.'), undefined, { duration: 6000 });
     }
   }
 }

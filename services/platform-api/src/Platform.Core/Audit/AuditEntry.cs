@@ -1,3 +1,6 @@
+using System.Text.Json;
+using Platform.Core.Access;
+
 namespace Platform.Core.Audit;
 
 /// <summary>Postgres enum <c>audit_action</c>.</summary>
@@ -39,6 +42,19 @@ public sealed class AuditEntry
     public string? After { get; set; }
     public string? RequestId { get; set; }
     public System.Net.IPAddress? Ip { get; set; }
+
+    /// <summary>The audit row of a file export: who (and for whom, in cover mode), which table's data, and what was asked for (<paramref name="after"/>, serialized as JSON).</summary>
+    public static AuditEntry ForExport(RequestContext ctx, DateTimeOffset now, string table, object after) => new()
+    {
+        OccurredAt = now,
+        UserId = ctx.RequiredPrincipal.UserId,
+        ActingForUserId = ctx.ActingFor?.UserId,
+        Action = AuditAction.Export,
+        SchemaName = "platform",
+        TableName = table,
+        After = JsonSerializer.Serialize(after),
+        RequestId = ctx.RequestId,
+    };
 }
 
 /// <summary>DATA_MODEL §7 <c>data_access_log</c>: who viewed or downloaded which personal data.</summary>

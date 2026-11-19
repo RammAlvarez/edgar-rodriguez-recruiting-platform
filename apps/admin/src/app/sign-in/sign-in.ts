@@ -8,7 +8,7 @@ import { MatProgressBar } from '@angular/material/progress-bar';
 import { Router } from '@angular/router';
 import { PASSWORD_AUTH } from '../auth-token';
 import { SignInError } from '@platform/api-client';
-import { BrandLogo } from '@platform/ui';
+import { BrandLogo, runExclusive } from '@platform/ui';
 
 @Component({
   selector: 'app-sign-in',
@@ -93,17 +93,15 @@ export class SignIn {
     });
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    this.error.set(null);
-    this.notice.set(null);
-    try {
-      await work();
-    } catch (e) {
-      this.error.set(e instanceof SignInError ? e.message : 'No se pudo iniciar sesión. Inténtalo de nuevo.');
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(
+      this.busy,
+      work,
+      (e) => this.error.set(e instanceof SignInError ? e.message : 'No se pudo iniciar sesión. Inténtalo de nuevo.'),
+      () => {
+        this.error.set(null);
+        this.notice.set(null);
+      },
+    );
   }
 }

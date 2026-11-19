@@ -8,9 +8,9 @@ import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { ApiError, apiFieldMessage, apiMessage } from '@platform/api-client';
 import { type DateKey, formatDateKey, todayKey } from '@platform/shared';
-import { applyServerErrors, confirm, errorMessage, openSidePanel } from '@platform/ui';
+import { applyServerErrors, confirm, errorMessage, openSidePanel, runExclusive } from '@platform/ui';
 import type { GeneratedPaymentFilesDto, PaymentBatchDto, PaymentBatchRowDto, PaymentFile, PaymentLineDto, PaymentState } from '../data/api-types';
 import { CatalogsRepository } from '../data/repositories';
 import { MANUAL_PAYMENT_METHODS, money, PAYMENT_STATE } from '../data/payroll-labels';
@@ -385,7 +385,7 @@ export class PaymentPanel {
     } catch (e) {
       const left = e instanceof ApiError ? applyServerErrors(this.manualForm, e) : [];
       if (!(e instanceof ApiError) || left.length || !Object.keys(e.fieldErrors).length) {
-        this.snack.open(e instanceof ApiError ? e.message : 'No se pudo completar.', 'Cerrar');
+        this.snack.open(apiMessage(e, 'No se pudo completar.'), 'Cerrar');
       }
     } finally {
       this.busy.set(false);
@@ -470,15 +470,7 @@ export class PaymentPanel {
     });
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    try {
-      await work();
-    } catch (e) {
-      this.snack.open(e instanceof ApiError ? (e.fieldErrors ? (Object.values(e.fieldErrors)[0]?.[0] ?? e.message) : e.message) : 'No se pudo completar.', 'Cerrar');
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(this.busy, work, (e) => this.snack.open(apiFieldMessage(e, 'No se pudo completar.'), 'Cerrar'));
   }
 }

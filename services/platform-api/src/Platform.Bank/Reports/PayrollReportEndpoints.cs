@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -65,26 +64,16 @@ public static class PayrollReportEndpoints
                 var period = dto.Filters.From is { } f && dto.Filters.To is { } t ? $" {f:yyyy-MM-dd} a {t:yyyy-MM-dd}" : $" al {clock.Today():yyyy-MM-dd}";
                 var fileName = $"{dto.Title}{(dto.Filters.ClientName is { } c ? $" {c}" : "")}{period}.{r.Format.Extension()}";
                 var download = await storage.PresignDownloadAsync(StorageBucket.Exports, key, fileName, DownloadLifetime, ct);
-                db.Add(new AuditEntry
+                db.Add(AuditEntry.ForExport(ctx, now, "prepayroll_lines", new
                 {
-                    OccurredAt = now,
-                    UserId = ctx.RequiredPrincipal.UserId,
-                    ActingForUserId = ctx.ActingFor?.UserId,
-                    Action = AuditAction.Export,
-                    SchemaName = "platform",
-                    TableName = "prepayroll_lines",
-                    After = JsonSerializer.Serialize(new
-                    {
-                        report = r.Report.ToString(),
-                        format = r.Format.ToString(),
-                        clientId = dto.Filters.ClientId,
-                        periodId = dto.Filters.PeriodId,
-                        from = dto.Filters.From,
-                        to = dto.Filters.To,
-                        key,
-                    }),
-                    RequestId = ctx.RequestId,
-                });
+                    report = r.Report.ToString(),
+                    format = r.Format.ToString(),
+                    clientId = dto.Filters.ClientId,
+                    periodId = dto.Filters.PeriodId,
+                    from = dto.Filters.From,
+                    to = dto.Filters.To,
+                    key,
+                }));
                 await db.SaveChangesAsync(ct);
                 return TypedResults.Ok(new ReportExportDto(download.Url, fileName, download.ExpiresAt));
             })

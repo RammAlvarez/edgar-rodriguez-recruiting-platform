@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -180,7 +179,7 @@ public static class PaymentEndpoints
                     period.PaidBy = userId;
                     period.TotalNet = lines.Sum(x => x.Entity.TotalNet);
                 }
-                db.Add(Export(ctx, now, "payment_batches", new
+                db.Add(AuditEntry.ForExport(ctx, now, "payment_batches", new
                 {
                     kind = batch.Kind.ToString(),
                     periodId = id,
@@ -213,7 +212,7 @@ public static class PaymentEndpoints
                     return ApiResults.Conflict(NoFrequentFile);
                 var period = await db.Set<PayrollPeriod>().AsNoTracking().SingleAsync(p => p.Uid == batch.PayrollPeriodId, ct);
                 var heading = await HeadingAsync(db, period, ct);
-                db.Add(Export(ctx, clock.UtcNow, "payment_batches", new { file = file.ToString(), batchId = id }));
+                db.Add(AuditEntry.ForExport(ctx, clock.UtcNow, "payment_batches", new { file = file.ToString(), batchId = id }));
                 await db.SaveChangesAsync(ct);
                 return TypedResults.Ok(await Link(storage, path, $"{(file == PaymentFile.Payments ? "PAGOS" : "CUENTAS FRECUENTES")} {heading}.xlsx", ct));
             })
@@ -411,11 +410,8 @@ public static class PaymentEndpoints
     public static IQueryable<PayrollGroup> Groups(DbContext db, RequestContext ctx) =>
         PayrollScope.Groups(db, ctx, PermissionModule.PayrollPaymentFiles);
 
-    private static async Task<PayrollPeriod?> Period(DbContext db, RequestContext ctx, Guid id, CancellationToken ct)
-    {
-        var groups = Groups(db, ctx);
-        return await db.Set<PayrollPeriod>().AsNoTracking().SingleOrDefaultAsync(p => p.Uid == id && groups.Any(g => g.Uid == p.PayrollGroupId), ct);
-    }
+    private static Task<PayrollPeriod?> Period(DbContext db, RequestContext ctx, Guid id, CancellationToken ct) =>
+        PayrollScope.Period(db, ctx, PermissionModule.PayrollPaymentFiles, id, ct);
 
     private static async Task<PaymentBatch?> Batch(DbContext db, RequestContext ctx, Guid id, CancellationToken ct, bool tracked = false)
     {
@@ -479,16 +475,4 @@ public static class PaymentEndpoints
         var download = await storage.PresignDownloadAsync(StorageBucket.Exports, key, fileName, DownloadLifetime, ct);
         return new ReportExportDto(download.Url, fileName, download.ExpiresAt);
     }
-
-    private static AuditEntry Export(RequestContext ctx, DateTimeOffset now, string table, object after) => new()
-    {
-        OccurredAt = now,
-        UserId = ctx.RequiredPrincipal.UserId,
-        ActingForUserId = ctx.ActingFor?.UserId,
-        Action = AuditAction.Export,
-        SchemaName = "platform",
-        TableName = table,
-        After = JsonSerializer.Serialize(after),
-        RequestId = ctx.RequestId,
-    };
 }

@@ -1,4 +1,5 @@
 import type { MeDto, MeRole, PermissionModule } from '@platform/shared';
+import { hasGrant } from '@platform/ui/session';
 
 /** Sidebar of the prototype (design-reference/Plataforma.dc.html), filtered by role and delegated grants. */
 export interface NavItem {
@@ -72,7 +73,7 @@ export function visibleNavigation(me: MeDto, covering = false): NavSection[] {
 export function isVisible(item: NavItem, me: MeDto, covering = false): boolean {
   if (covering && me.role === 'administrator') return item.roles.includes('recruiter');
   if (!item.roles.includes(me.role)) return false;
-  return !item.grant || me.role !== 'administrator' || me.grants.some((g) => g.module === item.grant);
+  return !item.grant || me.role !== 'administrator' || hasGrant(me, item.grant);
 }
 
 /** First screen the user may open, or null when the role has nothing in this app (a Cliente user). */

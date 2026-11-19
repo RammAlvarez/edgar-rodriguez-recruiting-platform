@@ -1,6 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { uploadToPresignedUrl } from '@platform/api-client';
-import { API_CLIENT, liveQuery } from '@platform/ui';
+import { API_CLIENT, liveQuery, uploadPersonDocument } from '@platform/ui';
 import type {
   ExpiringDocumentDto,
   AssignmentRole,
@@ -23,7 +22,6 @@ import type {
   PersonDocumentDto,
   PersonDto,
   PersonSummaryDto,
-  PresignUploadResponse,
   RecruiterDetailDto,
   RecruiterSummaryDto,
   StaffOptionDto,
@@ -203,23 +201,8 @@ export class PeopleRepository {
     );
   }
 
-  /** Presign → PUT straight to the bucket → confirm (ARCHITECTURE §4 "Files"). */
-  async upload(personId: string, item: ChecklistItemDto, file: File, onProgress?: (f: number) => void): Promise<PersonDocumentDto> {
-    const presign = await this.api.post<PresignUploadResponse>('/v1/files/presign-upload', {
-      personId,
-      documentTypeId: item.documentTypeId,
-      fileName: file.name,
-      contentType: file.type,
-      sizeBytes: file.size,
-    });
-    await uploadToPresignedUrl(file, { url: presign.url, headers: presign.headers }, onProgress);
-    return this.api.post(`/v1/people/${personId}/documents`, {
-      documentTypeId: item.documentTypeId,
-      storageKey: presign.storageKey,
-      originalFilename: file.name,
-      issuedAt: null,
-      expiresAt: null,
-    });
+  upload(personId: string, item: ChecklistItemDto, file: File, onProgress?: (f: number) => void): Promise<PersonDocumentDto> {
+    return uploadPersonDocument(this.api, personId, item.documentTypeId, file, onProgress);
   }
 
   validate(documentId: string): Promise<PersonDocumentDto> {

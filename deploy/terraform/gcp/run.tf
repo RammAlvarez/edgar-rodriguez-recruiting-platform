@@ -37,7 +37,7 @@ locals {
 resource "google_cloud_run_v2_job" "migrate" {
   name                = "platform-migrate"
   location            = var.region
-  deletion_protection = false
+  deletion_protection = var.cloud_run_deletion_protection
   depends_on          = [google_secret_manager_secret_iam_member.api]
 
   template {
@@ -76,7 +76,7 @@ resource "google_cloud_run_v2_service" "api" {
   name                = "platform-api"
   location            = var.region
   ingress             = "INGRESS_TRAFFIC_ALL"
-  deletion_protection = false
+  deletion_protection = var.cloud_run_deletion_protection
   # The generated values too: Cloud Run rejects a secret with no version yet.
   depends_on = [google_secret_manager_secret_iam_member.api, google_secret_manager_secret_version.generated]
 

@@ -10,9 +10,9 @@ import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { ApiError, apiMessage } from '@platform/api-client';
 import { email as emailSchema, type PermissionModule, type UserRole } from '@platform/shared';
-import { applyServerErrors, confirm, errorMessage, zodValidator } from '@platform/ui';
+import { applyServerErrors, confirm, errorMessage, runExclusive, zodValidator } from '@platform/ui';
 import { Session } from '@platform/ui/session';
 import type { ClientOptionDto, UserDto } from '../data/api-types';
 import { DEFAULT_ADMIN_GRANTS, GRANTS, ROLE_LABELS } from '../data/labels';
@@ -291,21 +291,19 @@ export class UserPanel {
     await this.save();
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    this.alert.set(null);
-    try {
-      await work();
-    } catch (e) {
-      if (e instanceof ApiError && e.isValidation) {
-        const rest = applyServerErrors(this.form, e);
-        this.alert.set(rest[0] ?? (Object.keys(e.fieldErrors).length ? null : e.message));
-      } else {
-        this.alert.set(e instanceof ApiError ? e.message : 'Ocurrió un error inesperado.');
-      }
-    } finally {
-      this.busy.set(false);
-    }
+  private run(work: () => Promise<void>): Promise<void> {
+    return runExclusive(
+      this.busy,
+      work,
+      (e) => {
+        if (e instanceof ApiError && e.isValidation) {
+          const rest = applyServerErrors(this.form, e);
+          this.alert.set(rest[0] ?? (Object.keys(e.fieldErrors).length ? null : e.message));
+        } else {
+          this.alert.set(apiMessage(e, 'Ocurrió un error inesperado.'));
+        }
+      },
+      () => this.alert.set(null),
+    );
   }
 }

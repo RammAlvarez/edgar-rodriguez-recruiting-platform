@@ -7,7 +7,7 @@ import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ApiError } from '@platform/api-client';
+import { apiMessage } from '@platform/api-client';
 import { type DateKey, formatDateKey, isDateKey, todayKey } from '@platform/shared';
 import type { RecruitingReport, ReportFormat } from '../data/api-types';
 import { ReportRepository, type ReportQuery } from '../data/report-repository';
@@ -277,7 +277,7 @@ export class ReportsPage {
       window.location.assign(file.url);
       this.snackBar.open(`${file.fileName} generado`, undefined, { duration: 4000 });
     } catch (e) {
-      this.snackBar.open(e instanceof ApiError ? e.message : 'No se pudo generar el archivo.', 'Cerrar');
+      this.snackBar.open(apiMessage(e, 'No se pudo generar el archivo.'), 'Cerrar');
     } finally {
       this.exporting.set(null);
     }

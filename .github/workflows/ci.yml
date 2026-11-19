@@ -43,15 +43,15 @@ jobs:
       - name: Provider neutrality
         run: npm run check:neutrality
       - name: Lint
-        run: npx eslint .
+        run: npm run lint:web
       - name: Type-check libs
-        run: npx tsc -p tsconfig.libs.json
+        run: npm run typecheck:libs
       - name: Vitest (libs, scripts)
         run: npm run test:libs
       - name: Vitest (apps)
         run: npm run test:apps
       - name: Build apps
-        run: npx ng build admin && npx ng build candidates && npx ng build clients
+        run: npm run build:apps
 
   api:
     name: API (format, tests on Postgres + Auth emulator, migrations, generated types)
@@ -111,14 +111,12 @@ jobs:
           cat emulator.log; exit 1
       - run: dotnet tool restore
       - name: Format
-        run: dotnet format services/platform-api/Platform.slnx --verify-no-changes
+        run: npm run lint:api
       - name: Build
-        run: dotnet build services/platform-api/Platform.slnx -c Release
+        run: dotnet build services/platform-api/Platform.slnx -c Release  # same as `npm run build:api`, kept on the .slnx for the test step below
       - name: Tests (xUnit against Postgres, Firebase adapter against the emulator)
         run: dotnet test services/platform-api/Platform.slnx -c Release --no-build
       - name: No pending model changes
         run: npm run check:migrations
       - name: Generated API types are up to date
-        run: |
-          npm run generate:api-types
-          git diff --exit-code -- libs/shared
+        run: npm run check:api-types

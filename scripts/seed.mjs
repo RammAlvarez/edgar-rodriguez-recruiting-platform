@@ -25,7 +25,7 @@
 //       uploaded, 40 paid with its file not uploaded, so the Resumen de pago has both; and the gate: Costo de nómina for ECOVIA
 //       over 38–41 has one row per week equal to its prenómina grid, or the seed fails. Skipped once Semana 39 exists.
 import { setTimeout as sleep } from 'node:timers/promises';
-import { assertLocalDatabase, loadEnv } from './lib/env.mjs';
+import { assertConfirmedIfRemote, assertLocalDatabase, loadEnv } from './lib/env.mjs';
 import { GOLDEN, SEM38, sem38Rows, sem38Week } from './lib/sem38.mjs';
 import { addDays, candidatos as sampleCandidates, clients as sampleClients, empleados as sampleEmployees, payrollGroups as samplePayrollGroups, puestos as samplePositions, RECRUITERS, vacantes as sampleOpenings } from '../design-reference/data.js';
 
@@ -33,6 +33,8 @@ export const LOCAL_OWNER = { email: 'edgar@local.test', password: 'plataforma-lo
 
 const env = loadEnv();
 assertLocalDatabase(env.DATABASE_URL);
+// The seed writes through the API (/internal/*): a leftover API_URL in .env must not send it to DEV or production. No --yes escape.
+assertConfirmedIfRemote(env.API_URL, false, 'The seed');
 const emulator = env.FIREBASE_AUTH_EMULATOR_HOST;
 if (!emulator) throw new Error('FIREBASE_AUTH_EMULATOR_HOST is required for the local seed.');
 

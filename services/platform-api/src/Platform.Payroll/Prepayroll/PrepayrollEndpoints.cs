@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -197,17 +196,7 @@ public static partial class PrepayrollEndpoints
                     .Replace("QUINCENA N° ", "QNA ", StringComparison.Ordinal);
                 var fileName = $"{name} {shortLabel} {heading.ClientName} {heading.GroupName}.{extension}";
                 var download = await storage.PresignDownloadAsync(StorageBucket.Exports, key, fileName, DownloadLifetime, ct);
-                db.Add(new AuditEntry
-                {
-                    OccurredAt = now,
-                    UserId = ctx.RequiredPrincipal.UserId,
-                    ActingForUserId = ctx.ActingFor?.UserId,
-                    Action = AuditAction.Export,
-                    SchemaName = "platform",
-                    TableName = "prepayroll_lines",
-                    After = JsonSerializer.Serialize(new { kind = r.Kind.ToString(), periodId = id, lines = grid.Rows.Count, totalNet = grid.TotalNet, key }),
-                    RequestId = ctx.RequestId,
-                });
+                db.Add(AuditEntry.ForExport(ctx, now, "prepayroll_lines", new { kind = r.Kind.ToString(), periodId = id, lines = grid.Rows.Count, totalNet = grid.TotalNet, key }));
                 await db.SaveChangesAsync(ct);
                 return TypedResults.Ok(new ReportExportDto(download.Url, fileName, download.ExpiresAt));
             })
@@ -273,11 +262,8 @@ public static partial class PrepayrollEndpoints
     public static IQueryable<PayrollGroup> Groups(DbContext db, RequestContext ctx) =>
         PayrollScope.Groups(db, ctx, PermissionModule.PayrollPrepayroll);
 
-    private static async Task<PayrollPeriod?> Period(DbContext db, RequestContext ctx, Guid id, CancellationToken ct)
-    {
-        var groups = Groups(db, ctx);
-        return await db.Set<PayrollPeriod>().AsNoTracking().SingleOrDefaultAsync(p => p.Uid == id && groups.Any(g => g.Uid == p.PayrollGroupId), ct);
-    }
+    private static Task<PayrollPeriod?> Period(DbContext db, RequestContext ctx, Guid id, CancellationToken ct) =>
+        PayrollScope.Period(db, ctx, PermissionModule.PayrollPrepayroll, id, ct);
 
     private static async Task<(PrepayrollLine Line, PayrollPeriod Period)?> Line(DbContext db, RequestContext ctx, Guid id, CancellationToken ct)
     {

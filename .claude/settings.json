@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run lint)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run test:libs)",
+      "Bash(npm run test:apps)",
+      "Bash(npm run test:api)",
+      "Bash(npm run check:neutrality)",
+      "Bash(npm run check:migrations)",
+      "Bash(npm run generate:api-types)",
+      "Bash(npx vitest:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet format:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)"
+    ],
+    "deny": [
+      "Bash(terraform apply:*)",
+      "Bash(terraform destroy:*)",
+      "Bash(gcloud:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(bash scripts/deploy-hosting.sh:*)",
+      "Bash(scripts/deploy-hosting.sh:*)"
+    ]
+  }
+}
