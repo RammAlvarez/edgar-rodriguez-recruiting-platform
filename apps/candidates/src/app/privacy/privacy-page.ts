@@ -24,7 +24,7 @@ import { CandidatePortal } from '../data/portal';
         <mat-card-content>
           <p>Hola {{ session.me()?.displayName }}. Antes de continuar, lee cómo usamos tus datos.</p>
           <ul>
-            <li>Tus datos personales y los documentos que subas se usan para tu proceso de reclutamiento y, si te contratan, para tu alta y el pago de tu nómina.</li>
+            <li>Tus datos personales y los documentos que subas se usan solo para tu proceso de reclutamiento. Si te contratan, trabajarás para la empresa de la vacante.</li>
             <li>Los consulta el equipo de reclutamiento. La empresa de la vacante ve tus iniciales y en qué etapa vas; cuando te seleccionamos para presentarte, ve también tu nombre, el sueldo ofrecido, la fecha de tu entrevista y cuántos documentos entregaste. Nunca ve tus documentos ni tus datos de contacto.</li>
             <li>Tus documentos se guardan en un almacenamiento privado y cada vez que alguien del equipo los consulta queda registrado.</li>
             <li>Puedes pedir que se corrijan o eliminen tus datos con tu reclutador.</li>

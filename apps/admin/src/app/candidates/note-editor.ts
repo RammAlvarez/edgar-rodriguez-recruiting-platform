@@ -34,7 +34,9 @@ type Control = 'h1' | 'h2' | 'h3' | 'bold' | 'italic' | 'ordered' | 'bullet' | '
   imports: [MatButton, MatIconButton, MatIcon, MatTooltip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="toolbar" role="toolbar" aria-label="Formato">
+    <!-- mousedown would move the focus (and the caret) out of the editor: on an empty note H1–H3 then left an empty heading
+         and the typing went to the paragraph after it (demo run, 2026-11-25). Keyboard use is unaffected. -->
+    <div class="toolbar" role="toolbar" aria-label="Formato" (mousedown)="$event.preventDefault()">
       @for (c of controls; track c.id) {
         <button matIconButton type="button" [attr.aria-label]="c.label" [matTooltip]="c.label" [attr.aria-pressed]="active()[c.id]"
                 [class.on]="active()[c.id]" (click)="apply(c.id)">

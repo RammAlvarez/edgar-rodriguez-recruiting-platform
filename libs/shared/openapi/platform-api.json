@@ -4843,93 +4843,6 @@
         }
       }
     },
-    "/v1/candidate-portal/bank-accounts": {
-      "get": {
-        "tags": [
-          "Candidate portal"
-        ],
-        "operationId": "ListCandidateBankAccounts",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BankAccountDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Candidate portal"
-        ],
-        "operationId": "AddCandidateBankAccount",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BankAccountRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BankAccountDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/candidate-portal/banks": {
-      "get": {
-        "tags": [
-          "Candidate portal"
-        ],
-        "operationId": "ListCandidateBanks",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BankOptionDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/candidate-portal/privacy-notice": {
       "post": {
         "tags": [
@@ -9718,26 +9631,6 @@
           }
         }
       },
-      "BankOptionDto": {
-        "required": [
-          "id",
-          "name",
-          "code"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          }
-        }
-      },
       "BankRequest": {
         "required": [
           "name",
@@ -13646,7 +13539,8 @@
           "opening_idle",
           "attendance_missing",
           "period_in_review",
-          "user_invited"
+          "user_invited",
+          "opening_assigned"
         ]
       },
       "NotificationsDto": {

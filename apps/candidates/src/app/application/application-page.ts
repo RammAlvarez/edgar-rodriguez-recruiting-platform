@@ -17,7 +17,7 @@ export function statusMessage(a: CandidateApplicationDto): string {
     case 'selected':
       return 'Te seleccionamos para presentarte con la empresa. Tu reclutador te dirá los siguientes pasos.';
     case 'hired':
-      return '¡Felicidades, te contrataron!';
+      return '¡Felicidades! La empresa te contrató. Tu reclutador te dará los detalles de tu ingreso.';
     case 'closed':
       return 'Este proceso ya concluyó. Gracias por tu interés.';
     default:

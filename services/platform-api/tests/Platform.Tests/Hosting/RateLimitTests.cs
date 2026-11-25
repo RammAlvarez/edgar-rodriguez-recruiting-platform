@@ -21,7 +21,6 @@ public sealed class RateLimitedApiFactory : ApiFactory
         ["RATE_LIMIT_PORTAL_PER_MINUTE"] = $"{Portal}",
         ["RATE_LIMIT_STAFF_PER_MINUTE"] = $"{Staff}",
         ["RATE_LIMIT_UPLOADS_PER_HOUR"] = $"{Route}",
-        ["RATE_LIMIT_BANK_ACCOUNTS_PER_HOUR"] = $"{Route}",
         ["RATE_LIMIT_PROFILE_PER_10_MINUTES"] = $"{Route}",
         ["RATE_LIMIT_COMMENTS_PER_HOUR"] = $"{Route}",
         ["TRUSTED_PROXY_HOPS"] = "1",
@@ -29,7 +28,7 @@ public sealed class RateLimitedApiFactory : ApiFactory
 }
 
 /// <summary>
-/// PLAN D92: per client address before the token is checked, per person after it, and the four candidate/client routes;
+/// PLAN D92: per client address before the token is checked, per person after it, and the three candidate/client routes;
 /// 429 in the problem shape with <c>Retry-After</c>, readable by the apps (CORS); <c>/health</c> and <c>/internal</c> never.
 /// </summary>
 public sealed class RateLimitTests(RateLimitedApiFactory factory) : ApiTest(factory), IClassFixture<RateLimitedApiFactory>
@@ -105,7 +104,7 @@ public sealed class RateLimitTests(RateLimitedApiFactory factory) : ApiTest(fact
         Assert.Equal(HttpStatusCode.TooManyRequests, upload[^1]);
 
         // Another route of the same candidate still answers (one call left of the per-minute 5).
-        Assert.NotEqual(HttpStatusCode.TooManyRequests, (await me.PostAsJsonAsync("/v1/candidate-portal/bank-accounts", new { })).StatusCode);
+        Assert.NotEqual(HttpStatusCode.TooManyRequests, (await me.PutAsJsonAsync("/v1/candidate-portal/profile", new { })).StatusCode);
 
         var recruiter = From(await As(UserRole.Recruiter), "192.0.2.10");
         var staff = await Repeat(RateLimitedApiFactory.Route + 2, () => recruiter.PostAsJsonAsync("/v1/files/presign-upload", new { }));
@@ -113,17 +112,12 @@ public sealed class RateLimitTests(RateLimitedApiFactory factory) : ApiTest(fact
     }
 
     [Fact]
-    public async Task Profile_and_bank_account_writes_are_limited_per_candidate()
+    public async Task Profile_writes_are_limited_per_candidate()
     {
         var profile = await Candidate();
         var edits = await Repeat(RateLimitedApiFactory.Route + 1, () => profile.PutAsJsonAsync("/v1/candidate-portal/profile", new { }));
         Assert.Equal(HttpStatusCode.TooManyRequests, edits[^1]);
         Assert.DoesNotContain(HttpStatusCode.TooManyRequests, edits[..^1]);
-
-        var accounts = await Candidate();
-        var adds = await Repeat(RateLimitedApiFactory.Route + 1, () => accounts.PostAsJsonAsync("/v1/candidate-portal/bank-accounts", new { }));
-        Assert.Equal(HttpStatusCode.TooManyRequests, adds[^1]);
-        Assert.DoesNotContain(HttpStatusCode.TooManyRequests, adds[..^1]);
     }
 
     [Fact]

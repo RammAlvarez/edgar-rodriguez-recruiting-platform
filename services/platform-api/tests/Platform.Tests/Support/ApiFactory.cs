@@ -34,7 +34,6 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         ["RATE_LIMIT_PORTAL_PER_MINUTE"] = "0",
         ["RATE_LIMIT_STAFF_PER_MINUTE"] = "0",
         ["RATE_LIMIT_UPLOADS_PER_HOUR"] = "0",
-        ["RATE_LIMIT_BANK_ACCOUNTS_PER_HOUR"] = "0",
         ["RATE_LIMIT_PROFILE_PER_10_MINUTES"] = "0",
         ["RATE_LIMIT_COMMENTS_PER_HOUR"] = "0",
     };

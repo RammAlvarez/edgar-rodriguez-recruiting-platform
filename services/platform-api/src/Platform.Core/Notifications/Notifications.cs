@@ -20,6 +20,8 @@ public enum NotificationKind
     AttendanceMissing,
     PeriodInReview,
     UserInvited,
+    /// <summary>A vacante was assigned to the user, as líder or apoyo (SPEC §4.4).</summary>
+    OpeningAssigned,
 }
 
 /// <summary>

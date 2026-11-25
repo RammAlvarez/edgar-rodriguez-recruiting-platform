@@ -29,6 +29,12 @@ import type {
 } from './api-types';
 import type { CandidateStage, OpeningStatus } from './recruiting-labels';
 
+/** Required documents of a checklist not delivered yet: missing, rejected or expired (a delivered one awaits validation). */
+export function missingRequired(list: Pick<DocumentChecklistDto, 'items'>): number {
+  return list.items.filter((i) => i.inTemplate && i.isRequired && !['delivered', 'validated'].includes(i.current?.status ?? 'pending'))
+    .length;
+}
+
 /**
  * Reclutamiento's calls to `/v1`. Every list is already scoped by the API (a Reclutador, or cover mode via X-Acting-For,
  * only gets her vacantes); queries are live and re-run on the tags the mutations return.
@@ -153,6 +159,19 @@ export class CandidatesRepository {
 
   update(id: string, body: { source: string; offeredSalary: string | null; comments: string | null }): Promise<CandidateDetailDto> {
     return this.api.put(`/v1/candidates/${id}`, body);
+  }
+
+  /**
+   * How many required documents of the candidate's checklist are not delivered yet (neither Entregado nor Validado); the
+   * hire dialog warns with it but never blocks (owner, 2026-11-25).
+   */
+  async missingRequiredDocuments(id: string): Promise<number> {
+    const c = await this.api.get<CandidateDetailDto>(`/v1/candidates/${id}`);
+    const list = await this.api.get<DocumentChecklistDto>(
+      `/v1/people/${c.person.id}/documents`,
+      c.documentTemplateId ? { templateId: c.documentTemplateId } : undefined,
+    );
+    return missingRequired(list);
   }
 
   move(id: string, stage: CandidateStage, reason: string | null, hiredAt: string | null): Promise<MoveStageResultDto> {

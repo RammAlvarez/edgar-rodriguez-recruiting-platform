@@ -106,7 +106,7 @@ Module ownership (all tables live in Postgres schema `platform`, migrated by `pl
 | `document_template_scope` | `candidate`, `employee` |
 | `payment_type` | `spei` (1), `tef` (2), `baz_transfer` (3) |
 | `manual_payment_method` | `cash`, `check`, `other` — how a line was paid outside the bank files (PLAN D94) |
-| `notification_kind` | `document_expiring`, `document_uploaded`, `opening_idle`, `attendance_missing`, `period_ready`, `user_invited`, `comment_posted` |
+| `notification_kind` | `document_expiring`, `document_uploaded`, `opening_idle`, `attendance_missing`, `period_in_review`, `user_invited`, `opening_assigned` (D102) — as built; `comment_posted` was never added |
 
 ---
 

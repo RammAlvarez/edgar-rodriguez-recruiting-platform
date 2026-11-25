@@ -98,7 +98,7 @@ Data: `npm run seed` (3 payroll groups, 5 puestos, 32 employees: two vacations, 
 5. Documentos uses «Empleado — expediente»; Horario: a weekly schedule; Calendario day / week / month shows it, with vacations and incapacidad on the expected people.
 6. Clientes (nómina) → ECOVIA: VALIDADORES 12 H, its puestos and rates, bonuses off.
 7. A Contratado candidate has no way into Personal (PLAN D101): no «Convertir en empleado» on the profile or the Kanban card.
-8. Candidates app → Mi perfil → «Cuenta para tu pago» adds a card, shown as «•••• 1237».
+8. Candidates app → Mi perfil has no bank-account section, and nothing in the Candidates or Clients app mentions nómina or pago (PLAN D102).
 9. 390 px: Personal, employee detail, Calendario, payroll client detail.
 
 ### S8 — Asistencia + jobs
@@ -228,7 +228,7 @@ ECOVIA weeks so it does not wait on the new hire.
 
 **B. Candidates app (:4301)**
 17. Link for `happy.candidata@local.test` → aviso de privacidad → accept → Mi perfil.
-18. Mi perfil: CURP, RFC, NSS, celular, address → Guardar; «Agregar mi cuenta» a debit card → «•••• NNNN».
+18. Mi perfil: CURP, RFC, NSS, celular, address → Guardar; there is no «Cuenta para tu pago» (PLAN D102).
 19. Mis documentos: upload INE (PDF) and comprobante (JPG) → *Entregado*.
 20. Mi postulación: the vacante, the tracker on the current etapa, Mónica's contact.
 
@@ -308,7 +308,7 @@ Run each form below against the **checklist**, then the form's own rules. Record
 | Entrar (email link) | empty / invalid email messages; an unknown email → the same confirmation (no account disclosure); an expired or reused link → «El enlace ya se usó o caducó. Pide uno nuevo.» and the button sends a new one; a link opened in another browser asks for the email |
 | Aviso de privacidad | «Continuar» disabled until the box is checked; «Salir» signs out; typing `/perfil` before accepting → back to the aviso |
 | Mi perfil | CURP / RFC / NSS / celular / CP rules as in Persona; birth date vs CURP; another person's CURP → refused without naming them; 31 saves in 10 minutes → «… Inténtalo de nuevo en 10 minutos.» (profile limit 30/10 min; save at a person's pace, a scripted loop also hits the 120-per-minute limit) |
-| Cuenta para tu pago | the account rules of Agregar cuenta; «Cambiar cuenta» keeps one principal; the 11th request in an hour (refused ones count) → «… Inténtalo de nuevo en 60 minutos.» (limit 10/h) |
+| Cuenta para tu pago | removed (PLAN D102): the section is absent and `/v1/candidate-portal/bank-accounts` answers 404 |
 | Mis documentos | the document checks above; a phone photo (HEIC → refused, JPG → ok) at 390 px through the file picker |
 
 **Clients app**

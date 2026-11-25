@@ -118,9 +118,6 @@ public sealed record BankAccountDto(Guid Id, Guid BankId, string BankName, strin
     string HolderName, string? Alias, bool IsPrimary, bool IsThirdParty, DateOnly ValidFrom, DateOnly? ValidTo, bool IsCurrent,
     bool IsFrequentAccountRegistered);
 
-/// <summary>A bank in a picker.</summary>
-public sealed record BankOptionDto(Guid Id, string Name, string Code);
-
 internal sealed class BankAccountRequestValidator : AbstractValidator<BankAccountRequest>
 {
     public BankAccountRequestValidator()

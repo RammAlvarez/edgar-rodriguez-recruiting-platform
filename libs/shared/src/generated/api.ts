@@ -1170,38 +1170,6 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
-    "/v1/candidate-portal/bank-accounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ListCandidateBankAccounts"];
-        put?: never;
-        post: operations["AddCandidateBankAccount"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/candidate-portal/banks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ListCandidateBanks"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/candidate-portal/privacy-notice": {
         parameters: {
             query?: never;
@@ -2457,12 +2425,6 @@ export type components = {
             supportsMassivePayment: boolean;
             isActive: boolean;
         };
-        BankOptionDto: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            code: string;
-        };
         BankRequest: {
             name: string;
             speiCode: string;
@@ -3398,7 +3360,7 @@ export type components = {
             read: boolean;
         };
         /** @enum {unknown} */
-        NotificationKind: "document_expiring" | "document_uploaded" | "opening_idle" | "attendance_missing" | "period_in_review" | "user_invited";
+        NotificationKind: "document_expiring" | "document_uploaded" | "opening_idle" | "attendance_missing" | "period_in_review" | "user_invited" | "opening_assigned";
         NotificationsDto: {
             /** Format: int32 */
             unread: number | string;
@@ -4651,7 +4613,6 @@ export type BankAccountDto = components['schemas']['BankAccountDto'];
 export type BankAccountRequest = components['schemas']['BankAccountRequest'];
 export type BankAccountType = components['schemas']['BankAccountType'];
 export type BankDto = components['schemas']['BankDto'];
-export type BankOptionDto = components['schemas']['BankOptionDto'];
 export type BankRequest = components['schemas']['BankRequest'];
 export type BatchStatus = components['schemas']['BatchStatus'];
 export type BenefitDto = components['schemas']['BenefitDto'];
@@ -8545,79 +8506,6 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-        };
-    };
-    ListCandidateBankAccounts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BankAccountDto"][];
-                };
-            };
-        };
-    };
-    AddCandidateBankAccount: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BankAccountRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BankAccountDto"][];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
-                };
-            };
-        };
-    };
-    ListCandidateBanks: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BankOptionDto"][];
                 };
             };
         };

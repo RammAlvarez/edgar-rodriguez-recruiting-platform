@@ -30,6 +30,10 @@ export interface TopNavItem {
     .user { padding: 12px 16px; font: var(--mat-sys-label-large); color: var(--mat-sys-on-surface-variant); }
     .theme { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 12px; font: var(--mat-sys-label-large); color: var(--mat-sys-on-surface-variant); }
     main { flex: 1; }
+    /* Phones: three tabs share the width instead of scrolling the last one out of view («Mi p…», demo run 2026-11-25). */
+    @media (max-width: 599px) {
+      a[mat-tab-link] { flex: 1 1 0; min-width: 0; padding: 0 8px; }
+    }
   `,
   template: `
     <mat-toolbar class="toolbar">

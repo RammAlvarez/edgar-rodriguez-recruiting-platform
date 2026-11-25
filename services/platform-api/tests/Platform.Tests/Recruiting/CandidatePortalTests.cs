@@ -362,31 +362,15 @@ public sealed class CandidatePortalTests(ApiFactory factory) : ApiTest(factory)
     }
 
     [Fact]
-    public async Task A_candidate_adds_the_account_to_be_paid_to_and_only_its_last_four_digits_come_back()
+    public async Task A_candidate_has_no_bank_account_routes_because_a_hire_is_the_clients_employee()
     {
+        // D101: the platform never pays a hired candidate, so the portal offers no «Cuenta para tu pago».
         await Arrange();
         var email = NewEmail();
-        var (_, personId) = await Capture(email);
+        await Capture(email);
         var me = AsEmail(email);
-        var azteca = (await BodyOf(await me.GetAsync("/v1/candidate-portal/banks"))).EnumerateArray()
-            .Single(b => b.GetProperty("code").GetString() == "127").GetProperty("id").GetGuid();
-
-        var wrong = await me.PostAsJsonAsync("/v1/candidate-portal/bank-accounts",
-            new { bankId = azteca, accountType = "debit_card", accountNumber = "4152 3138 0000 1238", holderName = (string?)null, alias = (string?)null });
-        Assert.Contains("dígito verificador", (await ErrorsOf(wrong))["accountNumber"][0]);
-
-        var added = await me.PostAsJsonAsync("/v1/candidate-portal/bank-accounts",
-            new { bankId = azteca, accountType = "debit_card", accountNumber = "4152 3138 0000 1237", holderName = (string?)null, alias = "Mi tarjeta" });
-        Assert.Equal(HttpStatusCode.OK, added.StatusCode);
-        var raw = await added.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("415231380000", raw);
-        var account = (await BodyOf(added)).EnumerateArray().Single();
-        Assert.Equal("1237", account.GetProperty("last4").GetString());
-        Assert.True(account.GetProperty("isPrimary").GetBoolean());
-        Assert.False(account.GetProperty("isThirdParty").GetBoolean()); // the titular defaults to the person
-
-        var stored = await WithDb(db => db.Set<PersonBankAccount>().SingleAsync(a => a.PersonId == personId));
-        Assert.DoesNotContain("4152313800001237", System.Text.Encoding.Latin1.GetString(stored.AccountNumberEnc));
-        Assert.Equal("4152313800001237", Factory.Services.GetRequiredService<Platform.Core.Security.IFieldCipher>().Decrypt(stored.AccountNumberEnc));
+        Assert.Equal(HttpStatusCode.NotFound, (await me.GetAsync("/v1/candidate-portal/bank-accounts")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await me.GetAsync("/v1/candidate-portal/banks")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await me.PostAsJsonAsync("/v1/candidate-portal/bank-accounts", new { })).StatusCode);
     }
 }

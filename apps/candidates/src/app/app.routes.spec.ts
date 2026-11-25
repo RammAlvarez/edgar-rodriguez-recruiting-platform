@@ -65,4 +65,10 @@ describe('Mi postulación', () => {
     expect(statusMessage(app({ step: 'interview' }))).toBe('Estás en la etapa de entrevista.');
     expect(statusMessage(app({ step: 'result', outcome: 'selected' }))).toContain('presentarte con la empresa');
   });
+
+  it('tells a hire that the company hired them, never that the platform pays them (D101)', () => {
+    const hired = statusMessage(app({ step: 'result', outcome: 'hired' }));
+    expect(hired).toContain('La empresa te contrató');
+    expect(hired).not.toMatch(/pag|nómina/i);
+  });
 });

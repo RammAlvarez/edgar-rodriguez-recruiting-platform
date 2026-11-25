@@ -20,11 +20,15 @@ public static class InvitationEmail
                 "Abrir el portal", "")
             : ("Para entrar, define tu contraseña con el enlace siguiente.", "Definir contraseña",
                 $"Después entra en {appUrl} con tu correo y esa contraseña. El enlace es de un solo uso y vence en una hora; si vence, pide que te reenvíen la invitación.");
-        var subject = "Tu acceso a la Plataforma de Reclutamiento y Prenómina";
+        // A Cliente only ever sees the portal of their vacantes: never name the payroll side to them (D101).
+        var product = user.Role == UserRole.Client ? "el Portal de clientes" : "la Plataforma de Reclutamiento y Prenómina";
+        var subject = user.Role == UserRole.Client
+            ? "Tu acceso al Portal de clientes"
+            : "Tu acceso a la Plataforma de Reclutamiento y Prenómina";
         var text = $"""
             Hola {user.DisplayName}:
 
-            {inviter} te dio acceso a la Plataforma de Reclutamiento y Prenómina como {role}.
+            {inviter} te dio acceso a {product} como {role}.
             {action}
 
             {link}
@@ -34,7 +38,7 @@ public static class InvitationEmail
         static string e(string value) => WebUtility.HtmlEncode(value);
         var html = $"""
             <p>Hola {e(user.DisplayName)}:</p>
-            <p>{e(inviter)} te dio acceso a la Plataforma de Reclutamiento y Prenómina como <strong>{role}</strong>.<br>{e(action)}</p>
+            <p>{e(inviter)} te dio acceso a {e(product)} como <strong>{role}</strong>.<br>{e(action)}</p>
             <p><a href="{e(link)}">{button}</a></p>
             <p style="color:#555">{e(note)}</p>
             """;

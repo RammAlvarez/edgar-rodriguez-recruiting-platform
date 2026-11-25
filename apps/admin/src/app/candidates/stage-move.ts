@@ -36,9 +36,14 @@ export class StageMove {
       if (reason === null) return null;
     }
     if (to === 'hired') {
+      // Warn, never block (owner, 2026-11-25): a hire may go ahead with documents still to come.
+      const missing = await this.candidates.missingRequiredDocuments(candidate.id).catch(() => 0);
+      const warning = missing
+        ? ` Faltan ${missing} ${missing === 1 ? 'documento obligatorio' : 'documentos obligatorios'} por entregar.`
+        : '';
       hiredAt = await prompt(this.dialog, {
         title: `Contratar a ${candidate.fullName}`,
-        body: 'La vacante suma un contratado; al llegar a las solicitadas queda Cubierta.',
+        body: `La vacante suma un contratado; al llegar a las solicitadas queda Cubierta.${warning}`,
         label: 'Fecha de ingreso',
         confirm: 'Marcar como contratado',
         kind: 'date',

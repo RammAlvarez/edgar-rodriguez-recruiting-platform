@@ -257,7 +257,7 @@ public static class OpeningEndpoints
             if (r.Role == AssignmentRole.Lead)
                 await OpeningRules.MakeLeadAsync(db, ctx, clock, o, user, ct);
             else
-                OpeningRules.Assign(db, ctx, clock, o, user);
+                await OpeningRules.AssignAsync(db, ctx, clock, o, user, ct);
         }
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
