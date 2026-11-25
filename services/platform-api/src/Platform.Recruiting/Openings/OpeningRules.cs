@@ -5,6 +5,7 @@ using Platform.Core.Access;
 using Platform.Core.Catalogs;
 using Platform.Core.Clients;
 using Platform.Core.Http;
+using Platform.Core.Notifications;
 using Platform.Core.Users;
 using Platform.Recruiting.Candidates;
 
@@ -119,6 +120,29 @@ public static class OpeningRules
         return row;
     }
 
+    /// <summary>«Asignar como apoyo»: <see cref="Assign"/>, and the recruiter hears of it when she was not assigned yet.</summary>
+    public static async Task AssignAsync(DbContext db, RequestContext ctx, IClock clock, JobOpening o, Guid userId, CancellationToken ct)
+    {
+        var wasAssigned = o.Recruiters.Any(r => r.UserId == userId);
+        Assign(db, ctx, clock, o, userId);
+        if (!wasAssigned)
+            await NotifyAssignedAsync(db, clock, o, userId, lead: false, ct);
+    }
+
+    /// <summary>
+    /// SPEC §4.4: the bell (and the daily digest) tells the recruiter which vacante she got and as what, linking to it in
+    /// «Mis vacantes» (only Reclutadores are assigned). Once per vacante, role and day.
+    /// </summary>
+    private static async Task NotifyAssignedAsync(DbContext db, IClock clock, JobOpening o, Guid userId, bool lead, CancellationToken ct)
+    {
+        var name = (await OpeningQueries.DisplayNames(db, [o.Uid], ct)).GetValueOrDefault(o.Uid) ?? o.PositionName;
+        var role = lead ? "líder" : "apoyo";
+        await Notifier.NotifyAsync(db, [userId], new NotificationDraft(NotificationKind.OpeningAssigned,
+                $"opening-assigned:{o.Uid}:{role}:{clock.Today():yyyy-MM-dd}", $"Te asignaron {name} como {role}",
+                "Revisa la vacante y empieza a capturar candidatos.", $"/mis-vacantes/{o.Uid}"),
+            clock.UtcNow, ct);
+    }
+
     /// <summary>
     /// Makes an assigned recruiter líder; the previous líder stays as apoyo. Saves the demotion first: the one-líder index is
     /// partial, so it cannot be deferred to the end of the statement batch. Run inside a transaction.
@@ -136,6 +160,7 @@ public static class OpeningRules
         row.IsLead = true;
         o.LeadRecruiterId = userId;
         AddEvent(db, ctx, clock, o, OpeningEventKind.LeadChanged, recruiter: userId);
+        await NotifyAssignedAsync(db, clock, o, userId, lead: true, ct);
     }
 
     /// <summary>«Quitar»: a líder is replaced by <paramref name="newLeadId"/>, required while other recruiters remain (D71).</summary>

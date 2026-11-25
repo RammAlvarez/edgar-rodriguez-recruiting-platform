@@ -9,9 +9,6 @@ public static class RateLimitPolicies
     /// <summary>Upload links (<c>POST /v1/files/presign-upload</c>): each one opens a PUT into the documents bucket.</summary>
     public const string Uploads = "uploads";
 
-    /// <summary>«Cuenta para tu pago» (<c>POST /v1/candidate-portal/bank-accounts</c>).</summary>
-    public const string BankAccounts = "bank-accounts";
-
     /// <summary>«Mis datos» (<c>PUT /v1/candidate-portal/profile</c>).</summary>
     public const string Profile = "profile";
 

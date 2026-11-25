@@ -53,7 +53,7 @@ namespace Platform.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "interview_outcome", new[] { "pending", "attended", "no_show" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "item_source", new[] { "attendance", "incident", "position", "manual" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "manual_payment_method", new[] { "cash", "check", "other" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "notification_kind", new[] { "document_expiring", "document_uploaded", "opening_idle", "attendance_missing", "period_in_review", "user_invited" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "notification_kind", new[] { "document_expiring", "document_uploaded", "opening_idle", "attendance_missing", "period_in_review", "user_invited", "opening_assigned" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_event_kind", new[] { "created", "edited", "status_changed", "recruiter_assigned", "recruiter_removed", "lead_changed" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_priority", new[] { "high", "medium", "low" });
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "platform", "opening_status", new[] { "open", "in_progress", "filled", "cancelled", "paused" });

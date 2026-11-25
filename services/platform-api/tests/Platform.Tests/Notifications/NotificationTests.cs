@@ -30,6 +30,8 @@ public sealed class NotificationTests(ApiFactory factory) : ApiTest(factory)
         _monica = await WithDb(db => db.AddUser(UserRole.Recruiter, "Mónica Soto"));
         _owner = await AsOwner();
         _opening = (await BodyOf(await _owner.PostAsJsonAsync("/v1/openings", OpeningTests.NewOpening(heb.Uid, _monica.Uid)))).GetProperty("id").GetGuid();
+        // Being made líder told her (covered by its own test); start each test from an empty bell.
+        await WithDb(db => db.Set<Notification>().Where(n => n.UserId == _monica.Uid).ExecuteDeleteAsync());
     }
 
     private async Task<(Guid Candidate, Guid Person, string Email)> Capture()
@@ -75,6 +77,30 @@ public sealed class NotificationTests(ApiFactory factory) : ApiTest(factory)
 
     private Task<List<Notification>> Of(Guid userId) =>
         WithDb(db => db.Set<Notification>().Where(n => n.UserId == userId).OrderBy(n => n.Id).ToListAsync());
+
+    [Fact]
+    public async Task Assigning_a_vacante_tells_the_recruiter_as_lider_or_apoyo()
+    {
+        var heb = await WithDb(db => db.AddClient("HEB"));
+        _monica = await WithDb(db => db.AddUser(UserRole.Recruiter, "Mónica Soto"));
+        var pricila = await WithDb(db => db.AddUser(UserRole.Recruiter, "Pricila de León"));
+        var adminHttp = await AsOwner();
+        var opening = (await BodyOf(await adminHttp.PostAsJsonAsync("/v1/openings", OpeningTests.NewOpening(heb.Uid, _monica.Uid))))
+            .GetProperty("id").GetGuid();
+
+        var lead = Assert.Single(await Of(_monica.Uid));
+        Assert.Equal(NotificationKind.OpeningAssigned, lead.Kind);
+        Assert.Equal($"/mis-vacantes/{opening}", lead.Link);
+        Assert.EndsWith("como líder", lead.Title, StringComparison.Ordinal);
+
+        Assert.Equal(HttpStatusCode.OK, (await adminHttp.PostAsJsonAsync($"/v1/recruiters/{pricila.Uid}/openings",
+            new { openingIds = new[] { opening }, role = "support" })).StatusCode);
+        Assert.EndsWith("como apoyo", Assert.Single(await Of(pricila.Uid)).Title, StringComparison.Ordinal);
+
+        // Assigning her again is not news.
+        await adminHttp.PostAsJsonAsync($"/v1/recruiters/{pricila.Uid}/openings", new { openingIds = new[] { opening }, role = "support" });
+        Assert.Single(await Of(pricila.Uid));
+    }
 
     [Fact]
     public async Task A_candidates_upload_tells_their_recruiter_and_the_bell_reads_and_clears()

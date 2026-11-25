@@ -62,7 +62,11 @@ public sealed class UserManagementTests(ApiFactory factory) : ApiTest(factory)
         Assert.Equal("HEB", result.GetProperty("user").GetProperty("clientName").GetString());
         var userId = result.GetProperty("user").GetProperty("id").GetGuid();
         Assert.Equal(userId, await WithDb(db => db.Set<ClientContact>().Where(c => c.Uid == contact.Uid).Select(c => c.UserId).SingleAsync()));
-        Assert.Contains("http://localhost:4302", Assert.Single(Factory.Email.To(contact.Email!)).Text, StringComparison.Ordinal);
+        var mail = Assert.Single(Factory.Email.To(contact.Email!));
+        Assert.Contains("http://localhost:4302", mail.Text, StringComparison.Ordinal);
+        // D101: a client never hears of the payroll side.
+        Assert.Equal("Tu acceso al Portal de clientes", mail.Subject);
+        Assert.DoesNotContain("ómina", mail.Subject + mail.Text + mail.Html, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -213,9 +213,10 @@ flowchart TD
 
 **Quién:** el candidato, desde su celular o computadora.
 
-1. ☐ Abra el enlace del correo → acepte el **aviso de privacidad** → entra a *Mi perfil*.
-2. ☐ **Mi perfil:** CURP, RFC, NSS, celular, domicilio → Guardar. «Agregar mi cuenta» con una tarjeta de débito →
-   se muestra como «•••• NNNN».
+1. ☐ El correo «Tu postulación: …» lleva a la app → escriba su correo → abra el enlace que le llega → acepte el
+   **aviso de privacidad** → entra a *Mi perfil*.
+2. ☐ **Mi perfil:** CURP, RFC, NSS, celular, domicilio → Guardar. No hay ninguna sección de cuenta bancaria: quien
+   resulta contratado trabaja para la empresa de la vacante.
 3. ☐ **Mis documentos:** suba INE (PDF) y comprobante de domicilio (JPG) → quedan *Entregado*.
 4. ☐ **Mi postulación:** la vacante, la etapa actual y los datos de contacto del reclutador.
 
@@ -226,7 +227,8 @@ flowchart TD
 
 **Quién:** el contacto del cliente.
 
-1. ☐ Abra el enlace del correo → **Mis vacantes** muestra la vacante **sin** sueldo, sexo ni edad.
+1. ☐ El correo «Tu acceso al Portal de clientes» lleva al portal → escriba su correo → abra el enlace que le llega →
+   **Mis vacantes** muestra la vacante **sin** sueldo, sexo ni edad.
 2. ☐ Abra la vacante → el candidato aparece con **iniciales** (todavía no es Apto).
 3. ☐ Escriba un comentario → aparece en la conversación y en **Comentarios**.
 

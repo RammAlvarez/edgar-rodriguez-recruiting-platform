@@ -20,7 +20,6 @@ public sealed record RateLimitSettings(
     int PortalPerMinute,
     int StaffPerMinute,
     int UploadsPerHour,
-    int BankAccountsPerHour,
     int ProfilePer10Minutes,
     int CommentsPerHour,
     int TrustedProxyHops)
@@ -37,7 +36,6 @@ public sealed record RateLimitSettings(
             Get("RATE_LIMIT_PORTAL_PER_MINUTE", 120),
             Get("RATE_LIMIT_STAFF_PER_MINUTE", 600),
             Get("RATE_LIMIT_UPLOADS_PER_HOUR", 30),
-            Get("RATE_LIMIT_BANK_ACCOUNTS_PER_HOUR", 10),
             Get("RATE_LIMIT_PROFILE_PER_10_MINUTES", 30),
             Get("RATE_LIMIT_COMMENTS_PER_HOUR", 30),
             Get("TRUSTED_PROXY_HOPS", 1));
@@ -81,7 +79,6 @@ public static partial class RateLimiting
                     null => RateLimitPartition.GetNoLimiter(""),
                 });
             o.AddPolicy(RateLimitPolicies.Uploads, PortalOnly(s.UploadsPerHour, TimeSpan.FromHours(1)));
-            o.AddPolicy(RateLimitPolicies.BankAccounts, PortalOnly(s.BankAccountsPerHour, TimeSpan.FromHours(1)));
             o.AddPolicy(RateLimitPolicies.Profile, PortalOnly(s.ProfilePer10Minutes, TimeSpan.FromMinutes(10)));
             o.AddPolicy(RateLimitPolicies.Comments, PortalOnly(s.CommentsPerHour, TimeSpan.FromHours(1)));
         });

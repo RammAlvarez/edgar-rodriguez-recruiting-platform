@@ -56,7 +56,7 @@ public static class RecruiterEndpoints
                     if (r.Role == AssignmentRole.Lead)
                         await OpeningRules.MakeLeadAsync(db, ctx, clock, o, id, ct);
                     else
-                        OpeningRules.Assign(db, ctx, clock, o, id);
+                        await OpeningRules.AssignAsync(db, ctx, clock, o, id, ct);
                 }
                 await db.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
@@ -66,8 +66,11 @@ public static class RecruiterEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
             .Invalidates(OpeningEndpoints.Tag, OpeningEndpoints.RecruitersTag, ClientEndpoints.Tag).RequireAccess(RecruitingScope.Manage);
 
+        // The interview's «Entrevistador» picker: the recruiting team only — Reclutadores and the Administradores holding the
+        // Reclutamiento grant — never a payroll-only user such as a field supervisor.
         v1.MapGet("/staff", async (DbContext db, CancellationToken ct) => TypedResults.Ok(await db.Set<User>()
-                .Where(u => u.IsActive && (u.Role == UserRole.Administrator || u.Role == UserRole.Recruiter))
+                .Where(u => u.IsActive && (u.Role == UserRole.Recruiter || (u.Role == UserRole.Administrator
+                    && db.Set<UserPermission>().Any(p => p.UserId == u.Uid && p.Module == PermissionModule.Recruiting))))
                 .OrderBy(u => u.DisplayName).Select(u => new StaffOptionDto(u.Uid, u.DisplayName, u.Role)).ToListAsync(ct)))
             .WithTags("Recruiters").WithName("ListStaff").RequireAccess(RecruitingScope.Staff);
 

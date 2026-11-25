@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Platform.Core.Abstractions;
+using Platform.Core.Access;
 using Platform.Core.Clients;
 using Platform.Core.Users;
 using Platform.Recruiting.Openings;
@@ -261,5 +262,21 @@ public sealed class OpeningTests(ApiFactory factory) : ApiTest(factory)
         var opening = await BodyOf(await admin.GetAsync($"/v1/openings/{id}"));
         Assert.Equal(("Operador de Limpieza", "HEB – Operador de Limpieza"),
             (opening.GetProperty("positionName").GetString(), opening.GetProperty("displayName").GetString()));
+    }
+
+    [Fact]
+    public async Task The_interviewer_list_is_the_recruiting_team_only()
+    {
+        var recruiter = await WithDb(db => db.AddUser(UserRole.Recruiter, $"Reclutadora {Guid.NewGuid():N}"));
+        var recruitingAdmin = await WithDb(db => db.AddUser(UserRole.Administrator, $"Admin {Guid.NewGuid():N}",
+            grants: [new UserPermission { Module = PermissionModule.Recruiting }]));
+        var supervisor = await WithDb(db => db.AddUser(UserRole.Administrator, $"Supervisor {Guid.NewGuid():N}",
+            grants: [new UserPermission { Module = PermissionModule.PayrollAttendance }]));
+        var (_, admin) = await SignedIn(UserRole.Administrator, new UserPermission { Module = PermissionModule.Recruiting });
+
+        var ids = (await BodyOf(await admin.GetAsync("/v1/staff"))).EnumerateArray().Select(s => s.GetProperty("id").GetGuid()).ToList();
+        Assert.Contains(recruiter.Uid, ids);
+        Assert.Contains(recruitingAdmin.Uid, ids);
+        Assert.DoesNotContain(supervisor.Uid, ids);
     }
 }

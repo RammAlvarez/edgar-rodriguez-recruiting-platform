@@ -16,6 +16,7 @@ const ICON = {
   attendance_missing: 'person_off',
   period_in_review: 'rule',
   user_invited: 'waving_hand',
+  opening_assigned: 'assignment_ind',
 } as const;
 
 /** How long the list waits before asking again (the API also invalidates it after each change of the user's own). */

@@ -148,7 +148,7 @@ Zonas (municipios de Nuevo León + custom), Puestos, Bancos (with clave SPEI: 01
 
 ### 3.5 Notifications
 
-In-app bell + **email only** (Resend via API); no WhatsApp in v1. Triggers: document expiring in 30/7 days, candidate uploaded a document, vacante without activity for N days, attendance not captured by cut-off, period ready to close, user invited.
+In-app bell + **email only** (Resend via API); no WhatsApp in v1. Triggers: document expiring in 30/7 days, candidate uploaded a document, vacante assigned to a recruiter (PLAN D102), vacante without activity for N days, attendance not captured by cut-off, period ready to close, user invited.
 
 ---
 
@@ -212,10 +212,10 @@ Views: Kanban by etapa per vacante (drag & drop), table with filters, candidate 
 |---|---|---|
 | Nuevo | captured, not yet contacted | invitation email to Candidates app (if email) |
 | Contactado | first contact done | — |
-| Entrevista | interview scheduled/held; date, interviewer, outcome notes | visible to client portal as "en entrevista" |
+| Entrevista | interview scheduled/held; date, interviewer (the recruiting team: Reclutadores and Administradores with `recruiting`, D102), outcome notes | visible to client portal as "en entrevista" |
 | Apto | approved for presentation to client | `apto = Sí`; client portal now shows full name and summary |
 | No apto | rejected after interview | `apto = No`; reason required |
-| Contratado | hired | `contratado = Sí`, fecha de ingreso required; vacante counter +1; the end of the process — the hire is the client's employee (D101) |
+| Contratado | hired | `contratado = Sí`, fecha de ingreso required; the dialog warns how many required documents are still missing, never blocks (D102); vacante counter +1; the end of the process — the hire is the client's employee (D101) |
 | Descartado | withdrawn / no-show / rejected by client | reason required |
 
 ### 4.4 Reclutadores
@@ -429,7 +429,7 @@ Create/invite users, assign role (Administrador / Reclutador / Cliente), link Cl
 
 ## 7. Candidates app
 
-Passwordless. First visit: the aviso de privacidad (PLAN D77, P8); then the candidate completes the profile the recruiter started (name, phone, address, CURP, RFC, NSS, bank account for future payroll — the bank account arrives with payment accounts in S7), uploads the documents required by the vacante's template (camera on mobile), and sees: estado de mi postulación (stage, in friendly words), documentos pendientes/validados/rechazados (with reason), reclutador de contacto. Nothing else. Spanish only, mobile-first.
+Passwordless. First visit: the aviso de privacidad (PLAN D77, P8); then the candidate completes the profile the recruiter started (name, phone, address, CURP, RFC, NSS — never a bank account: a hire is the client's employee, PLAN D101/D102), uploads the documents required by the vacante's template (camera on mobile), and sees: estado de mi postulación (stage, in friendly words), documentos pendientes/validados/rechazados (with reason), reclutador de contacto. Nothing else. Spanish only, mobile-first.
 
 ---
 
